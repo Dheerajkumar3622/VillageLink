@@ -10,7 +10,7 @@ import { getRecommendations } from '../services/foodRecommendationService.js';
 const router = express.Router();
 
 // Get personalized recommendations
-router.get('/recommendations', authenticateToken, async (req, res) => {
+router.get('/recommendations', Auth.authenticate, async (req, res) => {
     try {
         const recommendations = await getRecommendations(req.user.id);
         res.json(recommendations);

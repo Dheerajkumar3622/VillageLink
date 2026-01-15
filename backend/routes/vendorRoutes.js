@@ -1,6 +1,6 @@
 import express from 'express';
 import { FoodVendor, FoodOrder, VendorMenuItem, User, FoodReview } from '../models.js';
-import { authenticateToken } from '../auth.js';
+import { authenticate as authenticateToken } from '../auth.js';
 import { rewardUserForOrder, rewardVendorBonus } from '../services/rewardService.js';
 import crypto from 'crypto';
 
