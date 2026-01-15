@@ -655,3 +655,583 @@ paymentSchema.index({ razorpayOrderId: 1 });
 paymentSchema.index({ orderId: 1 });
 
 export const Payment = mongoose.model('Payment', paymentSchema);
+
+// --- FOODLINK V19.0: COMPREHENSIVE PLATFORM MODELS ---
+
+// ==================== VYAPAR SAATHI (Street Vendor) ====================
+
+// Bulk Procurement Orders Schema
+const bulkOrderSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  vendorIds: [String],             // Vendors participating in this bulk order
+  hubVendorId: String,             // Vendor designated as collection hub
+  items: [{
+    name: String,
+    quantity: Number,
+    unit: { type: String, enum: ['KG', 'LITRE', 'PIECE', 'DOZEN', 'BUNDLE'] },
+    targetPrice: Number,
+    actualPrice: Number,
+    b2bPartnerId: String           // Ninjacart, WayCool, etc.
+  }],
+  totalValue: { type: Number, default: 0 },
+  savingsPercent: { type: Number, default: 0 },
+  status: {
+    type: String,
+    enum: ['COLLECTING', 'LOCKED', 'PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
+    default: 'COLLECTING'
+  },
+  deliveryDate: Date,
+  deliveryTime: String,
+  pickupLocation: {
+    address: String,
+    lat: Number,
+    lng: Number
+  },
+  createdAt: { type: Date, default: Date.now },
+  lockedAt: Date,
+  deliveredAt: Date
+});
+
+bulkOrderSchema.index({ status: 1, deliveryDate: 1 });
+bulkOrderSchema.index({ vendorIds: 1 });
+bulkOrderSchema.index({ hubVendorId: 1 });
+
+export const BulkOrder = mongoose.model('BulkOrder', bulkOrderSchema);
+
+// Digital Khata (Vendor Ledger) Schema
+const vendorKhataSchema = new mongoose.Schema({
+  vendorId: { type: String, required: true, unique: true },
+  entries: [{
+    entryId: String,
+    timestamp: { type: Date, default: Date.now },
+    type: {
+      type: String,
+      enum: ['SALE', 'EXPENSE', 'LOAN_RECEIVED', 'LOAN_REPAYMENT', 'BULK_ORDER', 'REFUND']
+    },
+    amount: Number,
+    paymentMethod: { type: String, enum: ['CASH', 'UPI', 'CREDIT', 'WALLET'] },
+    note: String,
+    voiceNoteUrl: String,          // For voice-first recording
+    relatedOrderId: String,
+    relatedBulkOrderId: String
+  }],
+  dailySummary: {
+    type: Map, of: {
+      totalSales: Number,
+      totalExpenses: Number,
+      cashSales: Number,
+      upiSales: Number,
+      netProfit: Number
+    }
+  },
+  monthlySummary: {
+    type: Map, of: {
+      totalSales: Number,
+      avgDailySales: Number,
+      peakDay: String,
+      loanRepaid: Number
+    }
+  },
+  lastUpdated: { type: Date, default: Date.now }
+});
+
+vendorKhataSchema.index({ vendorId: 1 });
+vendorKhataSchema.index({ 'entries.timestamp': -1 });
+
+export const VendorKhata = mongoose.model('VendorKhata', vendorKhataSchema);
+
+// Hygiene Audit Schema (AI-verified self-audits)
+const hygieneAuditSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  vendorId: { type: String, required: true },
+  auditDate: { type: Date, default: Date.now },
+  photos: [{
+    type: {
+      type: String,
+      enum: ['WATER_TANK', 'WORKSPACE', 'PROTECTIVE_GEAR', 'WASTE_DISPOSAL', 'RAW_MATERIALS', 'COOKING_AREA']
+    },
+    url: String,
+    aiScore: { type: Number, min: 0, max: 100 },
+    aiRemarks: String,
+    verified: { type: Boolean, default: false }
+  }],
+  overallScore: { type: Number, min: 0, max: 100 },
+  badge: {
+    type: String,
+    enum: ['NONE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM'],
+    default: 'NONE'
+  },
+  streakDays: { type: Number, default: 0 },      // Consecutive audit days
+  improvements: [String],                         // AI-suggested improvements
+  expiresAt: Date                                 // Badge expiry
+});
+
+hygieneAuditSchema.index({ vendorId: 1, auditDate: -1 });
+hygieneAuditSchema.index({ badge: 1 });
+
+export const HygieneAudit = mongoose.model('HygieneAudit', hygieneAuditSchema);
+
+// Alternative Credit Score Schema
+const creditScoreSchema = new mongoose.Schema({
+  vendorId: { type: String, required: true, unique: true },
+  score: { type: Number, min: 300, max: 850, default: 500 },
+  tier: {
+    type: String,
+    enum: ['UNSCORED', 'FAIR', 'GOOD', 'VERY_GOOD', 'EXCELLENT'],
+    default: 'UNSCORED'
+  },
+  factors: [{
+    name: String,                   // 'UPI_VELOCITY', 'SALES_CONSISTENCY', etc.
+    impact: { type: String, enum: ['POSITIVE', 'NEGATIVE', 'NEUTRAL'] },
+    weight: Number,
+    value: Number
+  }],
+  metrics: {
+    avgDailySales: Number,
+    salesConsistencyScore: Number,  // 0-100
+    upiTransactionRatio: Number,    // % of digital payments
+    repaymentHistory: Number,       // 0-100
+    businessAge: Number,            // months
+    appEngagementScore: Number      // 0-100
+  },
+  loanEligibility: {
+    pmSvanidhi: { eligible: Boolean, maxAmount: Number, tier: Number },
+    workingCapital: { eligible: Boolean, maxAmount: Number, interestRate: Number }
+  },
+  lastCalculated: { type: Date, default: Date.now },
+  history: [{
+    date: Date,
+    score: Number,
+    changeReason: String
+  }]
+});
+
+creditScoreSchema.index({ vendorId: 1 });
+creditScoreSchema.index({ score: -1 });
+
+export const CreditScore = mongoose.model('CreditScore', creditScoreSchema);
+
+// FSSAI Registration Flow Schema
+const fssaiRegistrationSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  vendorId: { type: String, required: true },
+  applicationType: { type: String, enum: ['PETTY_FBO', 'STATE_LICENSE', 'CENTRAL_LICENSE'] },
+  step: {
+    type: String,
+    enum: ['INITIATED', 'DOCUMENTS_UPLOADED', 'OCR_VERIFIED', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'],
+    default: 'INITIATED'
+  },
+  documents: [{
+    docType: { type: String, enum: ['AADHAR', 'PAN', 'PHOTO', 'STALL_ADDRESS_PROOF', 'PHOTO_ID'] },
+    url: String,
+    ocrData: mongoose.Schema.Types.Mixed,
+    isValid: Boolean,
+    invalidReason: String
+  }],
+  applicationNumber: String,
+  fssaiNumber: String,
+  validFrom: Date,
+  validUntil: Date,
+  remarks: String,
+  createdAt: { type: Date, default: Date.now },
+  submittedAt: Date,
+  approvedAt: Date
+});
+
+fssaiRegistrationSchema.index({ vendorId: 1 });
+fssaiRegistrationSchema.index({ step: 1 });
+
+export const FSSAIRegistration = mongoose.model('FSSAIRegistration', fssaiRegistrationSchema);
+
+// ==================== HIGHWAY HOST (Dhaba) ====================
+
+// Pre-Order Schema for Highway Dhabas
+const preOrderSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  userId: String,
+  dhabaId: String,
+  items: [{
+    itemId: String,
+    name: String,
+    price: Number,
+    quantity: Number,
+    specialInstructions: String
+  }],
+  totalAmount: Number,
+  estimatedArrival: Date,
+  currentLocation: {
+    lat: Number,
+    lng: Number
+  },
+  distanceRemaining: Number,     // km
+  etaMinutes: Number,
+  status: {
+    type: String,
+    enum: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
+    default: 'PLACED'
+  },
+  vehicleNumber: String,
+  partySize: { type: Number, default: 1 },
+  createdAt: { type: Date, default: Date.now },
+  confirmedAt: Date,
+  readyAt: Date,
+  completedAt: Date
+});
+
+preOrderSchema.index({ dhabaId: 1, status: 1 });
+preOrderSchema.index({ userId: 1, createdAt: -1 });
+preOrderSchema.index({ estimatedArrival: 1 });
+
+export const PreOrder = mongoose.model('PreOrder', preOrderSchema);
+
+// Dhaba Amenity Ratings Schema
+const dhabaAmenitySchema = new mongoose.Schema({
+  dhabaId: { type: String, required: true, unique: true },
+  ratings: {
+    restroom: { score: Number, count: Number },        // Average & count
+    parking: { score: Number, count: Number, spaces: Number },
+    evCharging: { available: Boolean, chargerTypes: [String] },
+    womenFriendly: { score: Number, count: Number },
+    childFriendly: { score: Number, count: Number },
+    prayerRoom: { available: Boolean },
+    atm: { available: Boolean, banks: [String] },
+    petrol: { available: Boolean, distance: Number }   // Nearby petrol pump distance
+  },
+  recentReviews: [{
+    userId: String,
+    rating: Number,
+    amenityType: String,
+    comment: String,
+    timestamp: Date
+  }],
+  verifiedAt: Date,
+  lastUpdated: { type: Date, default: Date.now }
+});
+
+dhabaAmenitySchema.index({ dhabaId: 1 });
+
+export const DhabaAmenity = mongoose.model('DhabaAmenity', dhabaAmenitySchema);
+
+// Connectivity Hotspot Incentives
+const hotspotProviderSchema = new mongoose.Schema({
+  dhabaId: { type: String, required: true, unique: true },
+  isActive: { type: Boolean, default: false },
+  deviceId: String,
+  totalDataServedGB: { type: Number, default: 0 },
+  totalSessionsToday: { type: Number, default: 0 },
+  rewardsEarned: { type: Number, default: 0 },       // Credits/tokens
+  rewardsPaidOut: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now },
+  lastSessionAt: Date
+});
+
+export const HotspotProvider = mongoose.model('HotspotProvider', hotspotProviderSchema);
+
+// ==================== MESS MATE (Institutional Dining) ====================
+
+// Menu Voting Schema
+const menuVoteSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  messId: { type: String, required: true },
+  date: { type: String, required: true },            // YYYY-MM-DD
+  mealType: { type: String, enum: ['BREAKFAST', 'LUNCH', 'DINNER'] },
+  options: [{
+    dishId: String,
+    dishName: String,
+    votes: { type: Number, default: 0 },
+    voters: [String]                                 // User IDs who voted
+  }],
+  votingEndsAt: Date,
+  winningDish: String,
+  totalVotes: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
+
+menuVoteSchema.index({ messId: 1, date: 1, mealType: 1 });
+
+export const MenuVote = mongoose.model('MenuVote', menuVoteSchema);
+
+// Eat/Skip Toggle Schema
+const eatSkipStatusSchema = new mongoose.Schema({
+  messId: { type: String, required: true },
+  date: { type: String, required: true },
+  mealType: { type: String, enum: ['BREAKFAST', 'LUNCH', 'DINNER'] },
+  statuses: [{
+    userId: String,
+    eating: { type: Boolean, default: true },
+    updatedAt: { type: Date, default: Date.now }
+  }],
+  confirmedCount: { type: Number, default: 0 },
+  skippedCount: { type: Number, default: 0 },
+  cutoffTime: Date,
+  isLocked: { type: Boolean, default: false }
+});
+
+eatSkipStatusSchema.index({ messId: 1, date: 1, mealType: 1 }, { unique: true });
+
+export const EatSkipStatus = mongoose.model('EatSkipStatus', eatSkipStatusSchema);
+
+// Waste Entry Schema
+const wasteEntrySchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  messId: { type: String, required: true },
+  date: { type: String, required: true },
+  mealType: { type: String, enum: ['BREAKFAST', 'LUNCH', 'DINNER'] },
+  entries: [{
+    dishId: String,
+    dishName: String,
+    preparedKg: Number,
+    servedKg: Number,
+    wastedKg: Number,
+    wastePercentage: Number
+  }],
+  totalPreparedKg: Number,
+  totalWastedKg: Number,
+  overallWastePercentage: Number,
+  notes: String,
+  loggedBy: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+wasteEntrySchema.index({ messId: 1, date: -1 });
+
+export const WasteEntry = mongoose.model('WasteEntry', wasteEntrySchema);
+
+// Prep Sheet Schema
+const prepSheetSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  messId: String,
+  date: String,
+  mealType: String,
+  confirmedHeadcount: Number,
+  items: [{
+    dishName: String,
+    rawMaterials: [{
+      name: String,
+      quantity: Number,
+      unit: String
+    }],
+    portionSize: Number,
+    totalToPrep: Number
+  }],
+  generatedAt: { type: Date, default: Date.now },
+  approvedBy: String,
+  approvedAt: Date
+});
+
+prepSheetSchema.index({ messId: 1, date: 1, mealType: 1 });
+
+export const PrepSheet = mongoose.model('PrepSheet', prepSheetSchema);
+
+// ==================== LUXEOS (Fine Dining ERP) ====================
+
+// Guest Profile Schema (CRM)
+const guestProfileSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  phone: { type: String, required: true, unique: true },
+  name: String,
+  email: String,
+  preferences: {
+    dietaryRestrictions: [String],     // 'GLUTEN_FREE', 'NUT_ALLERGY', etc.
+    allergies: [String],
+    favoriteTable: String,
+    preferredStaff: String,
+    spicePreference: { type: String, enum: ['MILD', 'MEDIUM', 'HOT', 'EXTRA_HOT'] },
+    preferredDrink: String,
+    anniversaryDate: String,           // For special occasions
+    birthdayDate: String,
+    notes: String
+  },
+  visitHistory: [{
+    date: Date,
+    restaurantId: String,
+    orderId: String,
+    spend: Number,
+    rating: Number,
+    notes: String
+  }],
+  totalSpend: { type: Number, default: 0 },
+  visitCount: { type: Number, default: 0 },
+  avgSpend: { type: Number, default: 0 },
+  vipTier: {
+    type: String,
+    enum: ['NEW', 'REGULAR', 'GOLD', 'PLATINUM', 'BLACK'],
+    default: 'NEW'
+  },
+  createdAt: { type: Date, default: Date.now },
+  lastVisit: Date
+});
+
+guestProfileSchema.index({ phone: 1 });
+guestProfileSchema.index({ 'visitHistory.restaurantId': 1 });
+guestProfileSchema.index({ vipTier: 1 });
+
+export const GuestProfile = mongoose.model('GuestProfile', guestProfileSchema);
+
+// Recipe Management Schema
+const recipeSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  restaurantId: String,
+  menuItemId: String,
+  dishName: String,
+  ingredients: [{
+    name: String,
+    quantity: Number,
+    unit: String,
+    inventoryItemId: String,         // Links to inventory
+    costPerUnit: Number
+  }],
+  totalCost: Number,
+  portionYield: { type: Number, default: 1 },
+  preparationTime: Number,           // minutes
+  instructions: [String],
+  videoUrl: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+recipeSchema.index({ restaurantId: 1, menuItemId: 1 });
+
+export const Recipe = mongoose.model('Recipe', recipeSchema);
+
+// Inventory Schema
+const inventorySchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  restaurantId: { type: String, required: true },
+  itemName: String,
+  category: { type: String, enum: ['VEGETABLES', 'FRUITS', 'DAIRY', 'MEAT', 'SEAFOOD', 'SPICES', 'GRAINS', 'BEVERAGES', 'PACKAGING', 'OTHER'] },
+  unit: String,
+  currentStock: Number,
+  reorderLevel: Number,              // Auto-order when stock hits this
+  maxStock: Number,
+  costPerUnit: Number,
+  supplier: {
+    name: String,
+    id: String,                      // Hyperpure, local, etc.
+    leadTimeDays: Number
+  },
+  lastRestocked: Date,
+  expiryDate: Date,
+  isLowStock: { type: Boolean, default: false },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+inventorySchema.index({ restaurantId: 1, isLowStock: 1 });
+inventorySchema.index({ restaurantId: 1, category: 1 });
+
+export const Inventory = mongoose.model('Inventory', inventorySchema);
+
+// Purchase Order Schema
+const purchaseOrderSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  restaurantId: String,
+  supplierId: String,
+  supplierName: String,
+  items: [{
+    inventoryItemId: String,
+    itemName: String,
+    quantity: Number,
+    unit: String,
+    pricePerUnit: Number,
+    totalPrice: Number
+  }],
+  totalAmount: Number,
+  status: {
+    type: String,
+    enum: ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT', 'DELIVERED', 'CANCELLED'],
+    default: 'DRAFT'
+  },
+  isAutoGenerated: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  approvedBy: String,
+  approvedAt: Date,
+  deliveredAt: Date
+});
+
+purchaseOrderSchema.index({ restaurantId: 1, status: 1 });
+
+export const PurchaseOrder = mongoose.model('PurchaseOrder', purchaseOrderSchema);
+
+// Staff Training (LMS) Schema
+const trainingModuleSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  restaurantId: String,
+  title: String,
+  description: String,
+  type: { type: String, enum: ['VIDEO', 'DOCUMENT', 'QUIZ', 'INTERACTIVE'] },
+  category: { type: String, enum: ['ONBOARDING', 'MENU', 'SERVICE', 'SAFETY', 'COMPLIANCE'] },
+  content: {
+    videoUrl: String,
+    documentUrl: String,
+    quizQuestions: [{
+      question: String,
+      options: [String],
+      correctAnswer: Number,
+      explanation: String
+    }]
+  },
+  duration: Number,                 // minutes
+  passingScore: { type: Number, default: 70 },
+  isRequired: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+
+export const TrainingModule = mongoose.model('TrainingModule', trainingModuleSchema);
+
+// Staff Certification Schema
+const staffCertificationSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  staffId: String,
+  restaurantId: String,
+  moduleId: String,
+  moduleName: String,
+  status: { type: String, enum: ['IN_PROGRESS', 'PASSED', 'FAILED'], default: 'IN_PROGRESS' },
+  score: Number,
+  attempts: { type: Number, default: 0 },
+  completedAt: Date,
+  expiresAt: Date,                  // For recertifications
+  createdAt: { type: Date, default: Date.now }
+});
+
+staffCertificationSchema.index({ staffId: 1, restaurantId: 1 });
+
+export const StaffCertification = mongoose.model('StaffCertification', staffCertificationSchema);
+
+// ==================== LOAN APPLICATION (PM SVANidhi Integration) ====================
+
+const loanApplicationSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  vendorId: { type: String, required: true },
+  schemeType: { type: String, enum: ['PM_SVANIDHI_T1', 'PM_SVANIDHI_T2', 'PM_SVANIDHI_T3', 'WORKING_CAPITAL'] },
+  amount: Number,
+  interestRate: Number,
+  tenureMonths: Number,
+  status: {
+    type: String,
+    enum: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'DOCUMENTS_REQUIRED', 'APPROVED', 'DISBURSED', 'REJECTED', 'CLOSED'],
+    default: 'DRAFT'
+  },
+  bankName: String,
+  bankBranchCode: String,
+  applicationNumber: String,
+  disbursementAmount: Number,
+  disbursedAt: Date,
+  emiAmount: Number,
+  nextEmiDate: Date,
+  emisPaid: { type: Number, default: 0 },
+  totalEmis: Number,
+  creditScoreAtApplication: Number,
+  rejectionReason: String,
+  documents: [{
+    docType: String,
+    url: String,
+    verified: Boolean
+  }],
+  createdAt: { type: Date, default: Date.now },
+  submittedAt: Date,
+  approvedAt: Date
+});
+
+loanApplicationSchema.index({ vendorId: 1, status: 1 });
+loanApplicationSchema.index({ schemeType: 1, status: 1 });
+
+export const LoanApplication = mongoose.model('LoanApplication', loanApplicationSchema);

@@ -1,225 +1,229 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, FoodItem } from '../types';
+import { User, MenuVote, PrepSheet, WasteEntry } from '../types';
 import { Button } from './Button';
-import { API_BASE_URL } from '../config';
-import { getAuthToken } from '../services/authService';
-import { Loader2, Plus, QrCode, TrendingUp, Users, DollarSign, Utensils, AlertCircle } from 'lucide-react';
-import { Bar } from 'react-chartjs-2'; // Assuming Chart.js is available or we simulate simple UI
+import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users } from 'lucide-react';
+import { getMenuVotes, submitVote, getPrepSheet, logWaste, getMockVote, getMockPrepSheet } from '../services/messMateService';
 
 interface MessManagerViewProps {
     user: User;
+    onBack?: () => void;
 }
 
-export const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
-    const [dashboardData, setDashboardData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [verifyToken, setVerifyToken] = useState('');
-    const [verifyStatus, setVerifyStatus] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
-    const [menuItems, setMenuItems] = useState<FoodItem[]>([]);
-    const [showAddMenu, setShowAddMenu] = useState(false);
+type Tab = 'DASHBOARD' | 'VOTING' | 'PREP' | 'WASTE';
 
-    const [error, setError] = useState<string | null>(null);
+export const MessManagerView: React.FC<MessManagerViewProps> = ({ user, onBack }) => {
+    const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
+    const [activeVote, setActiveVote] = useState<MenuVote | null>(null);
+    const [prepSheet, setPrepSheet] = useState<PrepSheet | null>(null);
 
-    // Add Menu Form
-    const [newItemName, setNewItemName] = useState('');
-    const [newItemPrice, setNewItemPrice] = useState('');
-    const [newItemType, setNewItemType] = useState('VEG');
+    // State for Waste Logging
+    const [wasteDishName, setWasteDishName] = useState('');
+    const [wasteKg, setWasteKg] = useState('');
 
     useEffect(() => {
-        fetchDashboard();
+        // Initial Load - Mock Data for Demo
+        setActiveVote(getMockVote());
+        setPrepSheet(getMockPrepSheet());
     }, []);
 
-    useEffect(() => {
-        if (dashboardData?.messId) {
-            fetchMenu();
-        }
-    }, [dashboardData]);
-
-    const fetchDashboard = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/food/manager/dashboard`, {
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-            });
-            const data = await res.json();
-            if (data.error) {
-                setError(data.error);
-            } else {
-                setDashboardData(data);
-            }
-        } catch (e) {
-            console.error(e);
-            setError("Failed to load dashboard. Please try again.");
-        } finally {
-            setLoading(false);
+    const handleVote = async (optionId: string) => {
+        if (activeVote) {
+            // Optimistic update
+            const updatedOptions = activeVote.options.map(opt =>
+                opt.dishId === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+            );
+            setActiveVote({ ...activeVote, options: updatedOptions, totalVotes: activeVote.totalVotes + 1 });
+            await submitVote(activeVote.id, optionId);
         }
     };
 
-    const fetchMenu = async () => {
-        if (dashboardData?.messId) {
-            const res = await fetch(`${API_BASE_URL}/api/food/menu/${dashboardData.messId}`);
-            const data = await res.json();
-            setMenuItems(data);
-        }
-    };
+    const renderDashboard = () => (
+        <div className="space-y-6">
+            <div className="bg-emerald-700 text-white p-6 rounded-2xl">
+                <h2 className="text-2xl font-bold">Mess Mate Dashboard</h2>
+                <p className="opacity-80">Reducing waste, improving taste</p>
 
-    const handleVerify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!verifyToken) return;
+                <div className="flex gap-4 mt-6">
+                    <div className="bg-white/10 p-3 rounded-lg backdrop-blur-sm text-center">
+                        <span className="block text-2xl font-bold">340</span>
+                        <span className="text-xs opacity-75">Eating Today</span>
+                    </div>
+                    <div className="bg-white/10 p-3 rounded-lg backdrop-blur-sm text-center">
+                        <span className="block text-2xl font-bold">12%</span>
+                        <span className="text-xs opacity-75">Waste Reduced</span>
+                    </div>
+                </div>
+            </div>
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/food/manager/verify`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({ token: verifyToken })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setVerifyStatus({ msg: `Verified: ${data.booking.items[0].name} (x${data.booking.items[0].quantity})`, type: 'success' });
-                setVerifyToken('');
-            } else {
-                setVerifyStatus({ msg: data.error || 'Invalid Token', type: 'error' });
-            }
-        } catch (e) {
-            setVerifyStatus({ msg: 'Verification Failed', type: 'error' });
-        }
-    };
+            <div className="grid grid-cols-2 gap-4">
+                <div
+                    onClick={() => setActiveTab('VOTING')}
+                    className="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300"
+                >
+                    <div className="bg-emerald-100 w-10 h-10 rounded-full flex items-center justify-center text-emerald-700 mb-3">
+                        <ThumbsUp size={20} />
+                    </div>
+                    <h3 className="font-bold">Menu Voting</h3>
+                    <p className="text-xs text-gray-500">Students pick dinner</p>
+                </div>
 
-    const handleAddItem = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newItemName || !newItemPrice || !dashboardData?.messId) return;
+                <div
+                    onClick={() => setActiveTab('PREP')}
+                    className="bg-white p-4 rounded-xl shadow-sm border border-blue-100 cursor-pointer hover:border-blue-300"
+                >
+                    <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center text-blue-700 mb-3">
+                        <ClipboardList size={20} />
+                    </div>
+                    <h3 className="font-bold">Prep Sheet</h3>
+                    <p className="text-xs text-gray-500">Exact quantities</p>
+                </div>
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/food/manager/menu`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({
-                    messId: dashboardData.messId,
-                    name: newItemName,
-                    price: parseFloat(newItemPrice),
-                    type: newItemType,
-                    description: 'Freshly prepared'
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setMenuItems([...menuItems, data.item]);
-                setShowAddMenu(false);
-                setNewItemName('');
-                setNewItemPrice('');
-            }
-        } catch (e) {
-            alert("Failed to add item");
-        }
-    };
+                <div
+                    onClick={() => setActiveTab('WASTE')}
+                    className="bg-white p-4 rounded-xl shadow-sm border border-red-100 cursor-pointer hover:border-red-300"
+                >
+                    <div className="bg-red-100 w-10 h-10 rounded-full flex items-center justify-center text-red-700 mb-3">
+                        <Trash2 size={20} />
+                    </div>
+                    <h3 className="font-bold">Log Waste</h3>
+                    <p className="text-xs text-gray-500">Track & Optimize</p>
+                </div>
+            </div>
+        </div>
+    );
 
-    if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-brand-600" /></div>;
+    const renderVoting = () => (
+        <div className="space-y-4">
+            <h3 className="font-bold text-gray-700 text-lg">Tomorrow's Dinner Vote</h3>
+            {activeVote?.options.map(option => (
+                <div key={option.dishId} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                    <div className="flex justify-between relative z-10">
+                        <div>
+                            <h4 className="font-bold text-lg">{option.dishName}</h4>
+                            <p className="text-sm text-gray-500">{option.votes} votes</p>
+                        </div>
+                        {(user.role === 'PASSENGER' || user.role === 'MESS_MANAGER') && (
+                            <Button size="sm" onClick={() => handleVote(option.dishId)}>Vote</Button>
+                        )}
+                    </div>
+                    {/* Progress Bar Background */}
+                    <div
+                        className="absolute bottom-0 left-0 top-0 bg-emerald-50 transition-all duration-500"
+                        style={{ width: activeVote.totalVotes > 0 ? `${(option.votes / activeVote.totalVotes) * 100}%` : '0%' }}
+                    ></div>
+                </div>
+            ))}
+        </div>
+    );
 
-    if (error) return (
-        <div className="flex flex-col h-[60vh] items-center justify-center p-6 text-center">
-            <AlertCircle size={48} className="text-red-500 mb-4" />
-            <h3 className="text-xl font-bold dark:text-white">Account Setup Incomplete</h3>
-            <p className="text-slate-500 mt-2 mb-6">{error === "No Mess Found" ? "Your Mess account lacks a linked Shop profile. Please re-register as a new Mess Manager." : error}</p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+    const renderPrepSheet = () => (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-gray-700 text-lg">Kitchen Prep Sheet</h3>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold">
+                    {prepSheet?.confirmedHeadcount} Students
+                </span>
+            </div>
+
+            {prepSheet?.items.map((item, idx) => (
+                <div key={idx} className="bg-white p-4 rounded-xl border border-gray-200">
+                    <div className="flex justify-between mb-2">
+                        <h4 className="font-bold text-lg">{item.dishName}</h4>
+                        <div className="text-right">
+                            <span className="block font-bold text-2xl">{item.totalToPrep}</span>
+                            <span className="text-xs text-gray-500">Total Units</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                        {item.rawMaterials.map((mat, mIdx) => (
+                            <div key={mIdx} className="flex justify-between text-sm">
+                                <span className="text-gray-600">{mat.name}</span>
+                                <span className="font-mono font-bold">{mat.quantity} {mat.unit}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl flex gap-3 text-sm text-yellow-800">
+                <ChefHat className="shrink-0" />
+                <p><strong>Chef's Note:</strong> 160 students have skipped dinner. Preparation has been adjusted automatically to prevent waste.</p>
+            </div>
+        </div>
+    );
+
+    const renderWaste = () => (
+        <div className="space-y-4">
+            <h3 className="font-bold text-gray-700 text-lg">Daily Waste Log</h3>
+
+            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">Dish Name</label>
+                    <input
+                        type="text"
+                        className="w-full p-2 border rounded-lg"
+                        placeholder="e.g. Pumpkin Curry"
+                        value={wasteDishName}
+                        onChange={(e) => setWasteDishName(e.target.value)}
+                    />
+
+                    <label className="block text-sm font-medium text-gray-700">Waste Quantity (Kg)</label>
+                    <input
+                        type="number"
+                        className="w-full p-2 border rounded-lg"
+                        placeholder="0.0"
+                        value={wasteKg}
+                        onChange={(e) => setWasteKg(e.target.value)}
+                    />
+
+                    <Button
+                        fullWidth
+                        className="bg-red-600 hover:bg-red-700 text-white mt-2"
+                        onClick={() => {
+                            alert(`Logged ${wasteKg}kg waste for ${wasteDishName}`);
+                            setWasteDishName('');
+                            setWasteKg('');
+                        }}
+                    >
+                        Log Waste Entry
+                    </Button>
+                </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-gray-200">
+                <h4 className="font-bold mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-gray-500" />
+                    Waste Analytics (Last 7 Days)
+                </h4>
+                <div className="h-40 bg-gray-50 rounded flex items-center justify-center text-gray-400 text-sm">
+                    [Chart Placeholder: Waste Trend Down 15%]
+                </div>
+            </div>
         </div>
     );
 
     return (
-        <div className="pb-20 space-y-6">
-
-            {/* Header Stats */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                        <Users size={16} />
-                        <span className="text-xs font-bold uppercase">Expected Footfall</span>
-                    </div>
-                    <div className="text-2xl font-bold dark:text-white flex items-center gap-2">
-                        {dashboardData?.prediction?.expectedFootfall || 0}
-                        <span className="text-xs font-normal px-2 py-0.5 bg-green-100 text-green-700 rounded-full">ML Predicted</span>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 text-slate-500 mb-1">
-                        <TrendingUp size={16} />
-                        <span className="text-xs font-bold uppercase">Today's Bookings</span>
-                    </div>
-                    <div className="text-2xl font-bold dark:text-white">
-                        {dashboardData?.todayCount || 0}
-                    </div>
-                </div>
-            </div>
-
-            {/* Verify Token Section */}
-            <div className="bg-gradient-to-br from-brand-600 to-violet-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                <div className="relative z-10">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><QrCode size={20} /> Verify Meal Token</h3>
-
-                    <form onSubmit={handleVerify} className="space-y-3">
-                        <input
-                            type="text"
-                            value={verifyToken}
-                            onChange={e => setVerifyToken(e.target.value.toUpperCase())}
-                            placeholder="Enter 6-Digit Token"
-                            className="w-full px-4 py-3 bg-white/20 backdrop-blur border border-white/30 rounded-xl outline-none placeholder-white/60 font-mono text-center text-xl tracking-widest uppercase"
-                        />
-                        <Button type="submit" fullWidth variant="secondary">Verify Now</Button>
-                    </form>
-
-                    {verifyStatus && (
-                        <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 text-sm font-medium animate-fade-in ${verifyStatus.type === 'success' ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
-                            {verifyStatus.type === 'success' ? <Utensils size={16} /> : <AlertCircle size={16} />}
-                            {verifyStatus.msg}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Menu Management */}
-            <div className="space-y-4">
-                <div className="flex justify-between items-center px-2">
-                    <h3 className="font-bold text-lg dark:text-white">Daily Menu</h3>
-                    <button onClick={() => setShowAddMenu(!showAddMenu)} className="p-2 bg-brand-50 text-brand-600 rounded-full hover:bg-brand-100"><Plus size={20} /></button>
-                </div>
-
-                {showAddMenu && (
-                    <form onSubmit={handleAddItem} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3 animate-fade-in">
-                        <input type="text" placeholder="Item Name (e.g. Potato Curry)" className="w-full p-2 border rounded-lg dark:bg-slate-800 dark:border-slate-700" value={newItemName} onChange={e => setNewItemName(e.target.value)} />
-                        <div className="flex gap-2">
-                            <input type="number" placeholder="Price" className="w-[100px] p-2 border rounded-lg dark:bg-slate-800 dark:border-slate-700" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} />
-                            <select className="flex-1 p-2 border rounded-lg dark:bg-slate-800 dark:border-slate-700" value={newItemType} onChange={e => setNewItemType(e.target.value)}>
-                                <option value="VEG">Veg</option>
-                                <option value="NON_VEG">Non-Veg</option>
-                                <option value="EGG">Egg</option>
-                            </select>
-                        </div>
-                        <Button type="submit" size="sm" fullWidth>Add to Menu</Button>
-                    </form>
+        <div className="min-h-screen bg-gray-50 pb-20">
+            {/* Header */}
+            <div className="bg-white p-4 shadow-sm flex items-center gap-3 sticky top-0 z-20">
+                {activeTab !== 'DASHBOARD' && (
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('DASHBOARD')}>
+                        <ArrowRight className="w-5 h-5 rotate-180" />
+                    </Button>
                 )}
-
-                <div className="space-y-3">
-                    {menuItems.map(item => (
-                        <div key={item.id} className="bg-white dark:bg-slate-900 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${item.type === 'VEG' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                <div>
-                                    <p className="font-medium dark:text-white">{item.name}</p>
-                                    <p className="text-xs text-slate-500">{item.description}</p>
-                                </div>
-                            </div>
-                            <span className="font-bold text-brand-600">₹{item.price}</span>
-                        </div>
-                    ))}
-                    {menuItems.length === 0 && <p className="text-center text-slate-400 py-4">No items in menu</p>}
-                </div>
+                <h1 className="font-bold text-lg capitalize">
+                    {activeTab === 'DASHBOARD' ? 'Mess Manager' : activeTab.toLowerCase()}
+                </h1>
             </div>
 
+            <div className="p-4">
+                {activeTab === 'DASHBOARD' && renderDashboard()}
+                {activeTab === 'VOTING' && renderVoting()}
+                {activeTab === 'PREP' && renderPrepSheet()}
+                {activeTab === 'WASTE' && renderWaste()}
+            </div>
         </div>
     );
 };

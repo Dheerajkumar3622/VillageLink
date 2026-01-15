@@ -19,6 +19,8 @@ const AdminView = lazy(() => import('./AdminView').then(m => ({ default: m.Admin
 const ShopkeeperView = lazy(() => import('./ShopkeeperView').then(m => ({ default: m.ShopkeeperView })));
 const MessManagerView = lazy(() => import('./MessManagerView').then(m => ({ default: m.MessManagerView })));
 const VendorView = lazy(() => import('./VendorView').then(m => ({ default: m.VendorView })));
+const VyaparSaathiView = lazy(() => import('./VyaparSaathiView').then(m => ({ default: m.VyaparSaathiView })));
+const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.LuxeOSView })));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
 
 const App: React.FC = () => {
@@ -114,8 +116,11 @@ const App: React.FC = () => {
       case 'SHOPKEEPER':
         return <ShopkeeperView user={user} />;
       case 'MESS_MANAGER':
-      case 'FOOD_VENDOR':
-        return <VendorView user={user} />;
+        return <MessManagerView user={user} />;
+      case 'FOOD_VENDOR': // Street Vendor = Vyapar Saathi
+        return <VyaparSaathiView user={user} />;
+      case 'RESTAURANT_MANAGER': // Fine Dining = LuxeOS
+        return <LuxeOSView user={user} />;
       default:
         return <PassengerView user={user} lang={lang} />;
     }

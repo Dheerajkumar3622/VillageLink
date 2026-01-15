@@ -138,7 +138,9 @@ app.use('/api/user', userRoutes);
 
 // --- FOODLINK VENDOR ROUTES ---
 import vendorRoutes from './backend/routes/vendorRoutes.js';
+import foodLinkRoutes from './backend/routes/foodLinkRoutes.js';
 app.use('/api/vendor', vendorRoutes);
+app.use('/api/foodlink', foodLinkRoutes);
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 

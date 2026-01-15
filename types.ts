@@ -261,7 +261,7 @@ export interface SecurityContext {
   lastLoginLocation?: GeoLocation;
 }
 
-export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | null;
+export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | null;
 export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 
@@ -771,4 +771,346 @@ export interface Wallet {
   balance: number;
   address: string;
   nfts: NFTMetadata[];
+}
+
+// --- VYAPAR SAATHI (Street Vendor) TYPES ---
+
+export interface BulkOrder {
+  id: string;
+  vendorIds: string[];
+  hubVendorId: string;
+  items: {
+    name: string;
+    quantity: number;
+    unit: 'KG' | 'LITRE' | 'PIECE' | 'DOZEN' | 'BUNDLE';
+    targetPrice: number;
+    actualPrice: number;
+    b2bPartnerId?: string;
+  }[];
+  totalValue: number;
+  savingsPercent: number;
+  status: 'COLLECTING' | 'LOCKED' | 'PLACED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  deliveryDate: string; // ISO Date
+  deliveryTime?: string;
+  pickupLocation?: {
+    address: string;
+    lat: number;
+    lng: number;
+  };
+  createdAt: number; // timestamp
+}
+
+export interface VendorKhataEntry {
+  entryId: string;
+  timestamp: string; // ISO Date
+  type: 'SALE' | 'EXPENSE' | 'LOAN_RECEIVED' | 'LOAN_REPAYMENT' | 'BULK_ORDER' | 'REFUND';
+  amount: number;
+  paymentMethod: 'CASH' | 'UPI' | 'CREDIT' | 'WALLET';
+  note?: string;
+  voiceNoteUrl?: string;
+  relatedOrderId?: string;
+  relatedBulkOrderId?: string;
+}
+
+export interface VendorKhata {
+  vendorId: string;
+  entries: VendorKhataEntry[];
+  dailySummary?: {
+    totalSales: number;
+    totalExpenses: number;
+    cashSales: number;
+    upiSales: number;
+    netProfit: number;
+  };
+  monthlySummary?: {
+    totalSales: number;
+    avgDailySales: number;
+  };
+}
+
+export interface HygieneAudit {
+  id: string;
+  vendorId: string;
+  auditDate: string; // ISO Date
+  photos: {
+    type: 'WATER_TANK' | 'WORKSPACE' | 'PROTECTIVE_GEAR' | 'WASTE_DISPOSAL' | 'RAW_MATERIALS' | 'COOKING_AREA';
+    url: string;
+    aiScore: number;
+    aiRemarks?: string;
+    verified: boolean;
+  }[];
+  overallScore: number;
+  badge: 'NONE' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  streakDays: number;
+  improvements: string[];
+  expiresAt?: string; // ISO Date
+}
+
+export interface CreditScore {
+  vendorId: string;
+  score: number;
+  tier: 'UNSCORED' | 'FAIR' | 'GOOD' | 'VERY_GOOD' | 'EXCELLENT';
+  factors: {
+    name: string;
+    impact: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+    weight: number;
+    value: number;
+  }[];
+  metrics: {
+    avgDailySales: number;
+    salesConsistencyScore: number;
+    upiTransactionRatio: number;
+    repaymentHistory: number;
+    businessAge: number;
+    appEngagementScore: number;
+  };
+  loanEligibility: {
+    pmSvanidhi: { eligible: boolean; maxAmount: number; tier: number };
+    workingCapital: { eligible: boolean; maxAmount: number; interestRate: number };
+  };
+}
+
+export interface LoanApplication {
+  id: string;
+  vendorId: string;
+  schemeType: 'PM_SVANIDHI_T1' | 'PM_SVANIDHI_T2' | 'PM_SVANIDHI_T3' | 'WORKING_CAPITAL';
+  amount: number;
+  status: 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'DOCUMENTS_REQUIRED' | 'APPROVED' | 'DISBURSED' | 'REJECTED' | 'CLOSED';
+  applicationNumber?: string;
+  disbursedAt?: string;
+  createdAt: number;
+}
+
+// --- HIGHWAY HOST (Dhaba) TYPES ---
+
+export interface PreOrder {
+  id: string;
+  userId: string;
+  dhabaId: string;
+  items: {
+    itemId: string;
+    name: string;
+    price: number;
+    quantity: number;
+    specialInstructions?: string;
+  }[];
+  totalAmount: number;
+  estimatedArrival: string; // ISO Date
+  currentLocation?: {
+    lat: number;
+    lng: number;
+  };
+  distanceRemaining?: number; // km
+  etaMinutes?: number;
+  status: 'PLACED' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  vehicleNumber?: string;
+  partySize: number;
+  createdAt: number;
+}
+
+export interface DhabaAmenity {
+  dhabaId: string;
+  ratings: {
+    restroom: { score: number; count: number };
+    parking: { score: number; count: number; spaces: number };
+    evCharging: { available: boolean; chargerTypes: string[] };
+    womenFriendly: { score: number; count: number };
+    childFriendly: { score: number; count: number };
+    prayerRoom: { available: boolean };
+    atm: { available: boolean; banks: string[] };
+    petrol: { available: boolean; distance: number };
+  };
+  recentReviews?: {
+    userId: string;
+    rating: number;
+    amenityType: string;
+    comment: string;
+    timestamp: string;
+  }[];
+}
+
+export interface HotspotProvider {
+  dhabaId: string;
+  isActive: boolean;
+  deviceId?: string;
+  totalDataServedGB: number;
+  totalSessionsToday: number;
+  rewardsEarned: number;
+}
+
+// --- MESS MATE (Institutional) TYPES ---
+
+export interface MenuVote {
+  id: string;
+  messId: string;
+  date: string; // YYYY-MM-DD
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+  options: {
+    dishId: string;
+    dishName: string;
+    votes: number;
+    voters: string[];
+  }[];
+  votingEndsAt: string;
+  winningDish?: string;
+  totalVotes: number;
+}
+
+export interface EatSkipStatus {
+  messId: string;
+  date: string;
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+  confirmedCount: number;
+  skippedCount: number;
+  cutoffTime: string;
+  isLocked: boolean;
+  myStatus?: 'EATING' | 'SKIPPING'; // Computed for user
+}
+
+export interface WasteEntry {
+  id: string;
+  messId: string;
+  date: string;
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+  entries: {
+    dishId: string;
+    dishName: string;
+    preparedKg: number;
+    servedKg: number;
+    wastedKg: number;
+    wastePercentage: number;
+  }[];
+  totalPreparedKg: number;
+  totalWastedKg: number;
+  overallWastePercentage: number;
+  notes?: string;
+}
+
+export interface PrepSheet {
+  id: string;
+  messId: string;
+  date: string;
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER';
+  confirmedHeadcount: number;
+  items: {
+    dishName: string;
+    rawMaterials: {
+      name: string;
+      quantity: number;
+      unit: string;
+    }[];
+    portionSize: number;
+    totalToPrep: number;
+  }[];
+}
+
+// --- LUXEOS (Fine Dining) TYPES ---
+
+export interface GuestProfile {
+  id: string;
+  phone: string;
+  name: string;
+  email?: string;
+  preferences: {
+    dietaryRestrictions: string[];
+    allergies: string[];
+    favoriteTable?: string;
+    preferredStaff?: string;
+    spicePreference: 'MILD' | 'MEDIUM' | 'HOT' | 'EXTRA_HOT';
+    preferredDrink?: string;
+    anniversaryDate?: string;
+    birthdayDate?: string;
+    notes?: string;
+  };
+  visitHistory: {
+    date: string;
+    restaurantId: string;
+    orderId: string;
+    spend: number;
+    rating: number;
+    notes?: string;
+  }[];
+  totalSpend: number;
+  visitCount: number;
+  avgSpend: number;
+  vipTier: 'NEW' | 'REGULAR' | 'GOLD' | 'PLATINUM' | 'BLACK';
+  lastVisit?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  restaurantId: string;
+  itemName: string;
+  category: 'VEGETABLES' | 'FRUITS' | 'DAIRY' | 'MEAT' | 'SEAFOOD' | 'SPICES' | 'GRAINS' | 'BEVERAGES' | 'PACKAGING' | 'OTHER';
+  unit: string;
+  currentStock: number;
+  reorderLevel: number;
+  maxStock: number;
+  costPerUnit: number;
+  supplier: {
+    name: string;
+    id: string;
+    leadTimeDays: number;
+  };
+  lastRestocked: string;
+  expiryDate?: string;
+  isLowStock: boolean;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  restaurantId: string;
+  supplierId: string;
+  supplierName: string;
+  items: {
+    inventoryItemId: string;
+    itemName: string;
+    quantity: number;
+    unit: string;
+    pricePerUnit: number;
+    totalPrice: number;
+  }[];
+  totalAmount: number;
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'SENT' | 'DELIVERED' | 'CANCELLED';
+  isAutoGenerated: boolean;
+  createdAt: string; // ISO
+}
+
+export interface Recipe {
+  id: string;
+  restaurantId: string;
+  menuItemId: string;
+  dishName: string;
+  ingredients: {
+    name: string;
+    quantity: number;
+    unit: string;
+    inventoryItemId: string;
+    costPerUnit: number;
+  }[];
+  totalCost: number;
+  portionYield: number;
+  preparationTime: number;
+}
+
+export interface TrainingModule {
+  id: string;
+  restaurantId: string;
+  title: string;
+  description: string;
+  type: 'VIDEO' | 'DOCUMENT' | 'QUIZ' | 'INTERACTIVE';
+  category: 'ONBOARDING' | 'MENU' | 'SERVICE' | 'SAFETY' | 'COMPLIANCE';
+  content: {
+    videoUrl?: string;
+    documentUrl?: string;
+    quizQuestions?: {
+      question: string;
+      options: string[];
+      correctAnswer: number;
+      explanation?: string;
+    }[];
+  };
+  duration: number; // minutes
+  passingScore: number;
+  isRequired: boolean;
 }

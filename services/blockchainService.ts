@@ -154,6 +154,54 @@ export const createEscrow = (buyerId: string, sellerId: string, amount: number):
   };
 };
 
-export const addToTrustChain = async (data: any) => { };
+export const addToTrustChain = async (
+  entityId: string,
+  eventType: string,
+  data: any
+): Promise<{ success: boolean; hash?: string }> => {
+  try {
+    const token = await getAuthToken();
+    const payload = {
+      entityId,
+      eventType,
+      timestamp: Date.now(),
+      data,
+      signature: "0xMockSignature_" + Date.now()
+    };
+
+    // If Web3 is active, we could hash this payload and store the hash on-chain
+    if (window.ethereum) {
+      // Mock On-Chain Storage
+      console.log("Hashing to Blockchain:", payload);
+    }
+
+    // Persist to Backend (Off-chain Indexer)
+    await fetch(`${API_URL}/trust-chain`, {
+      method: 'POST',
+      headers: { 'Authorization': token || '', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    return { success: true, hash: "0xHash" + Date.now() };
+  } catch (e) {
+    return { success: false };
+  }
+};
+
+export const getSupplyChainHistory = async (entityId: string): Promise<any[]> => {
+  try {
+    // Mock Response for Demo
+    if (entityId === 'batch_123') {
+      return [
+        { stage: 'HARVESTED', location: 'Nashik Farm', timestamp: Date.now() - 86400000, hash: '0x1' },
+        { stage: 'QUALITY_CHECK', location: 'Mandi Hub', timestamp: Date.now() - 43200000, hash: '0x2' },
+        { stage: 'SHIPPED', location: 'Highway Logistics', timestamp: Date.now() - 10000000, hash: '0x3' }
+      ];
+    }
+    return [];
+  } catch (e) {
+    return [];
+  }
+};
 
 export const getVehicleHealth = (vehicleId: string) => ({ score: 95, verified: true });
