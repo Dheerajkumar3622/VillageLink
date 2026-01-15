@@ -21,8 +21,9 @@ import mongoSanitize from 'express-mongo-sanitize';
 // Note: xss-clean removed due to ESM incompatibility. Using helmet + mongoSanitize is sufficient.
 import Razorpay from 'razorpay';
 
-// Import Modular Components
-import { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } from './backend/models.js';
+// Import Modular Components - Using namespace import for ESM/CJS compatibility
+import * as Models from './backend/models.js';
+const { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } = Models;
 import * as Auth from './backend/auth.js';
 import * as Logic from './backend/logic.js';
 

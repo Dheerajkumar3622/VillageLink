@@ -1,12 +1,14 @@
 
 import express from 'express';
-import {
+// Using namespace import for ESM/CJS compatibility  
+import * as Models from '../models.js';
+const {
     User, Shop, FoodVendor,
     BulkOrder, VendorKhata, HygieneAudit, CreditScore, LoanApplication,
     PreOrder, DhabaAmenity, HotspotProvider,
     MenuVote, EatSkipStatus, WasteEntry, PrepSheet,
     GuestProfile, Inventory, PurchaseOrder, TrainingModule
-} from '../models.js';
+} = Models;
 import * as Auth from '../auth.js';
 import crypto from 'crypto';
 

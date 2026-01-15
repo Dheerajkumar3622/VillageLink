@@ -41,7 +41,19 @@ export const HighwayHostView: React.FC<HighwayHostViewProps> = ({ user, onBack }
     const handlePreOrder = async (dhaba: Restaurant) => {
         const mockEta = 45; // 45 mins away
         // Simple mock pre-order with 1 item
-        const res = await createPreOrder(dhaba.id, [{ itemId: 'item_1', quantity: 2 }], mockEta);
+        const preOrder: PreOrder = {
+            id: `po_${Date.now()}`,
+            userId: user.id,
+            dhabaId: dhaba.id,
+            items: [{ itemId: 'item_1', name: 'Combo Thali', price: 150, quantity: 2 }],
+            totalAmount: 300,
+            estimatedArrival: new Date(Date.now() + mockEta * 60 * 1000).toISOString(),
+            etaMinutes: mockEta,
+            status: 'PLACED',
+            partySize: 2,
+            createdAt: Date.now()
+        };
+        const res = await createPreOrder(preOrder);
         if (res.success) {
             alert(`Pre-order placed at ${dhaba.name}! Kitchen will have it ready in ${mockEta} mins.`);
             loadData();
