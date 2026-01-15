@@ -41,6 +41,7 @@ import smsRoutes from './backend/routes/smsRoutes.js';
 import ticketRoutes from './backend/routes/ticketRoutes.js';
 import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
+import gramMandiRoutes from './backend/routes/gramMandiRoutes.js';
 
 import EmailService from './backend/services/emailService.js';
 const { sendEmail } = EmailService;
@@ -143,6 +144,9 @@ app.post('/api/auth/logout', (req, res) => res.json({ success: true }));
 app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
 app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
+
+// --- GRAMMANDI ROUTES (Food Ecosystem) ---
+app.use('/api/grammandi', gramMandiRoutes);
 
 // --- ERROR REPORTING ROUTES ---
 app.post('/api/errors/report', async (req, res) => {
