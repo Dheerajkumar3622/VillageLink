@@ -5,7 +5,7 @@ import {
     BulkOrder, VendorKhata, HygieneAudit, CreditScore, LoanApplication,
     PreOrder, DhabaAmenity, HotspotProvider,
     MenuVote, EatSkipStatus, WasteEntry, PrepSheet,
-    GuestProfile, InventoryItem, PurchaseOrder, TrainingModule
+    GuestProfile, Inventory, PurchaseOrder, TrainingModule
 } from '../models.js';
 import * as Auth from '../auth.js';
 import crypto from 'crypto';
@@ -245,14 +245,14 @@ router.get('/luxe/guest/:phone', Auth.authenticate, async (req, res) => {
 // 2. Inventory
 router.get('/luxe/inventory', Auth.authenticate, async (req, res) => {
     try {
-        const items = await InventoryItem.find({ restaurantId: req.query.restaurantId });
+        const items = await Inventory.find({ restaurantId: req.query.restaurantId });
         res.json({ success: true, items });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.get('/luxe/inventory/low-stock', Auth.authenticate, async (req, res) => {
     try {
-        const items = await InventoryItem.find({ restaurantId: req.query.restaurantId, isLowStock: true });
+        const items = await Inventory.find({ restaurantId: req.query.restaurantId, isLowStock: true });
         res.json({ success: true, items });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
