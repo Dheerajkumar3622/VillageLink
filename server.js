@@ -18,7 +18,7 @@ import crypto from 'crypto';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
+// Note: xss-clean removed due to ESM incompatibility. Using helmet + mongoSanitize is sufficient.
 import Razorpay from 'razorpay';
 
 // Import Modular Components
@@ -68,7 +68,6 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 app.use(mongoSanitize());
-app.use(xss());
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
