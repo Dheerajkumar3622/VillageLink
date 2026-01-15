@@ -1,6 +1,7 @@
 {
   "name": "villagelink",
   "version": "2.2.0",
+  "type": "module",
   "description": "Premium accessible public transport booking system",
   "scripts": {
     "start": "node server.js",

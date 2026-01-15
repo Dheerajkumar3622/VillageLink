@@ -2,6 +2,7 @@
     "name": "villagelink-backend",
     "version": "3.0.0",
     "description": "VillageLink Backend API Server",
+    "type": "module",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
