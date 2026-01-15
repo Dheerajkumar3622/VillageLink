@@ -8,12 +8,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/socket.io': {
-        target: 'https://village-back-beta.onrender.com',
+        target: 'https://villagelink-c75g.onrender.com',
         ws: true,
         changeOrigin: true
       },
       '/api': {
-        target: 'https://village-back-beta.onrender.com',
+        target: 'https://villagelink-c75g.onrender.com',
         changeOrigin: true
       }
     }
