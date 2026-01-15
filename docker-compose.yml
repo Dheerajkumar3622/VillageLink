@@ -1,0 +1,195 @@
+# VillageLink Microservices Docker Compose
+# Run: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # ==================== DATABASES ====================
+  
+  # PostgreSQL (Auth, Payments)
+  postgres:
+    image: postgres:16-alpine
+    container_name: villagelink-postgres
+    environment:
+      POSTGRES_USER: villagelink
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-villagelink123}
+      POSTGRES_DB: villagelink
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U villagelink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL (Analytics)
+  mysql:
+    image: mysql:8.0
+    container_name: villagelink-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: villagelink_analytics
+      MYSQL_USER: villagelink
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-villagelink123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB (Documents)
+  mongodb:
+    image: mongo:7
+    container_name: villagelink-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: villagelink
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-villagelink123}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache & Realtime)
+  redis:
+    image: redis:7-alpine
+    container_name: villagelink-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== MICROSERVICES ====================
+
+  # API Gateway
+  api-gateway:
+    build: ./microservices/api-gateway
+    container_name: villagelink-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=8080
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - PAYMENT_SERVICE_URL=http://payment-service:3005
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - ML_SERVICE_URL=http://ml-service:5000
+      - LEGACY_SERVER_URL=http://legacy-server:3000
+    depends_on:
+      - auth-service
+      - payment-service
+      - notification-service
+      - ml-service
+
+  # Auth Service
+  auth-service:
+    build: ./microservices/auth-service
+    container_name: villagelink-auth
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_PORT=3001
+      - AUTH_DATABASE_URL=postgresql://villagelink:${POSTGRES_PASSWORD:-villagelink123}@postgres:5432/villagelink
+      - JWT_SECRET=${JWT_SECRET:-village_link_secure_secret_key_2025}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Payment Service
+  payment-service:
+    build: ./microservices/payment-service
+    container_name: villagelink-payment
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PAYMENT_SERVICE_PORT=3005
+      - PAYMENT_DATABASE_URL=postgresql://villagelink:${POSTGRES_PASSWORD:-villagelink123}@postgres:5432/villagelink
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_SECRET=${RAZORPAY_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Notification Service
+  notification-service:
+    build: ./microservices/notification-service
+    container_name: villagelink-notification
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - NOTIFICATION_SERVICE_PORT=3006
+      - MSG91_AUTH_KEY=${MSG91_AUTH_KEY}
+      - MSG91_SENDER_ID=${MSG91_SENDER_ID:-VLINKS}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ML Service (Python)
+  ml-service:
+    build: ./microservices/ml-service
+    container_name: villagelink-ml
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - ML_SERVICE_PORT=5000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Legacy Monolith Server (during migration)
+  legacy-server:
+    build: .
+    container_name: villagelink-legacy
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGO_URI=mongodb://villagelink:${MONGO_PASSWORD:-villagelink123}@mongodb:27017/villagelink?authSource=admin
+      - POSTGRES_URL=postgresql://villagelink:${POSTGRES_PASSWORD:-villagelink123}@postgres:5432/villagelink
+      - MYSQL_URL=mysql://villagelink:${MYSQL_PASSWORD:-villagelink123}@mysql:3306/villagelink_analytics
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-village_link_secure_secret_key_2025}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_SECRET=${RAZORPAY_SECRET}
+    depends_on:
+      - mongodb
+      - postgres
+      - mysql
+      - redis
+
+# ==================== VOLUMES ====================
+volumes:
+  postgres_data:
+  mysql_data:
+  mongodb_data:
+  redis_data:
+
+# ==================== NETWORKS ====================
+networks:
+  default:
+    name: villagelink-network

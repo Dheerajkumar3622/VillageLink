@@ -1,0 +1,9 @@
+{
+  "name": "VillageLink",
+  "description": "A premium, accessible public transport booking and tracking system designed for rural connectivity with a luxury aesthetic.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VillageLink</string>
+    <string name="title_activity_main">VillageLink</string>
+    <string name="package_name">com.villagelink.app</string>
+    <string name="custom_url_scheme">com.villagelink.app</string>
+</resources>
