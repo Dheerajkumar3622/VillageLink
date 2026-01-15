@@ -27,6 +27,10 @@ const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.U
 // Provider Apps - Separate entry points
 const KisanApp = lazy(() => import('./KisanApp').then(m => ({ default: m.KisanApp })));
 const DriverApp = lazy(() => import('./DriverApp').then(m => ({ default: m.DriverApp })));
+const VyapariApp = lazy(() => import('./VyapariApp').then(m => ({ default: m.VyapariApp })));
+const MessApp = lazy(() => import('./MessApp').then(m => ({ default: m.MessApp })));
+const StorageApp = lazy(() => import('./StorageApp').then(m => ({ default: m.StorageApp })));
+const LogisticsApp = lazy(() => import('./LogisticsApp').then(m => ({ default: m.LogisticsApp })));
 const UserPanel = lazy(() => import('./UserPanel').then(m => ({ default: m.UserPanel })));
 
 // Check if accessing a dedicated provider app URL
@@ -160,6 +164,34 @@ const App: React.FC = () => {
     return (
       <Suspense fallback={<ViewSkeleton />}>
         <DriverApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'VYAPARI') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <VyapariApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'MESS') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <MessApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'STORAGE') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <StorageApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'LOGISTICS') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <LogisticsApp />
       </Suspense>
     );
   }
