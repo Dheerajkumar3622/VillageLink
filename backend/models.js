@@ -1542,10 +1542,5 @@ export default {
   WasteEntry,
   PrepSheet,
   GuestProfile,
-  InventoryItem,
-  PurchaseOrder,
-  Recipe,
-  TrainingModule,
-  CommutePattern,
   MultimodalJourney
 };
