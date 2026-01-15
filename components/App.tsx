@@ -8,6 +8,7 @@ import { initSocketConnection } from '../services/transportService';
 import { getRoutes } from '../services/adminService';
 import { setUniversalRoutes } from '../services/graphService';
 import { initializeGeoData } from '../constants';
+import { initErrorReporting } from '../services/errorReportingService';
 import { Moon, Sun, LogOut, Languages } from 'lucide-react';
 
 // ========================================
@@ -38,6 +39,9 @@ const App: React.FC = () => {
       setUser(currentUser);
     }
     setIsInitialized(true);
+
+    // Initialize error reporting system
+    initErrorReporting();
 
     // Defer non-critical initialization to after first paint
     if (typeof requestIdleCallback !== 'undefined') {

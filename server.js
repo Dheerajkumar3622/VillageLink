@@ -64,6 +64,9 @@ const { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } = Tri
 import ReroutingService from './backend/services/dynamicReroutingService.js';
 const { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } = ReroutingService;
 
+import ErrorAggregator from './backend/services/errorAggregatorService.js';
+const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDeviceStats } = ErrorAggregator;
+
 const app = express();
 
 app.set('trust proxy', 1);
@@ -140,6 +143,70 @@ app.post('/api/auth/logout', (req, res) => res.json({ success: true }));
 app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
 app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
+
+// --- ERROR REPORTING ROUTES ---
+app.post('/api/errors/report', async (req, res) => {
+    try {
+        const { errors } = req.body;
+        if (!errors || !Array.isArray(errors)) {
+            return res.status(400).json({ error: 'Invalid payload' });
+        }
+        const result = await storeErrors(errors);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        console.error('Error storing error reports:', err);
+        res.status(500).json({ error: 'Failed to store errors' });
+    }
+});
+
+app.get('/api/errors/analytics', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { days, type, severity } = req.query;
+        const analytics = await getErrorAnalytics({
+            days: parseInt(days) || 7,
+            type,
+            severity
+        });
+        res.json(analytics);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/errors/recent', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { limit, type, severity, resolved } = req.query;
+        const errors = await getRecentErrors({
+            limit: parseInt(limit) || 50,
+            type,
+            severity,
+            resolved: resolved === 'true' ? true : resolved === 'false' ? false : null
+        });
+        res.json(errors);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/errors/:errorId/resolve', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { errorId } = req.params;
+        const { resolution } = req.body;
+        await resolveError(errorId, req.user.id, resolution);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/errors/device-stats', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const stats = await getDeviceStats(parseInt(req.query.days) || 7);
+        res.json(stats);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // --- ROUTERS ---
 app.use('/api/locations', villageRoutes);

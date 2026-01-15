@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { User, AdminStats, RouteDefinition, LocationData } from '../types';
 import { getAdminStats, getAllUsers, verifyDriver, toggleUserBan, getRoutes, createRoute, deleteRoute, getPricingConfig, updatePricingConfig } from '../services/adminService';
 import { findDetailedPath, calculatePathDistance } from '../services/graphService';
-import { LayoutDashboard, Users, UserCheck, ShieldAlert, CheckCircle, XCircle, Search, LogOut, Lock, Unlock, Activity, DollarSign, Map, Plus, Trash2, ArrowRight, Route as RouteIcon, Globe, Store, Car, Settings, UserX, UserCheck as UserActive } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, ShieldAlert, CheckCircle, XCircle, Search, LogOut, Lock, Unlock, Activity, DollarSign, Map, Plus, Trash2, ArrowRight, Route as RouteIcon, Globe, Store, Car, Settings, UserX, UserCheck as UserActive, AlertTriangle, Bug, RefreshCw } from 'lucide-react';
 import { logoutUser } from '../services/authService';
 import { LocationSelector } from './LocationSelector';
 import { Button } from './Button';
@@ -16,7 +16,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [routes, setRoutes] = useState<RouteDefinition[]>([]);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'PRICING'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'PRICING' | 'ERRORS'>('DASHBOARD');
     const [search, setSearch] = useState('');
 
     // Route Create State
@@ -31,6 +31,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [baseFare, setBaseFare] = useState(10);
     const [perKmRate, setPerKmRate] = useState(6);
     const [isSavingPricing, setIsSavingPricing] = useState(false);
+
+    // Error Analytics State
+    const [errorAnalytics, setErrorAnalytics] = useState<any>(null);
+    const [recentErrors, setRecentErrors] = useState<any[]>([]);
+    const [isLoadingErrors, setIsLoadingErrors] = useState(false);
 
     const fetchData = async () => {
         const s = await getAdminStats();
@@ -56,6 +61,33 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
         }
     }, [activeTab]);
 
+    // Fetch error analytics when tab is active
+    useEffect(() => {
+        if (activeTab === 'ERRORS') {
+            fetchErrorData();
+        }
+    }, [activeTab]);
+
+    const fetchErrorData = async () => {
+        setIsLoadingErrors(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const [analyticsRes, errorsRes] = await Promise.all([
+                fetch(`${process.env.VITE_API_URL || 'http://localhost:3001'}/api/errors/analytics?days=7`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`${process.env.VITE_API_URL || 'http://localhost:3001'}/api/errors/recent?limit=20`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+            if (analyticsRes.ok) setErrorAnalytics(await analyticsRes.json());
+            if (errorsRes.ok) setRecentErrors(await errorsRes.json());
+        } catch (err) {
+            console.error('Failed to fetch error data:', err);
+        }
+        setIsLoadingErrors(false);
+    };
+
     // When start/end changes, auto-clear calc to force re-calc
     useEffect(() => {
         setCalculatedStops([]);
@@ -79,11 +111,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const handleCalculatePath = () => {
         if (!newRouteFrom || !newRouteTo) return alert("Select start and end points first");
         setIsCalculating(true);
-        
+
         // Use Graph Service to calculate path based on Geospatial Data
         const stops = findDetailedPath(newRouteFrom.name, newRouteTo.name);
         const dist = calculatePathDistance(stops);
-        
+
         setCalculatedStops(stops);
         setCalculatedDist(dist);
         setIsCalculating(false);
@@ -100,7 +132,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
             stops: calculatedStops,
             totalDistance: calculatedDist
         });
-        
+
         if (success) {
             setNewRouteName('');
             setNewRouteFrom(null);
@@ -128,9 +160,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
 
     // Filter pending users (Drivers & Shopkeepers)
     const pendingUsers = users.filter(u => (u.role === 'DRIVER' || u.role === 'SHOPKEEPER') && !u.isVerified);
-    
-    const filteredUsers = users.filter(u => 
-        u.name.toLowerCase().includes(search.toLowerCase()) || 
+
+    const filteredUsers = users.filter(u =>
+        u.name.toLowerCase().includes(search.toLowerCase()) ||
         u.id.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -171,11 +203,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                     <button onClick={() => setActiveTab('PRICING')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PRICING' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <DollarSign size={18} /> <span className="font-bold text-sm">Pricing</span>
                     </button>
+                    <button onClick={() => setActiveTab('ERRORS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ERRORS' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                        <Bug size={18} /> <span className="font-bold text-sm">Errors</span>
+                        {errorAnalytics?.summary?.total > 0 && <span className="bg-orange-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{errorAnalytics.summary.total}</span>}
+                    </button>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 p-6 overflow-y-auto bg-slate-950/50">
-                    
+
                     {activeTab === 'DASHBOARD' && stats && (
                         <div className="space-y-6 animate-in fade-in">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -200,7 +236,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                     )}
 
                     {activeTab === 'APPROVALS' && (
-                         <div className="space-y-4 animate-in slide-in-from-right-4">
+                        <div className="space-y-4 animate-in slide-in-from-right-4">
                             <h2 className="text-xl font-bold mb-4">Pending Approvals (Drivers/Shopkeepers)</h2>
                             <p className="text-sm text-slate-400 mb-4">These users are waiting for verification before they can access their dashboard.</p>
                             {pendingUsers.length === 0 ? <p className="text-slate-500 italic bg-slate-900 p-8 rounded-xl text-center">No pending approvals.</p> : null}
@@ -213,7 +249,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         <div>
                                             <h3 className="font-bold text-lg">{u.name}</h3>
                                             <p className="text-sm text-slate-400 font-mono flex items-center gap-2">
-                                                {u.id} 
+                                                {u.id}
                                                 <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded uppercase">{u.role}</span>
                                             </p>
                                         </div>
@@ -226,19 +262,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     </div>
                                 </div>
                             ))}
-                         </div>
+                        </div>
                     )}
 
                     {activeTab === 'USERS' && (
-                         <div className="space-y-4 animate-in slide-in-from-right-4">
+                        <div className="space-y-4 animate-in slide-in-from-right-4">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-xl font-bold">User Database & ID Status</h2>
                             </div>
                             <div className="relative mb-6">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                <input 
-                                    value={search} 
-                                    onChange={(e) => setSearch(e.target.value)} 
+                                <input
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
                                     className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-slate-200 outline-none focus:border-red-600"
                                     placeholder="Search users by name or ID..."
                                 />
@@ -259,7 +295,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                                 <span className={`text-[10px] uppercase font-bold tracking-wider ${u.isBanned ? 'text-red-500' : 'text-emerald-500'}`}>
                                                     {u.isBanned ? 'Deactivated' : 'Active'}
                                                 </span>
-                                                <button 
+                                                <button
                                                     onClick={() => handleBan(u.id, !u.isBanned)}
                                                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${u.isBanned ? 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30 border border-emerald-600/50' : 'bg-red-600/20 text-red-500 hover:bg-red-600/30 border border-red-600/50'}`}
                                                 >
@@ -271,7 +307,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     </div>
                                 ))}
                             </div>
-                         </div>
+                        </div>
                     )}
 
                     {/* PRICING PANEL (Existing) */}
@@ -280,13 +316,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Settings size={20} className="text-red-500" /> Fare Configuration</h2>
                                 <p className="text-sm text-slate-400 mb-6">Adjust the global pricing logic for the entire platform. Changes apply immediately to new ticket calculations.</p>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Base Fare (Boarding Fee)</label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 value={baseFare}
                                                 onChange={e => setBaseFare(Number(e.target.value))}
@@ -300,7 +336,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         <label className="text-xs font-bold text-slate-500 uppercase block mb-2">Rate Per Kilometer</label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
-                                            <input 
+                                            <input
                                                 type="number"
                                                 value={perKmRate}
                                                 onChange={e => setPerKmRate(Number(e.target.value))}
@@ -335,10 +371,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus size={20} className="text-red-500" /> Define Universal Route</h2>
                                 <p className="text-sm text-slate-400 mb-4">Set the official stops for a route. This defines the "Universal Path" logic for passengers.</p>
-                                
+
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                    <input 
-                                        placeholder="Route Name (e.g. Express Line 1)" 
+                                    <input
+                                        placeholder="Route Name (e.g. Express Line 1)"
                                         value={newRouteName}
                                         onChange={e => setNewRouteName(e.target.value)}
                                         className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none focus:border-red-500"
@@ -346,7 +382,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     <div className="text-black"><LocationSelector label="Start Point" onSelect={setNewRouteFrom} /></div>
                                     <div className="text-black"><LocationSelector label="End Point" onSelect={setNewRouteTo} /></div>
                                 </div>
-                                
+
                                 <div className="flex gap-4">
                                     <Button variant="secondary" onClick={handleCalculatePath} disabled={isCalculating}>
                                         <Globe size={16} /> {isCalculating ? 'Analyzing Geospatial Data...' : '1. Analyze & Generate Path'}
@@ -410,6 +446,106 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         ))
                                     )}
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ERROR ANALYTICS PANEL */}
+                    {activeTab === 'ERRORS' && (
+                        <div className="space-y-6 animate-in slide-in-from-right-4">
+                            {/* Header */}
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-xl font-bold flex items-center gap-2"><Bug size={20} className="text-orange-500" /> Error Analytics</h2>
+                                    <p className="text-sm text-slate-400">Automatic error detection across all users</p>
+                                </div>
+                                <button onClick={fetchErrorData} disabled={isLoadingErrors} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-slate-300 transition-colors">
+                                    <RefreshCw size={18} className={isLoadingErrors ? 'animate-spin' : ''} />
+                                </button>
+                            </div>
+
+                            {/* Summary Cards */}
+                            {errorAnalytics?.summary && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                        <p className="text-slate-500 text-xs font-bold uppercase">Total Errors (7d)</p>
+                                        <p className="text-3xl font-bold mt-1 text-orange-500">{errorAnalytics.summary.total}</p>
+                                    </div>
+                                    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                        <p className="text-slate-500 text-xs font-bold uppercase">Unique Issues</p>
+                                        <p className="text-3xl font-bold mt-1 text-white">{errorAnalytics.summary.unique}</p>
+                                    </div>
+                                    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                        <p className="text-slate-500 text-xs font-bold uppercase">Resolved</p>
+                                        <p className="text-3xl font-bold mt-1 text-emerald-500">{errorAnalytics.summary.resolved}</p>
+                                    </div>
+                                    <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                                        <p className="text-slate-500 text-xs font-bold uppercase">Unresolved</p>
+                                        <p className="text-3xl font-bold mt-1 text-red-500">{errorAnalytics.summary.unique - errorAnalytics.summary.resolved}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Error Type Breakdown */}
+                            {errorAnalytics?.byType && errorAnalytics.byType.length > 0 && (
+                                <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                    <h3 className="text-sm font-bold text-slate-300 mb-4">Errors by Type</h3>
+                                    <div className="space-y-2">
+                                        {errorAnalytics.byType.map((item: any) => (
+                                            <div key={item._id} className="flex items-center gap-3">
+                                                <span className={`text-xs font-bold px-2 py-1 rounded ${item._id === 'CLIENT_ERROR' ? 'bg-blue-900 text-blue-300' :
+                                                        item._id === 'NETWORK_ERROR' ? 'bg-purple-900 text-purple-300' :
+                                                            item._id === 'PERFORMANCE' ? 'bg-yellow-900 text-yellow-300' :
+                                                                item._id === 'SERVICE_FAILURE' ? 'bg-red-900 text-red-300' :
+                                                                    'bg-slate-800 text-slate-300'
+                                                    }`}>{item._id}</span>
+                                                <div className="flex-1 bg-slate-800 rounded-full h-2">
+                                                    <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${Math.min((item.count / errorAnalytics.summary.total) * 100, 100)}%` }}></div>
+                                                </div>
+                                                <span className="text-sm font-mono text-slate-400">{item.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Recent Errors List */}
+                            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                <h3 className="text-sm font-bold text-slate-300 mb-4">Recent Errors</h3>
+                                {recentErrors.length === 0 ? (
+                                    <p className="text-slate-500 italic text-center py-8">No errors recorded yet. The system is working perfectly! 🎉</p>
+                                ) : (
+                                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                                        {recentErrors.map((err: any) => (
+                                            <div key={err.errorId || err._id} className={`p-4 rounded-xl border ${err.severity === 'CRITICAL' ? 'bg-red-900/20 border-red-800' :
+                                                    err.severity === 'HIGH' ? 'bg-orange-900/20 border-orange-800' :
+                                                        'bg-slate-800 border-slate-700'
+                                                }`}>
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${err.severity === 'CRITICAL' ? 'bg-red-600 text-white' :
+                                                                    err.severity === 'HIGH' ? 'bg-orange-600 text-white' :
+                                                                        err.severity === 'MEDIUM' ? 'bg-yellow-600 text-black' :
+                                                                            'bg-slate-600 text-white'
+                                                                }`}>{err.severity}</span>
+                                                            <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{err.type}</span>
+                                                            {err.resolved && <CheckCircle size={12} className="text-emerald-500" />}
+                                                        </div>
+                                                        <p className="text-sm text-white font-medium truncate">{err.message}</p>
+                                                        <p className="text-[10px] text-slate-500 mt-1">{err.url || 'Unknown URL'}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] text-slate-500">{new Date(err.createdAt).toLocaleString()}</p>
+                                                        {err.occurrenceCount > 1 && (
+                                                            <span className="text-[10px] bg-slate-700 text-orange-400 px-2 py-0.5 rounded">×{err.occurrenceCount}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
