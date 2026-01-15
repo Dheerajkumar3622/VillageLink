@@ -7,6 +7,8 @@
     "start": "node server.js",
     "dev": "vite",
     "build": "vite build",
+    "build:backend": "echo 'Backend ready'",
+    "start:backend": "node server.js",
     "preview": "vite preview"
   },
   "dependencies": {
