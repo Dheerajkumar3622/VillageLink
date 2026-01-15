@@ -1,0 +1,121 @@
+{
+    "name": "VillageLink - Rural Super App",
+    "short_name": "VillageLink",
+    "description": "Transport, Food, GramMandi - Everything rural India needs",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0f172a",
+    "theme_color": "#22c55e",
+    "icons": [
+        {
+            "src": "/assets/icon-72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/assets/hero-bus-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Book Ride",
+            "short_name": "Ride",
+            "description": "Book bus, auto, or taxi",
+            "url": "/?action=book",
+            "icons": [
+                {
+                    "src": "/assets/icon-bus.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Order Food",
+            "short_name": "Food",
+            "description": "Order from mess or restaurant",
+            "url": "/food",
+            "icons": [
+                {
+                    "src": "/assets/icon-food.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "GramMandi",
+            "short_name": "Mandi",
+            "description": "Buy fresh vegetables",
+            "url": "/grammandi",
+            "icons": [
+                {
+                    "src": "/assets/icon-mandi.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "categories": [
+        "travel",
+        "food",
+        "shopping",
+        "lifestyle"
+    ],
+    "screenshots": [
+        {
+            "src": "/assets/screenshot-home.png",
+            "type": "image/png",
+            "sizes": "1080x1920",
+            "form_factor": "narrow"
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}

@@ -24,6 +24,23 @@ const VyaparSaathiView = lazy(() => import('./VyaparSaathiView').then(m => ({ de
 const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.LuxeOSView })));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
 
+// Provider Apps - Separate entry points
+const KisanApp = lazy(() => import('./KisanApp').then(m => ({ default: m.KisanApp })));
+const DriverApp = lazy(() => import('./DriverApp').then(m => ({ default: m.DriverApp })));
+const UserPanel = lazy(() => import('./UserPanel').then(m => ({ default: m.UserPanel })));
+
+// Check if accessing a dedicated provider app URL
+const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'USER' => {
+  const path = window.location.pathname.toLowerCase();
+  if (path.startsWith('/kisan')) return 'KISAN';
+  if (path.startsWith('/driver')) return 'DRIVER';
+  if (path.startsWith('/vyapari')) return 'VYAPARI';
+  if (path.startsWith('/mess')) return 'MESS';
+  if (path.startsWith('/storage')) return 'STORAGE';
+  if (path.startsWith('/logistics')) return 'LOGISTICS';
+  return 'USER'; // Default to consumer super-app
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [darkMode, setDarkMode] = useState(false);
@@ -129,6 +146,23 @@ const App: React.FC = () => {
         return <PassengerView user={user} lang={lang} />;
     }
   };
+
+  // Route to dedicated provider apps based on URL path
+  const appMode = getAppMode();
+  if (appMode === 'KISAN') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <KisanApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'DRIVER') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <DriverApp />
+      </Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500">
