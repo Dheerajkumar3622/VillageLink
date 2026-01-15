@@ -140,24 +140,31 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
     if (isPhone) {
       // Use Firebase Phone Auth
       try {
-        if (!(window as any).recaptchaVerifier) {
-          (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible'
-          });
+        // Always create a fresh RecaptchaVerifier
+        if ((window as any).recaptchaVerifier) {
+          try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
         }
+        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => console.log('reCAPTCHA solved')
+        });
+
         const appVerifier = (window as any).recaptchaVerifier;
         const phoneNumber = resetIdentifier.startsWith('+') ? resetIdentifier : `+91${resetIdentifier}`;
 
+        console.log('Sending OTP to:', phoneNumber);
         const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
         setConfirmationResult(confirmation);
         setInfoMsg(`OTP sent to ${phoneNumber} via Firebase`);
         setViewState('RESET');
       } catch (err: any) {
-        console.error(err);
+        console.error('Firebase OTP Error:', err);
+        // Clear verifier on error
+        if ((window as any).recaptchaVerifier) {
+          try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
+          (window as any).recaptchaVerifier = null;
+        }
         setError("Firebase SMS Failed: " + err.message);
-        // Fallback to legacy
-        const res = await requestPasswordReset(resetIdentifier);
-        if (!res.error) setInfoMsg(res.message);
       } finally {
         setLoading(false);
       }
