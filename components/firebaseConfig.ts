@@ -2,15 +2,15 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
-// TODO: Replace with your Firebase Project Configuration
-// Get this from: Firebase Console -> Project Settings -> General -> Your Apps
+// VillageLink Firebase Configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyA5ly1G-IcAs-We5Fl2_8YIoHgc_sPf7-A",
+    authDomain: "villagelink-96b4c.firebaseapp.com",
+    projectId: "villagelink-96b4c",
+    storageBucket: "villagelink-96b4c.firebasestorage.app",
+    messagingSenderId: "428748007277",
+    appId: "1:428748007277:web:76f0eec16523044b575c64",
+    measurementId: "G-TWQ8ELYRN1"
 };
 
 const app = initializeApp(firebaseConfig);
