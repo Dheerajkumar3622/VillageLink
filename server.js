@@ -37,17 +37,27 @@ import smsRoutes from './backend/routes/smsRoutes.js';
 import ticketRoutes from './backend/routes/ticketRoutes.js';
 import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
-import { sendEmail } from './backend/services/emailService.js';
+import * as EmailService from './backend/services/emailService.js';
+const { sendEmail } = EmailService;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- SERVICES ---
-import { refreshMarketPrices } from './backend/services/marketService.js';
-import { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } from './backend/services/trafficAggregatorService.js';
-import { initializeTimeoutManager, startTimeout, handleDriverAcceptance, handleDriverRejection } from './backend/services/driverTimeoutManager.js';
-import { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } from './backend/services/tripMonitorService.js';
-import { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } from './backend/services/dynamicReroutingService.js';
+// --- SERVICES (Using namespace imports for ESM/CJS compatibility) ---
+import * as MarketService from './backend/services/marketService.js';
+const { refreshMarketPrices } = MarketService;
+
+import * as TrafficService from './backend/services/trafficAggregatorService.js';
+const { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } = TrafficService;
+
+import * as TimeoutManager from './backend/services/driverTimeoutManager.js';
+const { initializeTimeoutManager, startTimeout, handleDriverAcceptance, handleDriverRejection } = TimeoutManager;
+
+import * as TripMonitor from './backend/services/tripMonitorService.js';
+const { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } = TripMonitor;
+
+import * as ReroutingService from './backend/services/dynamicReroutingService.js';
+const { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } = ReroutingService;
 
 const app = express();
 
@@ -139,8 +149,14 @@ app.use('/api/user', userRoutes);
 // --- FOODLINK VENDOR ROUTES ---
 import vendorRoutes from './backend/routes/vendorRoutes.js';
 import foodLinkRoutes from './backend/routes/foodLinkRoutes.js';
+import umgRoutes from './backend/routes/umgRoutes.js';
+import fleetRoutes from './backend/routes/fleetRoutes.js';
+import becknRoutes from './backend/routes/becknRoutes.js';
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/foodlink', foodLinkRoutes);
+app.use('/api', umgRoutes); // UMG Routes for subscriptions, FLMC, guardian
+app.use('/api/fleet', fleetRoutes); // Fleet management for operators
+app.use('/api/beckn', becknRoutes); // ONDC/Beckn Protocol endpoints
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 

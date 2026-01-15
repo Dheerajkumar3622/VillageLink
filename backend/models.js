@@ -1235,3 +1235,259 @@ loanApplicationSchema.index({ vendorId: 1, status: 1 });
 loanApplicationSchema.index({ schemeType: 1, status: 1 });
 
 export const LoanApplication = mongoose.model('LoanApplication', loanApplicationSchema);
+
+// --- UMG (UNIFIED MOBILITY GRID) MODELS ---
+
+// ==================== DRIVER SUBSCRIPTION (Zero-Commission Model) ====================
+
+const driverSubscriptionSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  userId: { type: String, required: true },
+  plan: { type: String, enum: ['DAILY', 'MONTHLY', 'YEARLY'], required: true },
+  planId: String,
+  amount: { type: Number, required: true },
+  startDate: { type: Number, required: true },
+  endDate: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'EXPIRED', 'GRACE', 'CANCELLED'],
+    default: 'ACTIVE'
+  },
+  autoRenew: { type: Boolean, default: true },
+  razorpaySubscriptionId: String,
+  transactionId: String,
+  createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now }
+});
+
+driverSubscriptionSchema.index({ userId: 1, status: 1 });
+driverSubscriptionSchema.index({ endDate: 1, status: 1 });
+
+export const DriverSubscription = mongoose.model('DriverSubscription', driverSubscriptionSchema);
+
+// ==================== SHARE AUTO (FLMC) ====================
+
+const shareAutoRouteSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  routeName: String,
+  routeCode: String,
+  stops: [{
+    id: String,
+    name: String,
+    lat: Number,
+    lng: Number,
+    order: Number,
+    isTransitHub: { type: Boolean, default: false },
+    transitConnections: [String]
+  }],
+  baseFare: { type: Number, default: 10 },
+  farePerKm: { type: Number, default: 5 },
+  operatingHours: {
+    start: String,
+    end: String
+  },
+  frequency: { type: Number, default: 10 }, // minutes
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Number, default: Date.now }
+});
+
+shareAutoRouteSchema.index({ 'stops.lat': 1, 'stops.lng': 1 });
+shareAutoRouteSchema.index({ routeCode: 1 });
+
+export const ShareAutoRoute = mongoose.model('ShareAutoRoute', shareAutoRouteSchema);
+
+const shareAutoVehicleSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  driverId: String,
+  driverName: String,
+  vehicleNumber: String,
+  routeId: String,
+  currentLocation: {
+    lat: Number,
+    lng: Number,
+    heading: Number,
+    speed: Number,
+    updatedAt: Number
+  },
+  capacity: { type: Number, default: 6 },
+  currentOccupancy: { type: Number, default: 0 },
+  nextStopId: String,
+  eta: Number,
+  status: {
+    type: String,
+    enum: ['MOVING', 'WAITING', 'FULL', 'OFFLINE'],
+    default: 'OFFLINE'
+  },
+  freightModeEnabled: { type: Boolean, default: false },
+  lastUpdated: { type: Number, default: Date.now }
+});
+
+shareAutoVehicleSchema.index({ routeId: 1, status: 1 });
+shareAutoVehicleSchema.index({ driverId: 1 });
+
+export const ShareAutoVehicle = mongoose.model('ShareAutoVehicle', shareAutoVehicleSchema);
+
+// ==================== GUARDIAN (Safety Features) ====================
+
+const trustedContactSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  userId: { type: String, required: true },
+  name: String,
+  phone: String,
+  relationship: { type: String, enum: ['FAMILY', 'FRIEND', 'EMERGENCY'], default: 'FAMILY' },
+  autoShare: { type: Boolean, default: true },
+  createdAt: { type: Number, default: Date.now }
+});
+
+trustedContactSchema.index({ userId: 1 });
+
+export const TrustedContact = mongoose.model('TrustedContact', trustedContactSchema);
+
+const liveShareSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  tripId: String,
+  userId: String,
+  sharedWith: [String], // phone numbers
+  shareUrl: String,
+  shareToken: String,
+  status: { type: String, enum: ['ACTIVE', 'EXPIRED', 'ENDED'], default: 'ACTIVE' },
+  expiresAt: Number,
+  createdAt: { type: Number, default: Date.now }
+});
+
+liveShareSchema.index({ tripId: 1, status: 1 });
+liveShareSchema.index({ shareToken: 1 });
+
+export const LiveShare = mongoose.model('LiveShare', liveShareSchema);
+
+const safetyAlertSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  type: {
+    type: String,
+    enum: ['SOS', 'ROUTE_DEVIATION', 'LONG_STOP', 'SPEED_ALERT', 'MANUAL'],
+    required: true
+  },
+  userId: String,
+  tripId: String,
+  location: {
+    lat: Number,
+    lng: Number
+  },
+  message: String,
+  audioUrl: String,
+  status: { type: String, enum: ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED'], default: 'ACTIVE' },
+  respondedBy: String,
+  createdAt: { type: Number, default: Date.now },
+  resolvedAt: Number
+});
+
+safetyAlertSchema.index({ userId: 1, status: 1 });
+safetyAlertSchema.index({ status: 1, createdAt: -1 });
+
+export const SafetyAlert = mongoose.model('SafetyAlert', safetyAlertSchema);
+
+// ==================== CONDUCTOR METRICS (Revenue Protection) ====================
+
+const conductorMetricsSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  conductorId: { type: String, required: true },
+  date: { type: String, required: true }, // YYYY-MM-DD
+  totalTickets: { type: Number, default: 0 },
+  digitalTickets: { type: Number, default: 0 },
+  cashTickets: { type: Number, default: 0 },
+  totalRevenue: { type: Number, default: 0 },
+  verifiedRevenue: { type: Number, default: 0 },
+  fraudAlerts: { type: Number, default: 0 },
+  bonusEarned: { type: Number, default: 0 },
+  createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now }
+});
+
+conductorMetricsSchema.index({ conductorId: 1, date: 1 }, { unique: true });
+conductorMetricsSchema.index({ date: 1 });
+
+export const ConductorMetrics = mongoose.model('ConductorMetrics', conductorMetricsSchema);
+
+// Audio Verification Log (Soundbox)
+const audioVerificationSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  type: {
+    type: String,
+    enum: ['TICKET_VALIDATED', 'PAYMENT_RECEIVED', 'FARE_COLLECTED', 'FRAUD_ALERT']
+  },
+  amount: Number,
+  ticketId: String,
+  conductorId: String,
+  message: String,
+  language: { type: String, enum: ['EN', 'HI', 'LOCAL'], default: 'HI' },
+  synced: { type: Boolean, default: false },
+  timestamp: { type: Number, default: Date.now }
+});
+
+audioVerificationSchema.index({ conductorId: 1, timestamp: -1 });
+audioVerificationSchema.index({ synced: 1 });
+
+export const AudioVerification = mongoose.model('AudioVerification', audioVerificationSchema);
+
+// Fraud Alert Log
+const fraudAlertSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  type: {
+    type: String,
+    enum: ['ZERO_TICKET', 'MULTI_SCAN', 'EXPIRED_TICKET', 'INVALID_SIGNATURE', 'DEVICE_MISMATCH']
+  },
+  ticketId: String,
+  conductorId: String,
+  description: String,
+  severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
+  resolved: { type: Boolean, default: false },
+  resolvedBy: String,
+  resolvedAt: Number,
+  timestamp: { type: Number, default: Date.now }
+});
+
+fraudAlertSchema.index({ conductorId: 1, resolved: 1 });
+fraudAlertSchema.index({ severity: 1, resolved: 1 });
+
+export const FraudAlert = mongoose.model('FraudAlert', fraudAlertSchema);
+
+// ==================== MULTIMODAL JOURNEY ====================
+
+const multimodalJourneySchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  userId: String,
+  origin: {
+    name: String,
+    lat: Number,
+    lng: Number
+  },
+  destination: {
+    name: String,
+    lat: Number,
+    lng: Number
+  },
+  segments: [{
+    mode: { type: String, enum: ['WALK', 'SHARE_AUTO', 'BUS', 'METRO', 'AUTO'] },
+    from: { name: String, lat: Number, lng: Number },
+    to: { name: String, lat: Number, lng: Number },
+    duration: Number,
+    distance: Number,
+    fare: Number,
+    details: mongoose.Schema.Types.Mixed
+  }],
+  totalFare: Number,
+  totalDuration: Number,
+  totalDistance: Number,
+  status: {
+    type: String,
+    enum: ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+    default: 'PLANNED'
+  },
+  qrPayload: String,
+  createdAt: { type: Number, default: Date.now }
+});
+
+multimodalJourneySchema.index({ userId: 1, createdAt: -1 });
+multimodalJourneySchema.index({ status: 1 });
+
+export const MultimodalJourney = mongoose.model('MultimodalJourney', multimodalJourneySchema);
