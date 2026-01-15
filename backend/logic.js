@@ -1,6 +1,7 @@
 
 import crypto from 'crypto';
-import { Block, User, SystemSetting, TripLog } from './models.js';
+import Models from './models.js';
+const { Block, User, SystemSetting, TripLog, Location } = Models;
 import https from 'https';
 
 // --- SERVER-SIDE ML PRICING ENGINE ---
@@ -90,7 +91,6 @@ export const getRealRoadPath = (startLat, startLng, endLat, endLng) => {
 
 // --- ROUTE WITH VILLAGES/POIs ---
 // Combines OSRM route with village and POI mapping
-import { Location } from './models.js';
 
 // Helper function to query OSM Overpass API
 const queryOSMPOIsForPoint = async (lat, lng) => {
@@ -223,4 +223,13 @@ export const transferTokens = async (fromId, toId, amount, reason) => {
 
   await addToChain({ type: 'TOKEN_TRANSFER', from: fromId, to: toId, amount, reason });
   return true;
+};
+
+// Default export for CJS compatibility
+export default {
+  calculateFare,
+  getRealRoadPath,
+  getRouteWithPlaces,
+  addToChain,
+  transferTokens
 };

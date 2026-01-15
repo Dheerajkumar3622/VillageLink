@@ -32,3 +32,6 @@ export const sendEmail = async (to, subject, html) => {
         return false;
     }
 };
+
+// Default export for CJS compatibility
+export default { sendEmail };

@@ -4,9 +4,13 @@
  * and triggers re-routing when significant delays occur
  */
 
-import { ActiveTrip, DriverLocation } from '../models.js';
-import { detectSlowdownsOnRoute, getTrafficAlongRoute } from './trafficAggregatorService.js';
-import * as Logic from '../logic.js';
+import Models from '../models.js';
+const { ActiveTrip, DriverLocation } = Models;
+
+import TrafficService from './trafficAggregatorService.js';
+const { detectSlowdownsOnRoute, getTrafficAlongRoute } = TrafficService;
+
+import Logic from '../logic.js';
 
 // --- CONSTANTS ---
 
@@ -353,4 +357,13 @@ export const onDriverLocationUpdate = async (driverId, locationData) => {
             ...locationData
         });
     }
+};
+
+// Default export for CJS compatibility
+export default {
+    initializeTripMonitor,
+    stopTripMonitor,
+    recalculateEta,
+    getTripLiveStatus,
+    onDriverLocationUpdate
 };

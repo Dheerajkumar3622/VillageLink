@@ -3,7 +3,8 @@
  * Matches nearby available drivers to ride requests using geospatial queries
  */
 
-import { DriverLocation, User, ActiveTrip } from '../models.js';
+import Models from '../models.js';
+const { DriverLocation, User, ActiveTrip } = Models;
 
 /**
  * Calculate Haversine distance between two points
@@ -232,4 +233,15 @@ export const setDriverOffline = async (driverId) => {
         { isOnline: false, currentTripId: null, lastUpdated: new Date() }
     );
     console.log(`⚫ Driver ${driverId} is OFFLINE`);
+};
+
+// Default export for CJS compatibility
+export default {
+    findBestDriver,
+    assignDriverToTrip,
+    releaseDriver,
+    getOnlineDriversInBounds,
+    updateDriverLocation,
+    setDriverOnline,
+    setDriverOffline
 };

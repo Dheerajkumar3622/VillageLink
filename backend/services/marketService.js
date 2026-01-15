@@ -1,5 +1,6 @@
 
-import { MarketItem } from '../models.js';
+import Models from '../models.js';
+const { MarketItem } = Models;
 
 // Realistic base prices for Bihar region (in INR per Quintal)
 const COMMODITY_DATA = [
@@ -40,3 +41,6 @@ export const refreshMarketPrices = async () => {
         console.error("❌ Market Price Update Failed:", e);
     }
 };
+
+// Default export for CJS compatibility
+export default { refreshMarketPrices };

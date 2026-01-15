@@ -4,7 +4,8 @@
  * and provides real-time traffic data for routing and visualization
  */
 
-import { RoadSegment, DriverLocation } from '../models.js';
+import Models from '../models.js';
+const { RoadSegment, DriverLocation } = Models;
 
 // --- CONSTANTS ---
 
@@ -357,3 +358,14 @@ export const cleanupStaleCache = () => {
 
 // Run cleanup every 10 minutes
 setInterval(cleanupStaleCache, 600000);
+
+// Default export for CJS compatibility
+export default {
+    processDriverLocation,
+    getTrafficInBounds,
+    getTrafficAlongRoute,
+    detectSlowdownsOnRoute,
+    updateHistoricalBaselines,
+    getTrafficWeight,
+    cleanupStaleCache
+};

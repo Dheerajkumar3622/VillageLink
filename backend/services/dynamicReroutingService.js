@@ -3,9 +3,14 @@
  * Monitors active trips for traffic conditions and suggests alternate routes
  */
 
-import { ActiveTrip } from '../models.js';
-import { getRealRoadPath } from '../logic.js';
-import { detectSlowdownsOnRoute, getTrafficWeight } from './trafficAggregatorService.js';
+import Models from '../models.js';
+const { ActiveTrip } = Models;
+
+import Logic from '../logic.js';
+const { getRealRoadPath } = Logic;
+
+import TrafficService from './trafficAggregatorService.js';
+const { detectSlowdownsOnRoute, getTrafficWeight } = TrafficService;
 
 // --- CONSTANTS ---
 
@@ -285,4 +290,13 @@ export const checkTripForRerouteManual = async (tripId) => {
  */
 export const cleanupCompletedTrip = (tripId) => {
     lastRerouteTime.delete(tripId);
+};
+
+// Default export for CJS compatibility
+export default {
+    initializeReroutingService,
+    acceptReroute,
+    declineReroute,
+    checkTripForRerouteManual,
+    cleanupCompletedTrip
 };

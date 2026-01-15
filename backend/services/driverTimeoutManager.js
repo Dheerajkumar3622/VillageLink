@@ -4,8 +4,11 @@
  * when drivers don't respond within the timeout window
  */
 
-import { findBestDriver, assignDriverToTrip, releaseDriver } from './driverAllocationService.js';
-import { ActiveTrip } from '../models.js';
+import DriverAllocationService from './driverAllocationService.js';
+const { findBestDriver, assignDriverToTrip, releaseDriver } = DriverAllocationService;
+
+import Models from '../models.js';
+const { ActiveTrip } = Models;
 
 // --- CONSTANTS ---
 
@@ -367,4 +370,15 @@ export const getActiveTimeouts = () => {
         });
     }
     return info;
+};
+
+// Default export for CJS compatibility
+export default {
+    initializeTimeoutManager,
+    startTimeout,
+    clearTimeout,
+    handleDriverRejection,
+    handleDriverAcceptance,
+    getRemainingTime,
+    getActiveTimeouts
 };

@@ -1,10 +1,12 @@
 
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { User, Shop } from './models.js';
+import Models from './models.js';
+const { User, Shop } = Models;
 import crypto from 'crypto';
 import https from 'https';
-import { sendEmail } from './services/emailService.js';
+import EmailService from './services/emailService.js';
+const { sendEmail } = EmailService;
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
@@ -247,4 +249,14 @@ export const requireAdmin = async (req, res, next) => {
   } catch (err) {
     res.status(401).json({ error: "Invalid token" });
   }
+};
+
+// Default export for CJS compatibility
+export default {
+  register,
+  login,
+  requestPasswordReset,
+  resetPassword,
+  authenticate,
+  requireAdmin
 };
