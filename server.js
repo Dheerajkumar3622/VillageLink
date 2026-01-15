@@ -21,11 +21,10 @@ import mongoSanitize from 'express-mongo-sanitize';
 // Note: xss-clean removed due to ESM incompatibility. Using helmet + mongoSanitize is sufficient.
 import Razorpay from 'razorpay';
 
-// Import Modular Components - Using namespace import for ESM/CJS compatibility
-import * as Models from './backend/models.js';
-const { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } = Models;
-import * as Auth from './backend/auth.js';
-import * as Logic from './backend/logic.js';
+// Import Modular Components
+import { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } from './backend/models.js';
+import { register, login, authenticate, requireAdmin, requestPasswordReset, resetPassword } from './backend/auth.js';
+import { getRealRoadPath } from './backend/logic.js';
 
 // --- IMPORT ROUTERS ---
 import villageRoutes from './backend/routes/villageRoutes.js';
@@ -37,27 +36,17 @@ import smsRoutes from './backend/routes/smsRoutes.js';
 import ticketRoutes from './backend/routes/ticketRoutes.js';
 import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
-import * as EmailService from './backend/services/emailService.js';
-const { sendEmail } = EmailService;
+import { sendEmail } from './backend/services/emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- SERVICES (Using namespace imports for ESM/CJS compatibility) ---
-import * as MarketService from './backend/services/marketService.js';
-const { refreshMarketPrices } = MarketService;
-
-import * as TrafficService from './backend/services/trafficAggregatorService.js';
-const { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } = TrafficService;
-
-import * as TimeoutManager from './backend/services/driverTimeoutManager.js';
-const { initializeTimeoutManager, startTimeout, handleDriverAcceptance, handleDriverRejection } = TimeoutManager;
-
-import * as TripMonitor from './backend/services/tripMonitorService.js';
-const { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } = TripMonitor;
-
-import * as ReroutingService from './backend/services/dynamicReroutingService.js';
-const { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } = ReroutingService;
+// --- SERVICES ---
+import { refreshMarketPrices } from './backend/services/marketService.js';
+import { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } from './backend/services/trafficAggregatorService.js';
+import { initializeTimeoutManager, startTimeout, handleDriverAcceptance, handleDriverRejection } from './backend/services/driverTimeoutManager.js';
+import { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } from './backend/services/tripMonitorService.js';
+import { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } from './backend/services/dynamicReroutingService.js';
 
 const app = express();
 
