@@ -90,6 +90,19 @@ export const resetPassword = async (identifier: string, token: string, newPasswo
   }
 };
 
+export const resetPasswordViaFirebase = async (idToken: string, newPassword: string) => {
+  try {
+    const res = await fetch(`${API_URL}/reset-password-firebase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, newPassword })
+    });
+    return await res.json();
+  } catch (e: any) {
+    return { success: false, message: e.message };
+  }
+};
+
 export const getCurrentUser = (): User | null => {
   const stored = localStorage.getItem(USER_KEY);
   return stored ? JSON.parse(stored) : null;

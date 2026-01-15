@@ -8,10 +8,8 @@
  * - Women safety features
  */
 
+import { API_BASE_URL } from '../config';
 import { getAuthToken, getCurrentUser } from './authService';
-
-const API_BASE_URL = (typeof window !== 'undefined' && (window as any).API_BASE_URL)
-    || 'http://localhost:3001';
 
 // --- TYPES ---
 

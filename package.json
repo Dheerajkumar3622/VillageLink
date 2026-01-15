@@ -26,6 +26,8 @@
     "express": "^4.19.2",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.2.0",
+    "firebase": "^12.8.0",
+    "firebase-admin": "^13.6.0",
     "helmet": "^7.1.0",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",

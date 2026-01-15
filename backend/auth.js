@@ -251,12 +251,61 @@ export const requireAdmin = async (req, res, next) => {
   }
 };
 
+export const resetPasswordViaFirebase = async (req, res) => {
+  try {
+    const { idToken, newPassword } = req.body;
+
+    // Dynamic import to avoid crash if firebase-admin is missing
+    let admin;
+    try {
+      admin = await import('firebase-admin');
+      if (!admin.apps?.length) {
+        admin.default.initializeApp({
+          credential: admin.default.credential.applicationDefault()
+        });
+      }
+    } catch (e) {
+      console.error("Firebase Admin load error:", e);
+      return res.status(500).json({ error: "Firebase Admin SDK not configured on server." });
+    }
+
+    const decodedToken = await admin.default.auth().verifyIdToken(idToken);
+    const phoneNumber = decodedToken.phone_number;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: "Token matched no phone number" });
+    }
+
+    const normalizedPhone = phoneNumber.replace('+91', '').replace('+', '');
+
+    const user = await User.findOne({
+      $or: [{ phone: normalizedPhone }, { phone: phoneNumber }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found with this phone number." });
+    }
+
+    user.password = newPassword;
+    user.resetOTP = undefined;
+    user.resetOTPExpiry = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Password updated successfully via Firebase Auth." });
+
+  } catch (e) {
+    console.error("Firebase Reset Error:", e);
+    res.status(401).json({ error: "Invalid or expired token: " + e.message });
+  }
+};
+
 // Default export for CJS compatibility
 export default {
   register,
   login,
   requestPasswordReset,
   resetPassword,
+  resetPasswordViaFirebase,
   authenticate,
   requireAdmin
 };

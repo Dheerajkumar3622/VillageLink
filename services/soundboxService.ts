@@ -8,10 +8,8 @@
  * - Offline queue with sync
  */
 
+import { API_BASE_URL } from '../config';
 import { getAuthToken } from './authService';
-
-const API_BASE_URL = (typeof window !== 'undefined' && (window as any).API_BASE_URL)
-    || 'http://localhost:3001';
 
 // --- TYPES ---
 

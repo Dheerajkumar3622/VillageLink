@@ -139,6 +139,7 @@ app.post('/api/auth/login', Auth.login);
 app.post('/api/auth/logout', (req, res) => res.json({ success: true }));
 app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
+app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
 
 // --- ROUTERS ---
 app.use('/api/locations', villageRoutes);

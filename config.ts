@@ -10,4 +10,4 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 // Use VITE_API_URL if set, otherwise use current origin in production, or fallback to Render URL
 export const API_BASE_URL = import.meta.env.VITE_API_URL ||
     (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') ? window.location.origin : '') ||
-    'https://villagelink-c75g.onrender.com'; 
+    'https://villagelink-jh20.onrender.com'; 

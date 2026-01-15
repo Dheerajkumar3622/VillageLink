@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
 import { UserRole, VehicleType } from '../types';
-import { loginUser, registerUser, requestPasswordReset, resetPassword } from '../services/authService';
+import { loginUser, registerUser, requestPasswordReset, resetPassword, resetPasswordViaFirebase } from '../services/authService';
+import { auth } from './firebaseConfig';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { Button } from './Button';
 import { User, Lock, Bus, Car, ArrowRight, Loader2, Armchair, Mail, Phone, ArrowLeft, Key, Bike, Truck, Mic, Activity, ShieldAlert, Store, MicOff, Utensils } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
@@ -39,6 +41,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
   const [resetIdentifier, setResetIdentifier] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,29 +133,88 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError(null);
-    const res = await requestPasswordReset(resetIdentifier);
-    setLoading(false);
-    if (res.error) {
-      setError(res.error);
+
+    // Initial check: Is it a phone number?
+    const isPhone = /^\+?[0-9]{10,13}$/.test(resetIdentifier) || /^[0-9]{10}$/.test(resetIdentifier);
+
+    if (isPhone) {
+      // Use Firebase Phone Auth
+      try {
+        if (!(window as any).recaptchaVerifier) {
+          (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible'
+          });
+        }
+        const appVerifier = (window as any).recaptchaVerifier;
+        const phoneNumber = resetIdentifier.startsWith('+') ? resetIdentifier : `+91${resetIdentifier}`;
+
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        setConfirmationResult(confirmation);
+        setInfoMsg(`OTP sent to ${phoneNumber} via Firebase`);
+        setViewState('RESET');
+      } catch (err: any) {
+        console.error(err);
+        setError("Firebase SMS Failed: " + err.message);
+        // Fallback to legacy
+        const res = await requestPasswordReset(resetIdentifier);
+        if (!res.error) setInfoMsg(res.message);
+      } finally {
+        setLoading(false);
+      }
     } else {
-      const otpMsg = res.otp ? ` (Simulated OTP: ${res.otp})` : '';
-      setInfoMsg(res.message + otpMsg);
-      setViewState('RESET');
+      // Use Legacy Email/SMS Flow
+      const res = await requestPasswordReset(resetIdentifier);
+      setLoading(false);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        const otpMsg = res.otp ? ` (Simulated OTP: ${res.otp})` : '';
+        setInfoMsg(res.message + otpMsg);
+        setViewState('RESET');
+      }
     }
   };
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError(null);
-    const res = await resetPassword(resetIdentifier, resetToken, newPassword);
-    setLoading(false);
-    if (res.error) {
-      setError(res.error);
+
+    if (confirmationResult) {
+      // Verify Firebase OTP
+      try {
+        await confirmationResult.confirm(resetToken);
+        // Success: Get ID Token
+        const idToken = await auth.currentUser?.getIdToken();
+        if (!idToken) throw new Error("Failed to retrieve token");
+
+        // Send to backend to update password
+        const res = await resetPasswordViaFirebase(idToken, newPassword);
+
+        if (res.success) {
+          alert("Password Reset Successfully!");
+          setViewState('LOGIN');
+          setLoginId(resetIdentifier);
+          setPassword(newPassword);
+        } else {
+          setError(res.message || "Backend update failed");
+        }
+      } catch (err: any) {
+        setError("Invalid OTP or Verification Failed: " + err.message);
+      } finally {
+        setLoading(false);
+      }
     } else {
-      alert(res.message);
-      setViewState('LOGIN');
-      setLoginId(resetIdentifier);
-      setPassword(newPassword);
+      // Legacy Verify
+      const res = await resetPassword(resetIdentifier, resetToken, newPassword);
+      setLoading(false);
+      if (res.error) {
+        setError(res.error);
+      } else {
+        alert(res.message);
+        setViewState('LOGIN');
+        setLoginId(resetIdentifier);
+        setPassword(newPassword);
+      }
     }
   };
 
@@ -316,7 +378,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
             <form onSubmit={handleForgot} className="space-y-4">
               <p className="text-sm text-slate-500 mb-2">Enter your registered Email or Mobile Number to receive a reset OTP.</p>
               <input type="text" value={resetIdentifier} onChange={e => setResetIdentifier(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Email or Phone" required />
-              <Button type="submit" fullWidth disabled={loading}>Send OTP</Button>
+              <div id="recaptcha-container"></div>
+              <Button type="submit" fullWidth disabled={loading}>{loading ? <Loader2 className="animate-spin" /> : "Send OTP"}</Button>
               <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Cancel</button>
             </form>
           )}
