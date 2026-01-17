@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Logs and Temp
+*.log
+server_log.txt
+git_status.txt
+build_log.txt
+
+# Development scripts
+check_*.js
+test_*.js
+reseed.js
+reset_pass.js
+seed_*.js
+debug_*.js
+fix_*.js
+min_*.js
+check-all-db-connectivity.js
+test-db-connection.js
+test-razorpay.js
