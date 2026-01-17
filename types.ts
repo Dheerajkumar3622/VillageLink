@@ -265,7 +265,7 @@ export interface SecurityContext {
   lastLoginLocation?: GeoLocation;
 }
 
-export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | null;
+export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | 'FARMER' | 'VENDOR' | 'STORAGE_OPERATOR' | 'LOGISTICS_PARTNER' | null;
 export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 

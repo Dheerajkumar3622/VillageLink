@@ -9,7 +9,7 @@ import { getAuthToken, loginUser, registerUser, logoutUser } from '../services/a
 import { Button } from './Button';
 import {
     Loader2, Truck, Package, DollarSign, MapPin, Clock, Check, Navigation,
-    Phone, Lock, User, LogOut, ChevronRight, Camera, AlertCircle
+    Phone, Lock, User, LogOut, ChevronRight, Camera, AlertCircle, BarChart3
 } from 'lucide-react';
 
 type ViewState = 'AUTH' | 'DASHBOARD' | 'ACTIVE_TRIP' | 'TRIP_HISTORY';
@@ -86,11 +86,11 @@ export const LogisticsApp: React.FC = () => {
         try {
             const result = await loginUser(loginId, password);
             if (result.success && result.user) {
-                setUser(result.user);
+                setUser(result.user as any);
                 setViewState('DASHBOARD');
                 fetchData();
             } else {
-                setError(result.error || 'Login failed');
+                setError(result.message || 'Login failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -103,19 +103,21 @@ export const LogisticsApp: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await registerUser({
-                name: regName,
-                phone: regPhone,
+            const result = await registerUser(
+                regName,
+                'LOGISTICS_PARTNER',
                 password,
-                role: 'LOGISTICS_PARTNER',
-                vehicleNumber: regVehicleNumber,
-                vehicleType: regVehicleType
-            });
+                '', // email
+                regPhone,
+                undefined,
+                regVehicleType as any,
+                regVehicleNumber
+            );
             if (result.success) {
                 setAuthMode('LOGIN');
-                alert('Registration successful! Your account is pending verification.');
+                alert('Registration successful! Please login.');
             } else {
-                setError(result.error || 'Registration failed');
+                setError(result.message || 'Registration failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -130,39 +132,59 @@ export const LogisticsApp: React.FC = () => {
     };
 
     const fetchData = async () => {
-        // Mock data
-        setStats({ todayTrips: 3, todayEarnings: 850, weekEarnings: 5200, totalDeliveries: 156 });
+        try {
+            const token = getAuthToken();
+            const headers = { Authorization: `Bearer ${token}` };
+
+            // Fetch logistics stats/trips
+            const res = await fetch(`${API_BASE_URL}/api/grammandi/logistics/my-trips`, { headers });
+            if (res.ok) {
+                const data = await res.json();
+                // If it returns a list, we can use it to derive stats
+                setStats({
+                    todayTrips: data.length,
+                    todayEarnings: data.reduce((acc: number, t: any) => acc + (t.earnings || 0), 0),
+                    weekEarnings: 0, // Mock for now
+                    totalDeliveries: data.length * 2
+                });
+
+                // Set first pending trip as active if online
+                if (isOnline) {
+                    const pending = data.find((t: any) => t.status === 'PENDING');
+                    if (pending) setActiveTrip(pending);
+                }
+            }
+        } catch (e) {
+            console.error('Fetch error:', e);
+        }
     };
 
     const toggleOnline = () => {
         setIsOnline(!isOnline);
         if (!isOnline) {
-            // Simulate getting a trip assignment
-            setTimeout(() => {
-                setActiveTrip({
-                    id: 'trip1',
-                    pickups: [
-                        { location: 'Kotha Village', crop: 'Onion', quantity: '50 KG', completed: false },
-                        { location: 'Dehri Farm', crop: 'Tomato', quantity: '30 KG', completed: false },
-                    ],
-                    deliveries: [
-                        { location: 'Patna Market', customerName: 'Sharma Traders', completed: false },
-                        { location: 'Ara Mandi', customerName: 'Local Vendor', completed: false },
-                    ],
-                    status: 'PENDING',
-                    totalDistance: 45,
-                    estimatedEarnings: 450
-                });
-            }, 2000);
+            fetchData();
         } else {
             setActiveTrip(null);
         }
     };
 
-    const startTrip = () => {
-        if (activeTrip) {
-            setActiveTrip({ ...activeTrip, status: 'IN_PROGRESS' });
-            setViewState('ACTIVE_TRIP');
+    const startTrip = async (tripId: string) => {
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/api/grammandi/logistics/trip/${tripId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'IN_PROGRESS' })
+            });
+            if (res.ok) {
+                setActiveTrip(prev => prev ? { ...prev, status: 'IN_PROGRESS' } : null);
+                setViewState('ACTIVE_TRIP');
+            }
+        } catch (e) {
+            console.error('Start trip error:', e);
         }
     };
 
@@ -182,184 +204,133 @@ export const LogisticsApp: React.FC = () => {
         }
     };
 
-    // ==================== AUTH VIEW ====================
-    if (viewState === 'AUTH') {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-100 dark:from-slate-950 dark:to-teal-950 flex items-center justify-center p-4">
-                <div className="w-full max-w-md">
-                    <div className="text-center mb-8">
-                        <div className="w-20 h-20 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl mx-auto flex items-center justify-center mb-4">
-                            <Truck className="text-white" size={40} />
-                        </div>
-                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">LogisticsApp</h1>
-                        <p className="text-slate-500 text-sm">Earn with Farm Deliveries</p>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xl">
-                        {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
-
-                        {authMode === 'LOGIN' ? (
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone / Email" required />
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
-                                <Button type="submit" fullWidth disabled={loading} className="bg-teal-600 hover:bg-teal-700">
-                                    {loading ? <Loader2 className="animate-spin" /> : 'Login'}
-                                </Button>
-                                <p className="text-center text-sm text-slate-500">
-                                    New partner? <button type="button" onClick={() => setAuthMode('REGISTER')} className="text-teal-600 font-bold">Register</button>
-                                </p>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleRegister} className="space-y-4">
-                                <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Your Name" required />
-                                <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone Number" required />
-                                <input type="text" value={regVehicleNumber} onChange={e => setRegVehicleNumber(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Vehicle Number (BR01XX1234)" required />
-                                <select value={regVehicleType} onChange={e => setRegVehicleType(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
-                                    <option value="TEMPO">Tempo</option>
-                                    <option value="PICKUP">Pickup Truck</option>
-                                    <option value="MINI_TRUCK">Mini Truck</option>
-                                    <option value="BIKE">Bike (Small Parcels)</option>
-                                </select>
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
-                                <Button type="submit" fullWidth disabled={loading} className="bg-teal-600 hover:bg-teal-700">
-                                    {loading ? <Loader2 className="animate-spin" /> : 'Register as Partner'}
-                                </Button>
-                                <p className="text-center text-sm text-slate-500">
-                                    Already registered? <button type="button" onClick={() => setAuthMode('LOGIN')} className="text-teal-600 font-bold">Login</button>
-                                </p>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ==================== ACTIVE TRIP VIEW ====================
-    if (viewState === 'ACTIVE_TRIP' && activeTrip) {
-        return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-teal-600 to-emerald-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                    <button onClick={() => setViewState('DASHBOARD')} className="flex items-center gap-2 mb-4">
-                        <ChevronRight className="rotate-180" size={20} /> Back
-                    </button>
-                    <h1 className="text-xl font-bold">🚛 Active Trip</h1>
-                    <p className="text-teal-100 text-sm">{activeTrip.totalDistance} km • ₹{activeTrip.estimatedEarnings} earnings</p>
-                </div>
-
-                <div className="px-4 mt-4">
-                    {/* Pickups */}
-                    <h2 className="font-bold dark:text-white mb-3">📦 Pickups</h2>
-                    <div className="space-y-2 mb-6">
-                        {activeTrip.pickups.map((pickup, idx) => (
-                            <div key={idx} className={`bg-white dark:bg-slate-900 rounded-xl p-4 flex items-center justify-between ${pickup.completed ? 'opacity-50' : ''}`}>
-                                <div>
-                                    <h3 className="font-medium dark:text-white">{pickup.crop} - {pickup.quantity}</h3>
-                                    <p className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={10} /> {pickup.location}</p>
-                                </div>
-                                {pickup.completed ? (
-                                    <Check className="text-green-500" size={24} />
-                                ) : (
-                                    <Button onClick={() => completePickup(idx)} className="bg-teal-500"><Camera size={14} /> Picked</Button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Deliveries */}
-                    <h2 className="font-bold dark:text-white mb-3">🏠 Deliveries</h2>
-                    <div className="space-y-2">
-                        {activeTrip.deliveries.map((delivery, idx) => (
-                            <div key={idx} className={`bg-white dark:bg-slate-900 rounded-xl p-4 flex items-center justify-between ${delivery.completed ? 'opacity-50' : ''}`}>
-                                <div>
-                                    <h3 className="font-medium dark:text-white">{delivery.customerName}</h3>
-                                    <p className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={10} /> {delivery.location}</p>
-                                </div>
-                                {delivery.completed ? (
-                                    <Check className="text-green-500" size={24} />
-                                ) : (
-                                    <Button onClick={() => completeDelivery(idx)} className="bg-green-500"><Check size={14} /> Delivered</Button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     // ==================== DASHBOARD VIEW ====================
-    return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            <div className={`text-white p-4 pt-6 pb-8 rounded-b-3xl transition-all ${isOnline ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-slate-600 to-slate-700'}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                            <Truck size={24} />
+    if (viewState === 'DASHBOARD') {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden">
+                <div className="animated-bg opacity-40"></div>
+                <div className="morphing-blob bg-electric-500/20 top-[-10%] right-[-10%]"></div>
+
+                {/* Header - Glassmorphism */}
+                <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-electric-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-electric-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
+                                <Truck size={24} />
+                            </div>
+                            <div>
+                                <h1 className="font-bold text-slate-800 dark:text-white text-lg leading-tight">{user?.name || 'Partner'}</h1>
+                                <p className="text-[10px] font-black text-electric-600 uppercase tracking-widest">{user?.vehicleNumber || 'Vehicle Verified'}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="font-bold">{user?.name || 'Partner'}</h1>
-                            <p className="text-xs opacity-80">{user?.vehicleNumber || 'Vehicle'}</p>
-                        </div>
+                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                            <LogOut size={18} />
+                        </button>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full">
-                        <LogOut size={18} />
+                </div>
+
+                <div className="px-4 mt-6 animate-fadeInUp">
+                    {/* Online Toggle - Premium */}
+                    <button
+                        onClick={toggleOnline}
+                        className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all relative overflow-hidden group mb-8 ${isOnline ? 'bg-gradient-to-r from-emerald-600 to-teal-700 shadow-glow-sm' : 'bg-slate-800'}`}
+                    >
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></div>
+                            <div className="text-left">
+                                <p className="font-black text-white text-lg leading-none uppercase tracking-tighter">{isOnline ? 'System Online' : 'System Offline'}</p>
+                                <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest mt-1">{isOnline ? 'Scanning for assignments...' : 'Tap to start shift'}</p>
+                            </div>
+                        </div>
+                        <Navigation className={`relative z-10 text-white/50 group-hover:text-white transition-colors ${isOnline ? 'animate-bounce' : ''}`} />
                     </button>
-                </div>
 
-                {/* Online Toggle */}
-                <button onClick={toggleOnline} className={`w-full p-4 rounded-xl flex items-center justify-between ${isOnline ? 'bg-white/20' : 'bg-red-500/30'}`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
-                        <span className="font-bold">{isOnline ? 'You are Online' : 'You are Offline'}</span>
-                    </div>
-                    <span className="text-sm">{isOnline ? 'Tap to go offline' : 'Tap to go online'}</span>
-                </button>
-            </div>
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white mb-6 uppercase tracking-tight flex items-center gap-2">
+                        <BarChart3 className="text-electric-500" size={20} /> Shift Insights
+                    </h2>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 px-4 -mt-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Package className="text-teal-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.todayTrips}</p>
-                    <p className="text-xs text-slate-500">Today Trips</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <DollarSign className="text-green-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">₹{stats.todayEarnings}</p>
-                    <p className="text-xs text-slate-500">Today</p>
-                </div>
-            </div>
-
-            {/* Active Trip Card */}
-            {activeTrip && (
-                <div className="px-4 mt-6">
-                    <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl p-4">
-                        <h2 className="font-bold mb-2">🚛 New Trip Available!</h2>
-                        <p className="text-sm text-teal-100 mb-3">
-                            {activeTrip.pickups.length} pickups • {activeTrip.deliveries.length} deliveries • {activeTrip.totalDistance} km
-                        </p>
-                        <div className="flex justify-between items-center">
-                            <p className="text-xl font-bold">₹{activeTrip.estimatedEarnings}</p>
-                            <Button onClick={startTrip} className="bg-white text-teal-600">
-                                <Navigation size={16} /> Start Trip
-                            </Button>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <Package className="text-electric-500 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">{stats.todayTrips}</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Today Trips</p>
+                        </div>
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <DollarSign className="text-emerald-500 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">₹{stats.todayEarnings}</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Today Earnings</p>
                         </div>
                     </div>
-                </div>
-            )}
 
-            {!isOnline && (
-                <div className="px-4 mt-8">
-                    <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex items-start gap-3">
-                        <AlertCircle className="text-amber-500 flex-shrink-0" size={20} />
-                        <div>
-                            <p className="font-medium text-amber-800 dark:text-amber-200">You're Offline</p>
-                            <p className="text-sm text-amber-600 dark:text-amber-300">Go online to receive delivery requests.</p>
+                    {/* Active/Pending Trip Card */}
+                    {activeTrip ? (
+                        <div className="mb-8">
+                            <div className="premium-card p-6 bg-gradient-to-br from-electric-600 to-indigo-700 text-white border-none shadow-glow-md relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
+                                    <Truck size={120} />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black mb-1">New Assignment</h3>
+                                    <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-electric-100 mb-6">
+                                        <span className="flex items-center gap-1"><MapPin size={10} /> {activeTrip.totalDistance} KM</span>
+                                        <span className="flex items-center gap-1"><Clock size={10} /> 45 MINS</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold text-electric-200 uppercase tracking-widest mb-1">Potential Pay</p>
+                                            <p className="text-4xl font-black">₹{activeTrip.estimatedEarnings}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => startTrip(activeTrip.id)}
+                                            className="btn-cta !px-8 !py-4 shadow-xl active:scale-95 transition-all text-sm font-black uppercase tracking-tighter"
+                                        >
+                                            Accept & Navigate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    ) : (
+                        isOnline && (
+                            <div className="premium-card p-12 text-center border-dashed border-2 mb-8">
+                                <div className="relative inline-block mb-6">
+                                    <Loader2 className="animate-spin text-electric-500" size={64} />
+                                    <Truck className="absolute inset-0 m-auto text-slate-400" size={28} />
+                                </div>
+                                <p className="text-slate-500 font-black uppercase tracking-widest">Waiting for Orders</p>
+                                <p className="text-xs text-slate-400 mt-2 max-w-[200px] mx-auto">Stay in this area for better assignment priority.</p>
+                            </div>
+                        )
+                    )}
+
+                    {/* Secondary Actions */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <button className="premium-card p-6 flex flex-col items-center justify-center gap-3 hover:border-electric-500 transition-all group">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-electric-500 transition-colors">
+                                <Clock size={24} />
+                            </div>
+                            <p className="font-black text-[10px] uppercase tracking-widest dark:text-white text-center">History</p>
+                        </button>
+                        <button className="premium-card p-6 flex flex-col items-center justify-center gap-3 hover:border-electric-500 transition-all group">
+                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-electric-500 transition-colors">
+                                <Lock size={24} />
+                            </div>
+                            <p className="font-black text-[10px] uppercase tracking-widest dark:text-white text-center">Earnings Hub</p>
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
+        );
+    }
+
+    // Default Fallback
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-8 text-center uppercase">
+            <h1 className="text-4xl font-black text-electric-500 mb-4">{viewState}</h1>
+            <p className="text-slate-500 font-bold mb-8">Premium View Coming Soon</p>
+            <Button onClick={() => setViewState('DASHBOARD')} className="btn-primary !bg-electric-600">Back to Dashboard</Button>
         </div>
     );
 };

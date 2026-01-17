@@ -1,8 +1,8 @@
 import { Stop, NetworkNode, LocationData, RentalVehicle, MediaItem } from './types';
 import { API_BASE_URL } from './config';
 
-export const GOOGLE_API_KEY = ""; 
-export const ROHTAS_MAP_URL = ""; 
+export const GOOGLE_API_KEY = "";
+export const ROHTAS_MAP_URL = "";
 
 export const TEST_USERS = {
   DRIVER: { id: 'DRV-888', name: 'Raju Driver', role: 'DRIVER', password: 'drive', vehicleCapacity: 40, vehicleType: 'BUS', isVerified: true },
@@ -13,20 +13,21 @@ export const TEST_USERS = {
 
 // VISUAL LANDMARKS FOR RURAL NAVIGATION (Keep as UI Assets, not Data Source)
 export const STOP_LANDMARKS: Record<string, string> = {
-    'Sasaram': 'https://source.unsplash.com/random/100x100/?temple,ancient',
-    'Dehri-on-Sone': 'https://source.unsplash.com/random/100x100/?bridge,river',
-    'Nokha': 'https://source.unsplash.com/random/100x100/?market,vegetable',
-    'Chenari': 'https://source.unsplash.com/random/100x100/?mountain,hills',
-    'Bikramganj': 'https://source.unsplash.com/random/100x100/?school,college',
+  'Sasaram': 'https://source.unsplash.com/random/100x100/?temple,ancient',
+  'Dehri-on-Sone': 'https://source.unsplash.com/random/100x100/?bridge,river',
+  'Nokha': 'https://source.unsplash.com/random/100x100/?market,vegetable',
+  'Chenari': 'https://source.unsplash.com/random/100x100/?mountain,hills',
+  'Bikramganj': 'https://source.unsplash.com/random/100x100/?school,college',
 };
 
 export const OFFLINE_MEDIA: MediaItem[] = [
-    { id: 'MOV-01', title: 'Panchayat Season 3 (Ep 1)', category: 'MOVIE', sizeMb: 150, downloaded: true },
-    { id: 'NEWS-01', title: 'Bihar Top News Today', category: 'NEWS', sizeMb: 25, downloaded: true },
-    { id: 'AGRI-01', title: 'Rabi Crop Guide 2024', category: 'FARMING', sizeMb: 45, downloaded: true },
-    { id: 'EDU-01', title: 'Maths Class 10: Algebra', category: 'EDUCATION', sizeMb: 80, downloaded: false }
+  { id: 'MOV-01', title: 'Panchayat Season 3 (Ep 1)', category: 'MOVIE', sizeMb: 150, downloaded: true },
+  { id: 'NEWS-01', title: 'Bihar Top News Today', category: 'NEWS', sizeMb: 25, downloaded: true },
+  { id: 'AGRI-01', title: 'Rabi Crop Guide 2024', category: 'FARMING', sizeMb: 45, downloaded: true },
+  { id: 'EDU-01', title: 'Maths Class 10: Algebra', category: 'EDUCATION', sizeMb: 80, downloaded: false }
 ];
 
+// Application Translations (v2.0 - Added Active Trip)
 export const TRANSLATIONS = {
   EN: {
     welcome: "Namaste",
@@ -64,7 +65,8 @@ export const TRANSLATIONS = {
     verify: "Verify",
     chutta_wallet: "Chutta",
     monthly: "Monthly",
-    vidya_vahan: "Vidya Vahan"
+    vidya_vahan: "Vidya Vahan",
+    active_trip: "Active Trip"
   },
   HI: {
     welcome: "नमस्ते",
@@ -102,7 +104,8 @@ export const TRANSLATIONS = {
     verify: "जांच करें",
     chutta_wallet: "छुट्टा पैसे",
     monthly: "महीने वाला",
-    vidya_vahan: "विद्या वाहन"
+    vidya_vahan: "विद्या वाहन",
+    active_trip: "सक्रिय यात्रा"
   }
 };
 
@@ -117,7 +120,7 @@ export const ROHTAS_NETWORK: Record<string, NetworkNode> = {};
 export const ALL_LOCATIONS: LocationData[] = [];
 
 export const initializeGeoData = async () => {
-    console.log("⚡ App Loaded: Static Data Removed. Using Real DB.");
+  console.log("⚡ App Loaded: Static Data Removed. Using Real DB.");
 };
 
 export const STOPS: Stop[] = [];

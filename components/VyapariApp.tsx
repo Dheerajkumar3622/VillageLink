@@ -92,11 +92,11 @@ export const VyapariApp: React.FC = () => {
         try {
             const result = await loginUser(loginId, password);
             if (result.success && result.user) {
-                setUser(result.user);
+                setUser(result.user as any);
                 setViewState('DASHBOARD');
                 fetchData();
             } else {
-                setError(result.error || 'Login failed');
+                setError(result.message || 'Login failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -109,18 +109,21 @@ export const VyapariApp: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await registerUser({
-                name: regName,
-                phone: regPhone,
+            const result = await registerUser(
+                regName,
+                'VENDOR',
                 password,
-                role: 'VENDOR',
-                businessName: regBusinessName
-            });
+                '', // email
+                regPhone,
+                undefined, // capacity
+                undefined, // vehicleType
+                regBusinessName // address or business name
+            );
             if (result.success) {
                 setAuthMode('LOGIN');
                 alert('Registration successful! Please login.');
             } else {
-                setError(result.error || 'Registration failed');
+                setError(result.message || 'Registration failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -139,6 +142,13 @@ export const VyapariApp: React.FC = () => {
             const token = getAuthToken();
             const headers = { Authorization: `Bearer ${token}` };
 
+            // Fetch vendor stats
+            const statsRes = await fetch(`${API_BASE_URL}/api/grammandi/dashboard/vendor`, { headers });
+            if (statsRes.ok) {
+                const data = await statsRes.json();
+                setStats(data);
+            }
+
             // Fetch wholesale listings
             const listingsRes = await fetch(`${API_BASE_URL}/api/grammandi/produce/listings?minQuantity=100`);
             if (listingsRes.ok) setListings(await listingsRes.json());
@@ -149,13 +159,8 @@ export const VyapariApp: React.FC = () => {
 
         } catch (e) {
             console.error('Fetch error:', e);
-            // Mock data
-            setListings([
-                { id: 'l1', farmerId: 'f1', farmerName: 'Ramesh Kumar', crop: 'Onion', variety: 'Red', quantity: 500, unit: 'QUINTAL', pricePerUnit: 2200, location: { village: 'Kotha', district: 'Rohtas' }, grade: 'A', bidCount: 3 },
-                { id: 'l2', farmerId: 'f2', farmerName: 'Suresh Yadav', crop: 'Potato', variety: 'Desi', quantity: 300, unit: 'QUINTAL', pricePerUnit: 1800, location: { village: 'Dehri', district: 'Rohtas' }, grade: 'B', bidCount: 5 },
-                { id: 'l3', farmerId: 'f3', farmerName: 'Mohan Singh', crop: 'Wheat', variety: 'Lokwan', quantity: 100, unit: 'QUINTAL', pricePerUnit: 2100, location: { village: 'Sasaram', district: 'Rohtas' }, grade: 'A', bidCount: 2 },
-            ]);
-            setStats({ activeBids: 5, wonBids: 12, totalPurchases: 45, pendingDeliveries: 3 });
+            // Mock counts only if strictly needed for visual
+            setStats(prev => ({ ...prev, activeBids: 0 }));
         }
     };
 
@@ -235,44 +240,83 @@ export const VyapariApp: React.FC = () => {
     // ==================== BROWSE LISTINGS ====================
     if (viewState === 'BROWSE_LISTINGS') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                    <button onClick={() => setViewState('DASHBOARD')} className="flex items-center gap-2 mb-4">
-                        <ChevronRight className="rotate-180" size={20} /> Back
-                    </button>
-                    <h1 className="text-xl font-bold">🏪 Wholesale Market</h1>
-                    <p className="text-purple-100 text-sm">Place bids on bulk produce</p>
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative">
+                <div className="animated-bg opacity-30"></div>
+
+                {/* Header */}
+                <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-purple-500/20">
+                    <div className="flex items-center justify-between">
+                        <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                            <ChevronRight className="rotate-180" size={20} />
+                        </button>
+                        <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">Wholesale Market</h1>
+                        <button className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                            <Filter size={20} />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="px-4 mt-4 space-y-3">
-                    {listings.map(listing => (
-                        <div key={listing.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
-                            <div className="flex items-start gap-3">
-                                <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl flex items-center justify-center text-2xl">
-                                    {getCropEmoji(listing.crop)}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between">
-                                        <h3 className="font-bold dark:text-white">{listing.crop} - {listing.variety}</h3>
-                                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Grade {listing.grade}</span>
-                                    </div>
-                                    <p className="text-sm text-slate-500">{listing.quantity} {listing.unit}</p>
-                                    <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin size={10} /> {listing.location.village}, {listing.location.district}</p>
-                                    <p className="text-xs text-slate-400">by {listing.farmerName} • {listing.bidCount} bids</p>
-                                </div>
-                            </div>
-                            <div className="mt-3 flex items-center gap-2">
-                                <p className="text-lg font-bold text-purple-600">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
-                                <span className="text-xs text-slate-400">asking price</span>
-                            </div>
-                            <div className="mt-3 flex items-center gap-2">
-                                <input type="number" value={bidAmount[listing.id] || ''} onChange={e => setBidAmount({ ...bidAmount, [listing.id]: parseFloat(e.target.value) })} placeholder="Your bid ₹" className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" />
-                                <Button onClick={() => placeBid(listing.id)} className="bg-purple-600">
-                                    <Gavel size={16} /> Bid
-                                </Button>
-                            </div>
+                <div className="px-4 mt-6 space-y-4 animate-fadeInUp">
+                    {listings.length === 0 ? (
+                        <div className="premium-card p-12 text-center border-dashed border-2">
+                            <Search className="mx-auto text-slate-300 mb-4 opacity-50" size={64} />
+                            <p className="text-slate-500 font-bold uppercase tracking-widest">No listings available</p>
+                            <p className="text-xs text-slate-400 mt-2">Check back later or refresh the market data.</p>
                         </div>
-                    ))}
+                    ) : (
+                        listings.map(listing => (
+                            <div key={listing.id} className="premium-card p-5 group hover:border-purple-500/50 transition-all">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                                        {getCropEmoji(listing.crop)}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="font-black dark:text-white text-lg">{listing.crop} - {listing.variety}</h3>
+                                                <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">{listing.grade} Grade Quality</p>
+                                            </div>
+                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-black text-slate-500 uppercase tracking-tight">#{listing.id.slice(-4)}</span>
+                                        </div>
+                                        <div className="mt-3 flex items-center gap-4 text-xs font-bold text-slate-500">
+                                            <span className="flex items-center gap-1"><Package size={12} className="text-purple-500" /> {listing.quantity} {listing.unit}</span>
+                                            <span className="flex items-center gap-1"><MapPin size={12} className="text-purple-500" /> {listing.location.village}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr className="my-4 border-slate-100 dark:border-slate-800" />
+
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asking Price</p>
+                                        <p className="text-xl font-black text-purple-600">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Bids</p>
+                                        <p className="text-sm font-black dark:text-white">{listing.bidCount} Bidders</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex gap-2">
+                                    <div className="relative flex-1">
+                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                        <input
+                                            type="number"
+                                            value={bidAmount[listing.id] || ''}
+                                            onChange={e => setBidAmount({ ...bidAmount, [listing.id]: parseFloat(e.target.value) })}
+                                            placeholder="Your Bid"
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-purple-500 transition-all font-bold text-sm"
+                                        />
+                                    </div>
+                                    <button onClick={() => placeBid(listing.id)} className="btn-cta !px-6 !py-3 flex items-center gap-2">
+                                        <Gavel size={18} />
+                                        <span className="font-black uppercase text-sm">Bid</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         );
@@ -280,63 +324,90 @@ export const VyapariApp: React.FC = () => {
 
     // ==================== DASHBOARD VIEW ====================
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                <div className="flex items-center justify-between mb-4">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden">
+            {/* Background Animation Overflow */}
+            <div className="animated-bg opacity-40"></div>
+
+            {/* Header - Glassmorphism */}
+            <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-purple-500/20">
+                <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
                             <Store size={24} />
                         </div>
                         <div>
-                            <h1 className="font-bold">{user?.name || 'Vyapari'}</h1>
-                            <p className="text-purple-100 text-xs">{user?.businessName || 'Business'}</p>
+                            <p className="text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-wider">{user?.businessName || 'Wholesale Member'}</p>
+                            <h1 className="font-bold text-slate-800 dark:text-white text-lg">{user?.name || 'Vyapari'}</h1>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full">
+                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
                         <LogOut size={18} />
                     </button>
                 </div>
-                <h2 className="text-xl font-bold">🏪 Vyapari Dashboard</h2>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 px-4 -mt-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Gavel className="text-purple-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.activeBids}</p>
-                    <p className="text-xs text-slate-500">Active Bids</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Check className="text-green-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.wonBids}</p>
-                    <p className="text-xs text-slate-500">Won Bids</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Package className="text-blue-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.totalPurchases}</p>
-                    <p className="text-xs text-slate-500">Total Orders</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Clock className="text-orange-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.pendingDeliveries}</p>
-                    <p className="text-xs text-slate-500">Pending Delivery</p>
-                </div>
-            </div>
+            {/* Main Content Area */}
+            <div className="px-4 mt-6 animate-fadeInUp">
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                    <TrendingUp className="text-purple-500" /> Vyapari Dashboard
+                </h2>
 
-            {/* Actions */}
-            <div className="px-4 mt-6">
-                <Button onClick={() => setViewState('BROWSE_LISTINGS')} fullWidth className="bg-purple-600 hover:bg-purple-700">
-                    <Search size={18} /> Browse Wholesale Listings
-                </Button>
-            </div>
+                {/* Stats Grid - Premium Cards */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <Gavel className="text-purple-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">{stats.activeBids}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Active Bids</p>
+                    </div>
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <Check className="text-green-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">{stats.wonBids}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Won Bids</p>
+                    </div>
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <Package className="text-blue-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">{stats.totalPurchases}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Total Orders</p>
+                    </div>
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <Clock className="text-warm-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">{stats.pendingDeliveries}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Pending Deliveries</p>
+                    </div>
+                </div>
 
-            {/* Recent Bids */}
-            <div className="px-4 mt-6">
-                <h2 className="font-bold dark:text-white mb-3">Recent Activity</h2>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-8 text-center">
-                    <Gavel className="mx-auto text-slate-300 mb-4" size={48} />
-                    <p className="text-slate-500">No recent bids</p>
-                    <p className="text-xs text-slate-400 mt-1">Browse listings to place your first bid</p>
+                {/* Primary Action Button - Premium */}
+                <div className="mb-8">
+                    <button
+                        onClick={() => setViewState('BROWSE_LISTINGS')}
+                        className="btn-cta w-full flex items-center justify-between group py-6"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform">
+                                <Search size={28} />
+                            </div>
+                            <div className="text-left">
+                                <p className="font-black text-xl">Browse Market</p>
+                                <p className="text-xs text-purple-100 font-medium">Bids on bulk produce from farmers</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="opacity-50" />
+                    </button>
+                </div>
+
+                {/* Recent Activity Section */}
+                <div className="mb-4 flex justify-between items-center">
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white">Recent Activity</h2>
+                    <button onClick={() => setViewState('MY_BIDS')} className="text-purple-600 text-sm font-black uppercase tracking-widest">
+                        MY BIDS <ChevronRight size={16} className="inline ml-1" />
+                    </button>
+                </div>
+
+                <div className="premium-card p-10 text-center border-dashed border-2">
+                    <Gavel className="mx-auto text-slate-300 mb-4 opacity-50" size={64} />
+                    <p className="text-slate-500 font-bold uppercase tracking-widest mb-2 text-sm">No Recent Bids</p>
+                    <p className="text-xs text-slate-400 mb-6 mx-auto max-w-[200px]">You haven't placed any bids recently. Start exploring the wholesale market.</p>
+                    <Button onClick={() => setViewState('BROWSE_LISTINGS')} className="btn-primary">Find Deals</Button>
                 </div>
             </div>
         </div>

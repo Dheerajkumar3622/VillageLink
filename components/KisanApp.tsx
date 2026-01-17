@@ -88,7 +88,7 @@ export const KisanApp: React.FC = () => {
                 setViewState('DASHBOARD');
                 fetchData();
             } else {
-                setError(result.error || 'Login failed');
+                setError(result.message || 'Login failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -101,20 +101,23 @@ export const KisanApp: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await registerUser({
-                name: regName,
-                phone: regPhone,
+            const result = await registerUser(
+                regName,
+                'FARMER',
                 password,
-                role: 'FARMER', // Special role for farmers
-                address: regVillage,
-                pincode: regDistrict
-            });
+                '',
+                regPhone,
+                undefined,
+                undefined,
+                regVillage,
+                regDistrict
+            );
             if (result.success) {
                 setAuthMode('LOGIN');
                 setError(null);
                 alert('Registration successful! Please login.');
             } else {
-                setError(result.error || 'Registration failed');
+                setError(result.message || 'Registration failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -257,142 +260,278 @@ export const KisanApp: React.FC = () => {
     }
 
     // ==================== DASHBOARD VIEW ====================
-    return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-lg font-bold">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'K'}
-                        </div>
-                        <div>
-                            <p className="text-green-100 text-xs">Namaste,</p>
-                            <h1 className="font-bold">{user?.name || 'Kisan'}</h1>
-                        </div>
-                    </div>
-                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full">
-                        <LogOut size={18} />
-                    </button>
-                </div>
-                <h2 className="text-xl font-bold">👨‍🌾 Kisan Dashboard</h2>
-            </div>
+    if (viewState === 'DASHBOARD') {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden">
+                {/* Background Animation Overlay */}
+                <div className="animated-bg opacity-50"></div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-3 px-4 -mt-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Package className="text-green-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.activeListings}</p>
-                    <p className="text-xs text-slate-500">Active Listings</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Clock className="text-orange-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.pendingOrders}</p>
-                    <p className="text-xs text-slate-500">Pending Orders</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <DollarSign className="text-emerald-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">₹{(stats.totalRevenue / 1000).toFixed(0)}K</p>
-                    <p className="text-xs text-slate-500">Total Revenue</p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Milk className="text-blue-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.milkSupplied}L</p>
-                    <p className="text-xs text-slate-500">Milk Supplied</p>
-                </div>
-            </div>
-
-            {/* Weather Card */}
-            {weather && (
-                <div className="mx-4 mt-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg overflow-hidden relative">
-                    <div className="absolute -right-4 -top-4 opacity-20">
-                        {weather.condition.includes('Sun') ? <Sun size={120} /> : <Cloud size={120} />}
-                    </div>
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start">
+                {/* Header - Glassmorphism */}
+                <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-emerald-500/20">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
+                                {user?.name?.charAt(0)?.toUpperCase() || 'K'}
+                            </div>
                             <div>
-                                <p className="text-sm opacity-80 flex items-center gap-1"><MapPin size={14} /> {weather.location}</p>
-                                <h3 className="text-3xl font-bold mt-1">{weather.temp}°C</h3>
-                                <p className="font-medium">{weather.condition}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xs bg-white/20 px-2 py-1 rounded-full inline-block">Mausam Salah</p>
-                                <p className="text-[10px] mt-2 max-w-[120px] leading-tight font-medium">{weather.advisory}</p>
+                                <p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">Namaste,</p>
+                                <h1 className="font-bold text-slate-800 dark:text-white text-lg">{user?.name || 'Kisan'}</h1>
                             </div>
                         </div>
+                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                            <LogOut size={18} />
+                        </button>
                     </div>
                 </div>
-            )}
 
-            {/* Quick Actions */}
-            <div className="px-4 mt-6">
-                <h2 className="font-bold dark:text-white mb-3">Quick Actions</h2>
-                <div className="grid grid-cols-2 gap-3">
-                    <button className="bg-green-500 text-white rounded-xl p-4 flex items-center gap-3">
-                        <Plus size={24} />
-                        <div className="text-left">
-                            <p className="font-bold">Add Listing</p>
-                            <p className="text-xs text-green-100">Sell your produce</p>
-                        </div>
-                    </button>
-                    <button className="bg-blue-500 text-white rounded-xl p-4 flex items-center gap-3">
-                        <Milk size={24} />
-                        <div className="text-left">
-                            <p className="font-bold">Log Milk</p>
-                            <p className="text-xs text-blue-100">Daily collection</p>
-                        </div>
-                    </button>
-                </div>
-            </div>
+                {/* Main Content Area */}
+                <div className="px-4 mt-6 animate-fadeInUp">
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                        <Wheat className="text-emerald-500" /> Kisan Dashboard
+                    </h2>
 
-            {/* My Listings */}
-            <div className="px-4 mt-6">
-                <div className="flex justify-between items-center mb-3">
-                    <h2 className="font-bold dark:text-white">My Listings</h2>
-                    <button className="text-green-600 text-sm font-medium">View All</button>
-                </div>
-                {listings.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-xl p-8 text-center">
-                        <Wheat className="mx-auto text-slate-300 mb-4" size={48} />
-                        <p className="text-slate-500">No listings yet</p>
-                        <Button className="mt-4 bg-green-500"><Plus size={16} /> Add First Listing</Button>
+                    {/* Stats Grid - Premium Cards */}
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <Package className="text-emerald-500 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">{stats.activeListings}</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Active Listings</p>
+                        </div>
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <Clock className="text-warm-500 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">{stats.pendingOrders}</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Pending Orders</p>
+                        </div>
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <DollarSign className="text-blue-500 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">₹{(stats.totalRevenue / 1000).toFixed(0)}K</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Total Revenue</p>
+                        </div>
+                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                            <Milk className="text-emerald-400 mb-2" size={24} />
+                            <p className="text-2xl font-black dark:text-white">{stats.milkSupplied}L</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase">Milk Logged</p>
+                        </div>
                     </div>
-                ) : (
-                    <div className="space-y-3">
-                        {listings.slice(0, 3).map((listing, idx) => (
-                            <div key={idx} className="bg-white dark:bg-slate-900 rounded-xl p-4 flex items-center justify-between">
+
+                    {/* Quick Action Container - Holographic Gradient */}
+                    <div className="grid grid-cols-1 gap-4 mb-8">
+                        <button
+                            onClick={() => setViewState('CREATE_LISTING')}
+                            className="btn-cta w-full flex items-center justify-between group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-xl group-hover:scale-110 transition-transform">
+                                    <Plus size={24} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-lg">Sell New Crop</p>
+                                    <p className="text-xs text-emerald-100 font-medium">List your produce in Mandi</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="opacity-50" />
+                        </button>
+
+                        <button
+                            onClick={() => setViewState('DAIRY')}
+                            className="btn-primary w-full flex items-center justify-between !bg-gradient-to-r !from-emerald-500 !to-blue-600 border-none"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-xl">
+                                    <Milk size={24} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-lg">Dairy Management</p>
+                                    <p className="text-xs text-emerald-100 font-medium">Log daily milk collection</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="opacity-50" />
+                        </button>
+                    </div>
+
+                    {/* Weather Advice - Glassy */}
+                    {weather && (
+                        <div className="glass-panel p-6 rounded-3xl mb-8 relative overflow-hidden bg-gradient-to-br from-blue-500/10 to-emerald-500/10 border-emerald-500/20">
+                            <div className="flex justify-between items-start relative z-10">
                                 <div>
-                                    <h3 className="font-bold dark:text-white">{listing.crop}</h3>
-                                    <p className="text-xs text-slate-500">{listing.quantity} {listing.unit} @ ₹{listing.pricePerUnit}</p>
+                                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
+                                        {weather.condition.includes('Sun') ? <Sun size={20} /> : <CloudRain size={20} />}
+                                        <span className="text-sm font-black uppercase tracking-widest">{weather.condition}</span>
+                                    </div>
+                                    <h3 className="text-4xl font-black dark:text-white">{weather.temp}°C</h3>
+                                    <p className="text-sm text-slate-500 mt-2 font-medium max-w-[200px] leading-relaxed">
+                                        {weather.advisory}
+                                    </p>
                                 </div>
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${listing.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                                    {listing.status}
-                                </span>
+                                <div className="text-right">
+                                    <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">Mausam Salah</span>
+                                    <div className="mt-8 text-slate-400">
+                                        <MapPin size={16} className="inline mr-1" />
+                                        <span className="text-xs font-bold">{weather.location}</span>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
+                        </div>
+                    )}
+
+                    {/* Listings Header */}
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-black text-slate-800 dark:text-white">Active Listings</h2>
+                        <button onClick={() => setViewState('ORDERS')} className="text-emerald-600 text-sm font-black flex items-center gap-1 uppercase tracking-widest">
+                            My Orders <ChevronRight size={16} />
+                        </button>
                     </div>
-                )}
-                {/* News Section */}
-                {news.length > 0 && (
-                    <div className="px-4 mt-6">
-                        <h2 className="font-bold dark:text-white mb-3">Mandi Khabar</h2>
-                        <div className="space-y-3">
-                            {news.map((item, idx) => (
-                                <div key={idx} className="bg-white dark:bg-slate-900 rounded-xl p-3 flex gap-3 shadow-sm">
-                                    <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-                                        📰
+
+                    {/* Listings List - Premium Items */}
+                    <div className="space-y-4">
+                        {listings.length === 0 ? (
+                            <div className="premium-card p-12 text-center border-dashed border-2">
+                                <Wheat className="mx-auto text-slate-300 mb-4 opacity-50" size={64} />
+                                <p className="text-slate-500 font-bold uppercase tracking-widest mb-4">No Active Listings</p>
+                                <Button onClick={() => setViewState('CREATE_LISTING')} className="btn-primary">Add Listing</Button>
+                            </div>
+                        ) : (
+                            listings.slice(0, 3).map((listing, idx) => (
+                                <div key={idx} className="premium-card p-5 group hover:border-emerald-500/50 transition-all flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                                            <Package size={28} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black dark:text-white text-lg">{listing.crop}</h3>
+                                            <p className="text-sm text-slate-500 font-bold tracking-tight">
+                                                {listing.quantity} {listing.unit} • <span className="text-emerald-600">₹{listing.pricePerUnit}/{listing.unit}</span>
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-sm dark:text-white leading-tight">{item.title}</h4>
-                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.summary}</p>
+                                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                        {listing.status}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ==================== CREATE LISTING VIEW ====================
+    if (viewState === 'CREATE_LISTING') {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative">
+                <div className="animated-bg opacity-30"></div>
+
+                {/* Header */}
+                <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-emerald-500/20">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                            <ArrowLeft size={20} />
+                        </button>
+                        <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">New Produce Listing</h1>
+                    </div>
+                </div>
+
+                <div className="px-4 mt-8 animate-fadeInUp">
+                    <form className="space-y-6" onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const token = getAuthToken();
+                        setLoading(true);
+
+                        try {
+                            const res = await fetch(`${API_BASE_URL}/api/grammandi/produce/listing`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    category: 'VEGETABLES',
+                                    crop: formData.get('crop'),
+                                    variety: 'Standard',
+                                    quantity: parseFloat(formData.get('quantity') as string),
+                                    unit: 'KG',
+                                    pricePerUnit: parseFloat(formData.get('price') as string),
+                                    location: {
+                                        village: regVillage,
+                                        district: regDistrict,
+                                        pincode: '821115'
+                                    }
+                                })
+                            });
+
+                            if (res.ok) {
+                                alert('Crop listed successfully!');
+                                setViewState('DASHBOARD');
+                                fetchData();
+                            }
+                        } catch (err) {
+                            alert('failed to list crop');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}>
+                        <div className="premium-card p-6 space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Crop Name / फसल का नाम</label>
+                                <div className="relative">
+                                    <Wheat className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <input name="crop" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="e.g. Wheat, Potato, Rice" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Quantity / मात्रा</label>
+                                    <div className="relative">
+                                        <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <input name="quantity" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Amount" />
                                     </div>
                                 </div>
-                            ))}
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Price (₹/kg) / मूल्य</label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                        <input name="price" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Rate" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Photo (Optional)</label>
+                                <button type="button" className="w-full py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center text-slate-400 hover:border-emerald-500 hover:text-emerald-500 transition-all">
+                                    <Camera size={32} />
+                                    <span className="text-xs font-bold mt-2 uppercase tracking-tight">Tap to capture image</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+
+                        <div className="pt-4">
+                            <button disabled={loading} type="submit" className="btn-cta w-full py-5 !rounded-2xl shadow-glow-md flex items-center justify-center gap-3">
+                                {loading ? <Loader2 className="animate-spin" /> : <>
+                                    <Check size={24} />
+                                    <span className="text-xl font-black uppercase">Publish Listing</span>
+                                </>}
+                            </button>
+                            <p className="text-center text-xs text-slate-400 mt-4 font-medium italic">
+                                Note: Your listing will be visible to all wholesalers after standard verification.
+                            </p>
+                        </div>
+                    </form>
+                </div>
             </div>
-            );
+        );
+    }
+
+    // Fallback/Placeholder for other views
+    return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-8 text-center uppercase">
+            <h1 className="text-4xl font-black text-emerald-500 mb-4">{viewState}</h1>
+            <p className="text-slate-500 font-bold mb-8">Coming Soon to Real Mode</p>
+            <Button onClick={() => setViewState('DASHBOARD')} className="btn-primary">Back to Dashboard</Button>
+        </div>
+    );
 };
 
-            export default KisanApp;
+export default KisanApp;

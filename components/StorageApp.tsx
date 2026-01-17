@@ -90,11 +90,11 @@ export const StorageApp: React.FC = () => {
         try {
             const result = await loginUser(loginId, password);
             if (result.success && result.user) {
-                setUser(result.user);
+                setUser(result.user as any);
                 setViewState('DASHBOARD');
                 fetchData();
             } else {
-                setError(result.error || 'Login failed');
+                setError(result.message || 'Login failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -107,19 +107,21 @@ export const StorageApp: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await registerUser({
-                name: regName,
-                phone: regPhone,
+            const result = await registerUser(
+                regFacilityName,
+                'STORAGE_OPERATOR',
                 password,
-                role: 'STORAGE_OPERATOR',
-                businessName: regFacilityName,
-                address: regAddress
-            });
+                '', // email
+                regPhone,
+                parseFloat(regCapacity),
+                undefined,
+                regAddress
+            );
             if (result.success) {
                 setAuthMode('LOGIN');
-                alert('Registration successful! Your facility is pending verification.');
+                alert('Registration successful! Please login.');
             } else {
-                setError(result.error || 'Registration failed');
+                setError(result.message || 'Registration failed');
             }
         } catch (e: any) {
             setError(e.message);
@@ -134,12 +136,26 @@ export const StorageApp: React.FC = () => {
     };
 
     const fetchData = async () => {
-        // Mock data
-        setBookings([
-            { id: 'b1', farmerName: 'Ramesh Kumar', crop: 'Potato', quantity: 100, unit: 'Tons', startDate: '2026-01-01', endDate: '2026-03-01', status: 'ACTIVE', dailyRate: 5 },
-            { id: 'b2', farmerName: 'Suresh Yadav', crop: 'Onion', quantity: 50, unit: 'Tons', startDate: '2026-01-10', endDate: '2026-02-10', status: 'ACTIVE', dailyRate: 6 },
-            { id: 'b3', farmerName: 'Mohan Singh', crop: 'Apple', quantity: 30, unit: 'Tons', startDate: '2026-01-15', endDate: '', status: 'PENDING', dailyRate: 8 },
-        ]);
+        try {
+            const token = getAuthToken();
+            const headers = { Authorization: `Bearer ${token}` };
+
+            // Fetch facility details & stats
+            const facilityRes = await fetch(`${API_BASE_URL}/api/grammandi/storage/facility`, { headers });
+            if (facilityRes.ok) {
+                const data = await facilityRes.json();
+                setStats(data.stats || stats);
+            }
+
+            // Fetch bookings
+            const bookingsRes = await fetch(`${API_BASE_URL}/api/grammandi/storage/my-bookings`, { headers });
+            if (bookingsRes.ok) setBookings(await bookingsRes.json());
+
+        } catch (e) {
+            console.error('Fetch error:', e);
+            // Minimal fallback
+            setStats(prev => ({ ...prev, pendingRequests: 0 }));
+        }
     };
 
     const occupancyPercentage = Math.round((stats.usedCapacity / stats.totalCapacity) * 100);
@@ -235,63 +251,105 @@ export const StorageApp: React.FC = () => {
 
     // ==================== DASHBOARD VIEW ====================
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            <div className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                <div className="flex items-center justify-between mb-4">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden">
+            <div className="animated-bg opacity-40"></div>
+
+            {/* Header - Glassmorphism */}
+            <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-cyan-500/20">
+                <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
                             <Snowflake size={24} />
                         </div>
                         <div>
-                            <h1 className="font-bold">{user?.facilityName || user?.name || 'Cold Storage'}</h1>
-                            <div className="flex items-center gap-2 text-xs text-cyan-100">
-                                <Thermometer size={12} /> {stats.temperature}°C
+                            <h1 className="font-bold text-slate-800 dark:text-white text-lg leading-tight">{user?.facilityName || user?.name || 'Cold Storage'}</h1>
+                            <div className="flex items-center gap-2 text-[10px] font-black text-cyan-600 uppercase tracking-widest">
+                                <Thermometer size={10} /> Active Cooling: {stats.temperature}°C
                             </div>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full">
+                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
                         <LogOut size={18} />
                     </button>
                 </div>
-                <h2 className="text-xl font-bold">❄️ Storage Dashboard</h2>
             </div>
 
-            {/* Capacity Bar */}
-            <div className="px-4 -mt-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium dark:text-white">Capacity</span>
-                        <span className="text-sm text-slate-500">{stats.usedCapacity}/{stats.totalCapacity} Tons</span>
+            <div className="px-4 mt-6 animate-fadeInUp">
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                    <Warehouse className="text-cyan-500" /> Storage Portal
+                </h2>
+
+                {/* Capacity Bar - Premium */}
+                <div className="premium-card p-6 mb-8 bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Space Utilization</span>
+                        <span className="text-sm font-black dark:text-white">{stats.usedCapacity} / {stats.totalCapacity} Tons</span>
                     </div>
-                    <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${occupancyPercentage > 80 ? 'bg-red-500' : occupancyPercentage > 60 ? 'bg-amber-500' : 'bg-cyan-500'}`} style={{ width: `${occupancyPercentage}%` }}></div>
+                    <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+                        <div
+                            className={`h-full rounded-full transition-all duration-1000 ${occupancyPercentage > 85 ? 'bg-red-500 shadow-glow-sm' : occupancyPercentage > 65 ? 'bg-amber-500' : 'bg-cyan-500'}`}
+                            style={{ width: `${occupancyPercentage}%` }}
+                        ></div>
                     </div>
-                    <p className="text-center text-sm text-slate-500 mt-2">{occupancyPercentage}% Full</p>
+                    <div className="flex justify-between mt-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">{stats.totalCapacity - stats.usedCapacity} Tons Available</p>
+                        <p className="text-sm font-black text-cyan-600">{occupancyPercentage}% Full</p>
+                    </div>
                 </div>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 px-4 mt-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Clock className="text-amber-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{stats.pendingRequests}</p>
-                    <p className="text-xs text-slate-500">Pending Requests</p>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <Clock className="text-amber-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">{stats.pendingRequests}</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Pending Approval</p>
+                    </div>
+                    <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
+                        <DollarSign className="text-emerald-500 mb-2" size={24} />
+                        <p className="text-2xl font-black dark:text-white">₹{(stats.monthlyRevenue / 1000).toFixed(0)}K</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Revenue/Mo</p>
+                    </div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <DollarSign className="text-green-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">₹{(stats.monthlyRevenue / 1000).toFixed(0)}K</p>
-                    <p className="text-xs text-slate-500">Monthly Revenue</p>
-                </div>
-            </div>
 
-            {/* Actions */}
-            <div className="px-4 mt-6 space-y-3">
-                <Button onClick={() => setViewState('BOOKINGS')} fullWidth className="bg-cyan-500">
-                    <Package size={18} /> View Bookings
-                </Button>
-                <Button fullWidth className="bg-blue-500">
-                    <BarChart3 size={18} /> Inventory Report
-                </Button>
+                {/* Primary Action Button - Premium */}
+                <div className="mb-8">
+                    <button
+                        onClick={() => setViewState('BOOKINGS')}
+                        className="btn-cta w-full flex items-center justify-between group py-6 !from-cyan-600 !to-blue-700"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/20 rounded-2xl group-hover:scale-110 transition-transform">
+                                <Package size={28} />
+                            </div>
+                            <div className="text-left">
+                                <p className="font-black text-xl text-white">Manage Bookings</p>
+                                <p className="text-xs text-cyan-100 font-medium">Review and accept crop storage requests</p>
+                            </div>
+                        </div>
+                        <ChevronRight className="opacity-50" />
+                    </button>
+                </div>
+
+                {/* Inventory Report Area */}
+                <div className="mb-4 flex justify-between items-center">
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white">Quick Reports</h2>
+                    <button className="text-cyan-600 text-[10px] font-black uppercase tracking-widest">
+                        Inventory Audit
+                    </button>
+                </div>
+
+                <div className="premium-card p-6 flex items-center justify-between hover:border-cyan-500/50 transition-all cursor-pointer">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400">
+                            <BarChart3 size={24} />
+                        </div>
+                        <div>
+                            <p className="font-black dark:text-white">Download Inventory Report</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">January 2026 Summary</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="text-slate-300" />
+                </div>
             </div>
         </div>
     );
