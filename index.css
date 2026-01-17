@@ -334,3 +334,51 @@ body,
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   color: #000;
 }
+/* ========================================
+   3D & NANO BANANA UTILITIES
+   ======================================== */
+
+.perspective-2000 {
+  perspective: 2000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.rotate-y-left {
+  transform: rotateY(45deg);
+}
+
+.rotate-y-right {
+  transform: rotateY(-45deg);
+}
+
+.banana-glass {
+  background: rgba(251, 191, 36, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.1);
+}
+
+.banana-glass-bright {
+  background: rgba(251, 191, 36, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.neon-glow-yellow {
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4), 0 0 30px rgba(251, 191, 36, 0.2);
+}
+
+@keyframes float-banana {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+.animate-float-banana {
+  animation: float-banana 4s ease-in-out infinite;
+}

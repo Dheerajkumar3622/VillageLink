@@ -511,7 +511,7 @@ export interface LostItem {
 
 // --- MARKETING MODE TYPES (GRAM-HAAT) ---
 // UPDATED: Only Construction Material allowed
-export type ShopCategory = 'CONSTRUCTION';
+export type ShopCategory = 'CONSTRUCTION' | 'AGRICULTURE' | 'DAIRY' | 'MESS' | 'ELECTRONICS' | 'GROCERY' | 'CLOTHING' | 'OTHER';
 
 export interface Product {
   id: string;
