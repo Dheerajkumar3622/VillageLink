@@ -321,126 +321,21 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     };
 
     return (
-        <div className="max-w-md mx-auto pb-32 animate-fade-in font-sans relative">
-            {/* ... (Fatigue & Pothole Overlays - Unchanged) ... */}
-            {fatigueAlert && (
-                <div className="fixed inset-0 z-[100] bg-red-600 flex flex-col items-center justify-center text-white animate-pulse">
-                    <AlertOctagon size={80} className="mb-4 animate-bounce" />
-                    <h1 className="text-3xl font-black mb-2 uppercase tracking-widest text-center px-4">Driver Fatigue Detected!</h1>
-                    <p className="text-lg font-bold mb-8 opacity-90 text-center px-6">Microsleep pattern identified by sensors. Please stop.</p>
-                    <button onClick={() => setFatigueAlert(false)} className="bg-white text-red-600 px-8 py-3 rounded-full font-bold shadow-xl">I am Awake</button>
-                </div>
-            )}
-            {potholeDetected && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-6 py-3 rounded-full shadow-2xl z-[90] animate-bounce flex items-center gap-2 font-bold">
-                    <Activity size={20} /> Pothole Detected & Logged!
-                </div>
-            )}
-
-            {/* ... (Header & Mode Selector - Unchanged) ... */}
-            <div className="mb-6 bg-slate-900 text-white p-4 rounded-2xl shadow-lg border border-slate-700">
-                <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center font-bold text-lg">{user.name.charAt(0)}</div>
-                        <div>
-                            <h2 className="text-base font-bold leading-none">Cpt. {user.name.split(' ')[0]}</h2>
-                            <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-wider mt-1">
-                                <span>{viewMode} Mode</span>
-                                {isMobileATM && <span className="text-emerald-400 border border-emerald-500/50 px-1.5 py-0.5 rounded-md flex items-center gap-1"><Coins size={10} /> ATM Active</span>}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <div onClick={() => setVoiceAssist(!voiceAssist)} className={`cursor-pointer p-2 rounded-xl border flex items-center justify-center transition-all ${voiceAssist ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
-                            {voiceAssist ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                        </div>
-                        <div onClick={() => setShowWithdrawModal(true)} className="cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 flex flex-col items-end hover:bg-slate-700 transition-colors">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">Earnings</p>
-                            <div className="flex items-center gap-1 font-bold text-emerald-400">
-                                <WalletIcon size={12} /> ₹{walletBalance.toFixed(0)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex bg-slate-800 p-1 rounded-xl mt-4 overflow-x-auto gap-1">
-                    <button onClick={() => setViewMode('BUS')} className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap ${viewMode === 'BUS' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>Bus</button>
-                    <button onClick={() => setViewMode('CARGO')} className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap ${viewMode === 'CARGO' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>Logistics</button>
-                    <button onClick={() => setViewMode('CHARTER')} className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap ${viewMode === 'CHARTER' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}>Charter</button>
-                    <button onClick={() => setViewMode('UTILITIES')} className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold whitespace-nowrap ${viewMode === 'UTILITIES' ? 'bg-brand-700 text-white' : 'text-slate-500'}`}>Tools</button>
-                </div>
-            </div>
-
-            {viewMode === 'UTILITIES' ? (
-                // ... (Utilities content - Unchanged) ...
-                <div className="space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => setIsMobileATM(!isMobileATM)} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isMobileATM ? 'bg-emerald-50 border-emerald-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-                            <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2"><Coins size={20} /></div>
-                            <h4 className="font-bold text-sm dark:text-white">Mobile ATM</h4>
-                            <p className="text-xs text-slate-500">{isMobileATM ? 'Broadcast Active' : 'Enable Cash-Out'}</p>
-                        </div>
-                        <div onClick={() => setIsDataMuleActive(!isDataMuleActive)} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isDataMuleActive ? 'bg-blue-50 border-blue-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-2"><Wifi size={20} /></div>
-                            <h4 className="font-bold text-sm dark:text-white">Data Mule</h4>
-                            <p className="text-xs text-slate-500">{isDataMuleActive ? 'Hosting Content' : 'Sync Content'}</p>
-                        </div>
-                        <div onClick={() => setIsRoadAIActive(!isRoadAIActive)} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isRoadAIActive ? 'bg-amber-50 border-amber-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${isRoadAIActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-100 text-amber-600'}`}><Activity size={20} /></div>
-                            <h4 className="font-bold text-sm dark:text-white">Road AI</h4>
-                            <p className="text-xs text-slate-500">{isRoadAIActive ? 'Sensor Active' : 'Detect Potholes'}</p>
-                        </div>
-                        <div onClick={handleAudioCount} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-brand-500`}>
-                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 mb-2">
-                                {isCountingAudio ? <span className="animate-spin">⌛</span> : <Mic size={20} />}
-                            </div>
-                            <h4 className="font-bold text-sm dark:text-white">Count Crowd</h4>
-                            <p className="text-xs text-slate-500">Use Audio AI</p>
-                        </div>
-                    </div>
-                </div>
-            ) : (!tripConfig.isActive ? (
-                // ... (Route Selection - Unchanged) ...
-                <div className="glass-panel p-6 rounded-[32px] shadow-2xl relative border border-white/50 mt-6">
-                    <h3 className="text-2xl font-bold dark:text-white mb-4 text-center">Begin Shift</h3>
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-4">
-                        <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${routeMode === 'OFFICIAL' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Official Route</button>
-                        <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${routeMode === 'CUSTOM' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Custom Path</button>
-                    </div>
-                    {routeMode === 'OFFICIAL' ? (
-                        <div className="mb-6">
-                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Select Assigned Route</label>
-                            <div className="relative">
-                                <select value={selectedRouteId} onChange={(e) => setSelectedRouteId(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl appearance-none outline-none dark:text-white font-medium">
-                                    <option value="">-- Select Route --</option>
-                                    {officialRoutes.map(route => (<option key={route.id} value={route.id}>{route.name} ({route.from} - {route.to})</option>))}
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4 mb-6"><LocationSelector label="Start Point" onSelect={(loc) => setTripConfig(prev => ({ ...prev, startLocation: loc }))} /><LocationSelector label="End Point" onSelect={(loc) => setTripConfig(prev => ({ ...prev, endLocation: loc }))} /></div>
-                    )}
-                    <Button variant="primary" fullWidth onClick={handleStartTrip} className="h-14 text-lg rounded-xl">Initialize Route</Button>
-                </div>
-            ) : (
-                <div className="space-y-6 animate-fade-in relative">
-                    <div className="bg-slate-900 rounded-3xl p-5 shadow-xl border border-slate-700 relative overflow-hidden flex flex-col h-80">
-                        <div className="flex justify-between items-center mb-4 text-white">
+        <div className="max-w-5xl mx-auto pb-32 animate-fade-in font-sans relative">
+            <div className="flex flex-col lg:flex-row gap-6">
+                {/* Left Side: Journey Timeline */}
+                {tripConfig.isActive && (
+                    <aside className="w-full lg:w-80 glass-3 p-6 rounded-[32px] border-white/5 shadow-yhisk-float h-fit sticky top-24">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-xl shadow-glow-sm">🚀</div>
                             <div>
-                                <h3 className="font-bold text-lg">Route Navigation</h3>
-                                <p className="text-xs text-slate-400">{tripConfig.path[0]} → {tripConfig.path[tripConfig.path.length - 1]}</p>
+                                <h1 className="font-black text-white text-lg tracking-tight">Trip VL-{user.id.slice(-3).toUpperCase()}</h1>
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Route: {officialRoutes.find(r => r.id === selectedRouteId)?.name || 'Custom'}</p>
                             </div>
-                            {/* VERIFY BUTTON */}
-                            <button
-                                onClick={() => { setVerifyId(''); setVerifyResult(null); setShowVerifyModal(true); }}
-                                className="bg-emerald-600 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/50"
-                            >
-                                <ScanLine size={16} /> Collect Ticket
-                            </button>
                         </div>
-                        {/* ... (Route List - Unchanged) ... */}
-                        <div className="relative z-10 flex-1 overflow-y-auto pr-2 space-y-0" ref={routeListRef}>
-                            <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-slate-700 -z-10"></div>
+
+                        <div className="space-y-0 relative">
+                            <div className="absolute left-[11px] top-3 bottom-3 w-px bg-slate-800/50"></div>
                             {tripConfig.path.map((stop, idx) => {
                                 const isCurrent = idx === currentStopIndex;
                                 const isPassed = idx < currentStopIndex;
@@ -448,175 +343,314 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
 
                                 return (
-                                    <div key={idx} className={`flex items-center justify-between py-3 border-b border-slate-800/50 last:border-0 ${isCurrent ? 'bg-slate-800/50 -mx-2 px-2 rounded-lg' : ''}`}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={`relative w-6 h-6 rounded-full flex items-center justify-center border-2 ${isCurrent ? 'border-emerald-500 bg-emerald-500/20' : (isPassed ? 'border-slate-600 bg-slate-700' : 'border-slate-600')}`}>
-                                                {isCurrent && <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>}
-                                            </div>
-                                            <div>
-                                                <span className={`text-sm font-medium ${isCurrent ? 'text-white' : (isPassed ? 'text-slate-500 line-through' : 'text-slate-400')}`}>{stop}</span>
-                                                {!isPassed && waitingCount > 0 && (
-                                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <div className="px-1.5 py-0.5 bg-brand-500/20 rounded text-[9px] font-black text-brand-400 uppercase tracking-tighter flex items-center gap-1">
-                                                            <Users size={8} /> {waitingCount} Waiting
-                                                        </div>
-                                                        {aheadBusesAtStop.length > 0 && (
-                                                            <div className="px-1.5 py-0.5 bg-red-500/20 rounded text-[9px] font-black text-red-300 uppercase tracking-tighter">
-                                                                {aheadBusesAtStop.length} Vehicle Ahead
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
+                                    <div key={idx} className={`relative pl-8 pb-6 last:pb-0 ${isCurrent ? 'opacity-100 scale-105' : 'opacity-40'}`}>
+                                        <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center border-2 z-10 ${isCurrent ? 'border-indigo-400 bg-indigo-500/20 shadow-glow-sm' : (isPassed ? 'border-slate-700 bg-slate-800' : 'border-slate-800')}`}>
+                                            {isCurrent && <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>}
+                                            {isPassed && <Check size={12} className="text-slate-500" />}
+                                        </div>
+                                        <div className="flex justify-between items-start">
+                                            <span className={`text-xs font-black ${isCurrent ? 'text-white' : 'text-slate-400'}`}>{stop}</span>
+                                            {!isPassed && waitingCount > 0 && (
+                                                <div className="px-1.5 py-0.5 bg-emerald-500/20 rounded text-[8px] font-black text-emerald-400 animate-pulse uppercase tracking-tighter">
+                                                    {waitingCount} WAITING
+                                                </div>
+                                            )}
                                         </div>
                                         {isCurrent && (
-                                            <div className="flex gap-2">
-                                                <button onClick={handleMarkChowk} className="text-[10px] bg-slate-700 text-white px-2 py-1 rounded flex items-center gap-1 hover:bg-slate-600"><Plus size={10} /> Chowk</button>
-                                                <button onClick={() => setCurrentStopIndex(i => Math.min(i + 1, tripConfig.path.length - 1))} className="text-[10px] bg-white text-slate-900 px-2 py-1 rounded font-bold">Depart</button>
+                                            <div className="mt-2 flex gap-2">
+                                                <button onClick={handleMarkChowk} className="text-[9px] font-black bg-white/5 hover:bg-white/10 text-white px-2 py-1 rounded-lg border border-white/10 uppercase tracking-widest transition-all">Mark Chowk</button>
                                             </div>
+                                        )}
+                                        {!isPassed && aheadBusesAtStop.length > 0 && (
+                                            <p className="text-[8px] font-black text-rose-400 uppercase mt-1">Bus {aheadBusesAtStop[0].driverId.slice(-3).toUpperCase()} is here</p>
                                         )}
                                     </div>
                                 );
                             })}
                         </div>
+                    </aside>
+                )}
+
+                {/* Right Side: Main Display */}
+                <div className="flex-1 space-y-6">
+                    {/* Overlays (Fatigue & Pothole) */}
+                    {fatigueAlert && (
+                        <div className="fixed inset-0 z-[100] bg-red-600 flex flex-col items-center justify-center text-white animate-pulse">
+                            <AlertOctagon size={80} className="mb-4 animate-bounce" />
+                            <h1 className="text-3xl font-black mb-2 uppercase tracking-widest text-center px-4">Driver Fatigue Detected!</h1>
+                            <p className="text-lg font-bold mb-8 opacity-90 text-center px-6">Microsleep pattern identified by sensors. Please stop.</p>
+                            <button onClick={() => setFatigueAlert(false)} className="bg-white text-red-600 px-8 py-3 rounded-full font-bold shadow-xl">I am Awake</button>
+                        </div>
+                    )}
+                    {potholeDetected && (
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-6 py-3 rounded-full shadow-2xl z-[90] animate-bounce flex items-center gap-2 font-bold">
+                            <Activity size={20} /> Pothole Detected & Logged!
+                        </div>
+                    )}
+
+                    {/* Header HUD */}
+                    <div className="glass-3 p-5 rounded-[32px] border-white/10 shadow-whisk-float relative overflow-hidden">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-400 flex items-center justify-center font-black text-xl text-white shadow-glow-md">{user.name.charAt(0)}</div>
+                                <div>
+                                    <h2 className="text-lg font-black text-white tracking-tight leading-none mb-1">Cpt. {user.name.split(' ')[0]}</h2>
+                                    <div className="flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">
+                                        <span>{viewMode} Mode</span>
+                                        {isMobileATM && <span className="text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1"><Coins size={10} /> ATM Active</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <div onClick={() => setVoiceAssist(!voiceAssist)} className={`cursor-pointer w-12 h-12 rounded-2xl border flex items-center justify-center transition-all ${voiceAssist ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-glow-sm' : 'bg-white/5 border-white/5 text-slate-500'}`}>
+                                    {voiceAssist ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                                </div>
+                                <div onClick={() => setShowWithdrawModal(true)} className="cursor-pointer glass-3 px-4 py-2 rounded-2xl border border-white/5 flex flex-col items-end hover:bg-white/10 transition-colors shadow-whisk-float">
+                                    <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest">Wallet</p>
+                                    <div className="flex items-center gap-1 font-black text-emerald-400 text-lg">
+                                        <WalletIcon size={14} /> ₹{walletBalance.toFixed(0)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex glass-3 p-1.5 rounded-[20px] mt-6 border-white/5 overflow-x-auto gap-2">
+                            <button onClick={() => setViewMode('BUS')} className={`flex-1 py-3 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'BUS' ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Bus</button>
+                            <button onClick={() => setViewMode('CARGO')} className={`flex-1 py-3 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'CARGO' ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Logistics</button>
+                            <button onClick={() => setViewMode('CHARTER')} className={`flex-1 py-3 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'CHARTER' ? 'bg-indigo-600 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Charter</button>
+                            <button onClick={() => setViewMode('UTILITIES')} className={`flex-1 py-3 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'UTILITIES' ? 'bg-brand-700 text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-300'}`}>Tools</button>
+                        </div>
                     </div>
 
-                    {deviation && (
-                        <div className="bg-red-500 text-white p-4 rounded-xl flex items-center gap-3 animate-pulse shadow-lg border-2 border-red-400">
-                            <ShieldAlert size={24} />
-                            <div>
-                                <p className="font-bold text-sm uppercase">Off-Route Warning</p>
-                                <p className="text-xs opacity-90">{deviation.extraDistance.toFixed(2)}km deviation detected.</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {profitWarning && (
-                        <div className="bg-amber-600/90 backdrop-blur-md text-white p-4 rounded-2xl flex items-start gap-3 shadow-xl border border-amber-500/50 animate-fade-in">
-                            <TrendingDown size={32} className="shrink-0 text-amber-300" />
-                            <div>
-                                <p className="font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
-                                    Profit Alert <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
-                                </p>
-                                <p className="text-[11px] leading-relaxed opacity-90 font-bold">{profitWarning}</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {logisticsAdvice && (
-                        <div
-                            onClick={() => { setViewMode('CARGO'); setLogisticsAdvice(null); }}
-                            className="bg-brand-600 text-white p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl border border-brand-400 cursor-pointer hover:bg-brand-700 transition-all group active:scale-95"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-                                    <ShoppingCart size={24} />
+                    {/* Contextual Body */}
+                    {viewMode === 'UTILITIES' && (
+                        <div className="space-y-6 animate-fade-in shadow-whisk-float rounded-[32px]">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div onClick={() => setIsMobileATM(!isMobileATM)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isMobileATM ? 'bg-emerald-500/10 border-emerald-500/50 shadow-glow-sm' : 'glass-3 border-white/5 text-slate-500'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isMobileATM ? 'bg-emerald-500 text-white' : 'bg-white/5 text-slate-500'}`}><Coins size={24} /></div>
+                                    <h4 className="font-black text-white text-sm uppercase tracking-widest">Mobile ATM</h4>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isMobileATM ? 'Broadcast Active' : 'Enable Cash-Out'}</p>
                                 </div>
-                                <div>
-                                    <p className="font-black text-xs uppercase tracking-widest leading-none mb-1">Fill Capacity Gap</p>
-                                    <h4 className="font-bold text-sm">Pickup {logisticsAdvice.itemType} at {logisticsAdvice.from}</h4>
-                                    <p className="text-[10px] opacity-70">Earnings: ₹{logisticsAdvice.price || 450} (Intersects your path)</p>
+                                <div onClick={() => setIsDataMuleActive(!isDataMuleActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isDataMuleActive ? 'bg-blue-500/10 border-blue-500/50 shadow-glow-sm' : 'glass-3 border-white/5 text-slate-500'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDataMuleActive ? 'bg-blue-500 text-white' : 'bg-white/5 text-slate-500'}`}><Wifi size={24} /></div>
+                                    <h4 className="font-black text-white text-sm uppercase tracking-widest">Data Mule</h4>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isDataMuleActive ? 'Hosting Content' : 'Sync Content'}</p>
+                                </div>
+                                <div onClick={() => setIsRoadAIActive(!isRoadAIActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isRoadAIActive ? 'bg-amber-500/10 border-amber-500/50 shadow-glow-sm' : 'glass-3 border-white/5 text-slate-500'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isRoadAIActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-white/5 text-slate-500'}`}><Activity size={24} /></div>
+                                    <h4 className="font-black text-white text-sm uppercase tracking-widest">Road AI</h4>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isRoadAIActive ? 'Sensor Active' : 'Detect Potholes'}</p>
+                                </div>
+                                <div onClick={handleAudioCount} className="p-6 rounded-3xl border glass-3 border-white/5 cursor-pointer hover:bg-white/5 transition-all group">
+                                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 mb-4 group-hover:text-white transition-colors">
+                                        {isCountingAudio ? <span className="animate-spin text-2xl">⌛</span> : <Mic size={24} />}
+                                    </div>
+                                    <h4 className="font-black text-white text-sm uppercase tracking-widest">Count Crowd</h4>
+                                    <p className="text-[10px] font-bold text-slate-500 mt-1">Use Audio AI Analysis</p>
                                 </div>
                             </div>
-                            <ChevronRight size={20} className="text-white/50" />
                         </div>
                     )}
 
-                    <Button variant="danger" fullWidth onClick={handleEndTrip}>End Trip</Button>
+                    {!tripConfig.isActive && viewMode !== 'UTILITIES' && (
+                        <div className="glass-3 p-8 rounded-[40px] shadow-whisk-float border-white/5 relative overflow-hidden animate-fade-in-up">
+                            <h3 className="text-2xl font-black text-white mb-6 text-center tracking-tight">Begin Shift</h3>
+                            <div className="flex bg-white/5 p-1.5 rounded-2xl mb-8">
+                                <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'OFFICIAL' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500'}`}>Official Route</button>
+                                <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'CUSTOM' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500'}`}>Custom Path</button>
+                            </div>
+                            {routeMode === 'OFFICIAL' ? (
+                                <div className="mb-8">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Assigned Route</label>
+                                    <div className="relative">
+                                        <select value={selectedRouteId} onChange={(e) => setSelectedRouteId(e.target.value)} className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl appearance-none outline-none text-white font-black text-sm tracking-tight">
+                                            <option value="" className="bg-slate-950">-- Select Hub Route --</option>
+                                            {officialRoutes.map(route => (<option key={route.id} value={route.id} className="bg-slate-950">{route.name} ({route.from} - {route.to})</option>))}
+                                        </select>
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">▼</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 mb-8">
+                                    <LocationSelector label="Start Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, startLocation: loc }))} />
+                                    <LocationSelector label="End Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, endLocation: loc }))} />
+                                </div>
+                            )}
+                            <Button variant="primary" fullWidth onClick={handleStartTrip} className="h-16 text-lg font-black uppercase tracking-[0.2em] rounded-[24px] shadow-glow-md">Initialize NavIC</Button>
+                        </div>
+                    )}
+
+                    {tripConfig.isActive && viewMode !== 'UTILITIES' && (
+                        <div className="space-y-6 animate-fade-in relative">
+                            {/* Main Active HUD */}
+                            <div className="glass-3 rounded-[40px] p-8 shadow-whisk-float border-white/5 relative overflow-hidden flex flex-col items-center">
+                                <div className="w-full flex justify-between items-center mb-12">
+                                    <div className="flex gap-4">
+                                        <div className="glass-3 border-white/5 bg-white/5 py-3 px-6 rounded-2xl">
+                                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Occupancy</p>
+                                            <h3 className="text-xl font-black text-white tracking-widest">{currentOccupancy} / <span className="text-slate-600">{user.vehicleCapacity || 40}</span></h3>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => { setVerifyId(''); setVerifyResult(null); setShowVerifyModal(true); }}
+                                        className="bg-emerald-600 px-8 py-4 rounded-2xl text-[10px] font-black flex items-center gap-3 hover:bg-emerald-500 transition-all shadow-glow-sm uppercase tracking-widest text-white"
+                                    >
+                                        <ScanLine size={18} /> Collect Ticket
+                                    </button>
+                                </div>
+
+                                {/* Center: Biometric Authorizer */}
+                                <div className="relative mb-8 group">
+                                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-center w-48 pointer-events-none transition-all group-hover:-translate-y-2 opacity-0 group-hover:opacity-100">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Depart Now</p>
+                                        <div className="h-4 w-px bg-indigo-500/50 mx-auto mt-2"></div>
+                                    </div>
+
+                                    <div
+                                        className="w-48 h-48 rounded-full glass-3 border-indigo-500/30 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-glow-md relative overflow-hidden border-4"
+                                        onClick={() => setCurrentStopIndex(i => Math.min(i + 1, tripConfig.path.length - 1))}
+                                    >
+                                        <div className="scan-line-anim" />
+                                        <div className="text-5xl mb-2">🖐️</div>
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 text-center leading-relaxed">Identity<br />Verified</p>
+
+                                        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
+                                            <circle cx="96" cy="96" r="92" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="8" />
+                                            <circle cx="96" cy="96" r="92" fill="none" stroke="theme('colors.indigo.500')" strokeWidth="8" strokeDasharray="578" strokeDashoffset="578" className="transition-all duration-1000 ease-linear" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                {/* HUD Bottom Bar */}
+                                <div className="w-full flex justify-center gap-12 mt-4">
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">NavIC Satellites</p>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(i => (
+                                                <div key={i} className={`w-1.5 h-4 rounded-full ${i <= 4 ? 'bg-emerald-500 shadow-glow-sm' : 'bg-slate-800'}`}></div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Network Sync</p>
+                                        <span className="text-xs font-black text-white tracking-widest">REAL-TIME</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Alert Notifications */}
+                            {deviation && (
+                                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-6 rounded-[32px] flex items-center gap-4 animate-pulse shadow-glow-sm">
+                                    <ShieldAlert size={28} />
+                                    <div>
+                                        <p className="font-black text-xs uppercase tracking-widest">Off-Route Critical</p>
+                                        <p className="text-[11px] font-bold opacity-80">{deviation.extraDistance.toFixed(2)}km deviation from assigned grid path.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {profitWarning && (
+                                <div className="glass-3 profit-alert-glow p-8 rounded-[40px] flex gap-8 items-center bg-indigo-900/10 border-white/5 shadow-yhisk-float animate-fade-in-up">
+                                    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-3xl shadow-glow-md">🤖</div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-amber-500 mb-2">AI Profitability Advisor</p>
+                                        <h2 className="text-xl font-black text-white leading-tight">Switch to <span className="text-emerald-400">Cargo Link</span> mode</h2>
+                                        <p className="text-[11px] font-bold text-slate-500 mt-2 leading-relaxed">Estimated passenger load is low. Converting to logistics will yield ₹800 additional per trip.</p>
+                                    </div>
+                                    <button onClick={() => setViewMode('CARGO')} className="px-8 py-4 bg-indigo-600 text-white text-[10px] font-black rounded-2xl hover:bg-indigo-500 transition-all uppercase tracking-[0.2em] shadow-glow-md">Optimize</button>
+                                </div>
+                            )}
+
+                            {logisticsAdvice && (
+                                <div
+                                    onClick={() => { setViewMode('CARGO'); setLogisticsAdvice(null); }}
+                                    className="bg-brand-600 text-white p-6 rounded-[32px] flex items-center justify-between gap-4 shadow-glow-sm cursor-pointer hover:scale-[1.02] transition-all transform active:scale-95"
+                                >
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner">
+                                            <ShoppingCart size={28} />
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-[10px] uppercase tracking-[0.3em] opacity-70 mb-1">Fill Capacity Gap</p>
+                                            <h4 className="font-black text-lg tracking-tight">Pickup {logisticsAdvice.itemType}</h4>
+                                            <p className="text-[11px] font-bold">Collect at {logisticsAdvice.from} • ₹{logisticsAdvice.price || 450}</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={24} className="opacity-50" />
+                                </div>
+                            )}
+
+                            <Button variant="danger" fullWidth onClick={handleEndTrip} className="h-14 rounded-2xl opacity-50 hover:opacity-100 transition-opacity uppercase font-black text-xs tracking-widest">Emergency Shift End</Button>
+                        </div>
+                    )}
                 </div>
-            ))}
+            </div>
 
-            {/* VERIFY MODAL */}
+            {/* Modals */}
             <Modal
                 isOpen={showVerifyModal}
                 onClose={() => setShowVerifyModal(false)}
                 onConfirm={handleManualVerify}
-                title="Collect & Verify Ticket"
-                confirmLabel={verifyLoading ? "Processing..." : "Verify & Add to Wallet"}
+                title="Verify Digital Ticket"
+                confirmLabel={verifyLoading ? "Scanning..." : "Confirm & Deposit"}
             >
-                <div className="p-4 space-y-4">
-                    <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl text-center border-2 border-dashed border-slate-300 dark:border-slate-700 h-32 flex flex-col items-center justify-center cursor-pointer hover:border-brand-500 transition-colors">
-                        <Camera size={32} className="text-slate-400 mb-2" />
-                        <p className="text-xs font-bold text-slate-500">Tap to Scan QR Code</p>
+                <div className="p-6 space-y-6">
+                    <div className="glass-3 bg-white/5 p-8 rounded-3xl text-center border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-brand-500 transition-colors">
+                        <Camera size={40} className="text-slate-500 mb-3" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scan QR Identity</p>
                     </div>
-
-                    <div className="text-center text-xs font-bold text-slate-400 uppercase">OR Enter ID Manually</div>
-
+                    <div className="text-center text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">OR</div>
                     <input
                         value={verifyId}
                         onChange={(e) => setVerifyId(e.target.value)}
-                        placeholder="e.g. 1234 or TK-1234"
-                        className="w-full bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 outline-none font-mono text-center uppercase text-lg tracking-widest"
+                        placeholder="TK-XXXX"
+                        className="w-full bg-white/5 p-5 rounded-2xl border border-white/10 outline-none font-black text-center uppercase text-xl tracking-[0.3em] text-white"
                         autoFocus
                     />
-
                     {verifyResult && (
-                        <div className={`p-4 rounded-xl border ${verifyResult.success ? (verifyResult.paymentMethod === 'CASH' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200') : 'bg-red-50 border-red-200'} animate-in slide-in-from-top-2`}>
-                            <div className="flex items-center gap-2 mb-2">
-                                {verifyResult.success ? <Check size={20} className={verifyResult.paymentMethod === 'CASH' ? "text-amber-600" : "text-emerald-600"} /> : <ShieldAlert size={20} className="text-red-600" />}
-                                <span className={`font-bold ${verifyResult.paymentMethod === 'CASH' ? 'text-amber-800' : (verifyResult.success ? 'text-emerald-800' : 'text-red-800')}`}>
-                                    {verifyResult.success ? (verifyResult.paymentMethod === 'CASH' ? 'Verify Cash' : 'Online Verified') : 'Failed'}
-                                </span>
+                        <div className={`p-6 rounded-2xl border-2 ${verifyResult.success ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'} animate-fade-in-up`}>
+                            <div className="flex items-center gap-3 mb-2">
+                                {verifyResult.success ? <Check size={24} className="text-emerald-400" /> : <ShieldAlert size={24} className="text-red-400" />}
+                                <h4 className={`text-lg font-black uppercase tracking-tight ${verifyResult.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {verifyResult.success ? 'Payment Verified' : 'Invalid Identity'}
+                                </h4>
                             </div>
-
-                            {verifyResult.success ? (
-                                <div className="text-sm">
-                                    {verifyResult.paymentMethod === 'CASH' ? (
-                                        <div className="space-y-1">
-                                            <p className="text-amber-800 font-bold flex items-center gap-2"><Banknote size={14} /> Collect Full Cash from User</p>
-                                            <p className="text-xs text-amber-700">{verifyResult.financialDetails}</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-1">
-                                            <p className="text-emerald-800 font-bold flex items-center gap-2"><CreditCard size={14} /> Payment Received Online</p>
-                                            <p className="text-xs text-emerald-700">{verifyResult.financialDetails}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-red-700">{verifyResult.error || 'Invalid ID.'}</p>
-                            )}
+                            <p className="text-xs font-bold text-slate-400 leading-relaxed">{verifyResult.success ? verifyResult.financialDetails : verifyResult.error}</p>
                         </div>
                     )}
                 </div>
             </Modal>
 
-            {/* ... (Withdraw Modal - Unchanged) ... */}
             <Modal
                 isOpen={showWithdrawModal}
                 onClose={() => setShowWithdrawModal(false)}
                 onConfirm={handleWithdraw}
-                title="Withdraw Funds"
-                confirmLabel="Request Withdrawal"
+                title="Elite Withdrawal"
+                confirmLabel="Authorize Transfer"
             >
-                <div className="space-y-4">
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase">Available Balance</p>
-                            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">₹{walletBalance.toFixed(2)}</p>
-                        </div>
-                        <WalletIcon size={32} className="text-emerald-500" />
+                <div className="p-6 space-y-6">
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-3xl shadow-glow-sm">
+                        <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Total Available</p>
+                        <p className="text-4xl font-black text-white tracking-tighter">₹{walletBalance.toFixed(2)}</p>
                     </div>
-
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase">Amount to Withdraw</label>
-                        <div className="relative mt-1">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Amount to Transfer</label>
+                        <div className="relative">
+                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-xl font-black">₹</span>
                             <input
                                 type="number"
                                 value={withdrawAmount}
                                 onChange={(e) => setWithdrawAmount(e.target.value)}
-                                className="w-full pl-8 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none"
-                                placeholder="0"
+                                className="w-full pl-12 p-5 rounded-2xl bg-white/5 border border-white/10 text-white text-2xl font-black outline-none"
                             />
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <div className="flex-1 p-2 border rounded-lg text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-xs" onClick={() => setWithdrawAmount('500')}>₹500</div>
-                        <div className="flex-1 p-2 border rounded-lg text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-xs" onClick={() => setWithdrawAmount('1000')}>₹1000</div>
-                        <div className="flex-1 p-2 border rounded-lg text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-xs" onClick={() => setWithdrawAmount(walletBalance.toString())}>All</div>
+                    <div className="flex gap-3">
+                        {['500', '1000', walletBalance.toString()].map(amt => (
+                            <button key={amt} onClick={() => setWithdrawAmount(amt)} className="flex-1 py-3 glass-3 border-white/5 rounded-xl text-[10px] font-black text-white hover:bg-white/10 uppercase tracking-widest">
+                                {amt === walletBalance.toString() ? 'Max' : `₹${amt}`}
+                            </button>
+                        ))}
                     </div>
-                    <p className="text-[10px] text-slate-400 text-center">Service charge calculated at ticket scan time.</p>
                 </div>
             </Modal>
         </div>

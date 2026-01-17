@@ -689,58 +689,60 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     {/* ... Header Area ... */}
                     {activeTab === 'HOME' && (
                         <div className="mb-6 px-4">
-                            {/* Whisk 2.0: Dashboard Top Bar (Inspired by Image 1 & 3) */}
-                            <div className="flex justify-between items-center mb-6 bg-white dark:bg-slate-900 p-4 super-rounded shadow-whisk-subtle border border-slate-100 dark:border-slate-800 animate-fade-in-up">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                        <UserIcon size={20} className="text-slate-400" />
+                            {/* Whisk 3.0: High-fidelity Top Bar */}
+                            <div className="flex justify-between items-center mb-8 glass-3 p-5 rounded-[40px] shadow-whisk-float border-white/5 animate-fade-in-up">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-brand-500 p-0.5 shadow-glow-sm">
+                                        <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center overflow-hidden">
+                                            <UserIcon size={22} className="text-slate-500" />
+                                        </div>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{t('welcome')}</p>
-                                        <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-none">{user.name.split(' ')[0]}</h2>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none mb-1">{t('welcome')}</p>
+                                        <h2 className="text-xl font-black text-white tracking-tight leading-none">{user.name.split(' ')[0]}</h2>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Balance</p>
-                                        <div className="flex items-center gap-1 justify-end">
-                                            <Gem size={14} className="text-yellow-500" />
-                                            <span className="text-sm font-bold text-slate-800 dark:text-white">₹{wallet?.balance || 0}</span>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Balance</p>
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <Gem size={16} className="text-emerald-400" />
+                                            <span className="text-lg font-black text-white tracking-tight">₹{wallet?.balance || 0}</span>
                                         </div>
                                     </div>
-                                    <button onClick={triggerSOS} className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-900/50 text-red-600 pulse-heartbeat">
-                                        <Siren size={20} />
+                                    <button onClick={triggerSOS} className="w-12 h-12 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center border border-rose-500/30 text-rose-500 shadow-glow-sm transition-all active:scale-95 pulse-heartbeat">
+                                        <Siren size={24} />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Mode Selection Grid (Inspired by Image 3) */}
-                            <div className="grid grid-cols-4 gap-3 mb-6">
+                            {/* Gemini Flow: Mode Selection Cards */}
+                            <div className="grid grid-cols-2 gap-4 mb-8">
                                 {[
-                                    { id: 'TRANSPORT', label: 'Ride', icon: Bus, color: 'bg-brand-50 text-brand-600 border-brand-100' },
-                                    { id: 'MARKET', label: 'Haat', icon: Store, color: 'bg-orange-50 text-orange-600 border-orange-100' },
-                                    { id: 'FOOD', label: 'Mess', icon: Utensils, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-                                    { id: 'SOS', label: 'Help', icon: ShieldCheck, color: 'bg-red-50 text-red-600 border-red-100' }
+                                    { id: 'TRANSPORT', title: 'Smart Ride', sub: 'Book Bus or Rickshaw', icon: Bus, color: 'from-indigo-500 to-indigo-700' },
+                                    { id: 'MARKET', title: 'Village Haat', sub: 'Buy Agro & Hardware', icon: Store, color: 'from-orange-500 to-rose-500' },
+                                    { id: 'FOOD', title: 'Smart Mess', sub: 'Wholesome Rural Meals', icon: Utensils, color: 'from-emerald-500 to-teal-500' },
+                                    { id: 'LOGISTICS', title: 'Quick Parcel', sub: 'Send Items Anywhere', icon: Package, color: 'from-blue-500 to-indigo-500' }
                                 ].map((mode) => (
                                     <button
                                         key={mode.id}
                                         onClick={() => {
-                                            if (mode.id === 'SOS') triggerSOS();
+                                            if (mode.id === 'LOGISTICS') handleTabChange('LOGISTICS');
                                             else {
                                                 setAppMode(mode.id as any);
-                                                speak(`${mode.label} Mode Active`);
+                                                speak(`${mode.title} Active`);
                                             }
                                         }}
-                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${appMode === mode.id
-                                            ? `${mode.color} shadow-lg -translate-y-1 scale-105 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ${mode.id === 'TRANSPORT' ? 'ring-brand-500' : (mode.id === 'MARKET' ? 'ring-orange-500' : 'ring-emerald-500')}`
-                                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-slate-50'
-                                            }`}
+                                        className="gemini-morph-card p-6 flex flex-col gap-4 text-left group"
                                     >
-                                        <div className={`p-2 rounded-xl ${appMode === mode.id ? 'bg-white shadow-sm' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                                            <mode.icon size={20} />
+                                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mode.color} flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
+                                            <mode.icon size={24} />
                                         </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-tight">{mode.label}</span>
+                                        <div>
+                                            <h3 className="text-lg font-black text-white tracking-tight group-hover:text-brand-400 transition-colors uppercase tracking-[0.05em]">{mode.title}</h3>
+                                            <p className="text-[10px] font-bold text-slate-500 leading-tight mt-1">{mode.sub}</p>
+                                        </div>
                                     </button>
                                 ))}
                             </div>

@@ -262,24 +262,24 @@ export const KisanApp: React.FC = () => {
     // ==================== DASHBOARD VIEW ====================
     if (viewState === 'DASHBOARD') {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden">
+            <div className="min-h-screen bg-transparent pb-20 relative overflow-hidden">
                 {/* Background Animation Overlay */}
                 <div className="animated-bg opacity-50"></div>
 
                 {/* Header - Glassmorphism */}
-                <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-emerald-500/20">
+                <div className="glass-3 sticky top-0 z-30 px-4 py-4 rounded-b-[40px] border-b-emerald-500/20 backdrop-blur-3xl shadow-whisk-float">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-md">
                                 {user?.name?.charAt(0)?.toUpperCase() || 'K'}
                             </div>
                             <div>
-                                <p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">Namaste,</p>
-                                <h1 className="font-bold text-slate-800 dark:text-white text-lg">{user?.name || 'Kisan'}</h1>
+                                <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1">Namaste,</p>
+                                <h1 className="font-black text-white text-xl tracking-tight">{user?.name || 'Kisan'}</h1>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
-                            <LogOut size={18} />
+                        <button onClick={handleLogout} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-400 group transition-all">
+                            <LogOut size={18} className="group-hover:text-red-400 transition-colors" />
                         </button>
                     </div>
                 </div>
@@ -290,27 +290,27 @@ export const KisanApp: React.FC = () => {
                         <Wheat className="text-emerald-500" /> Kisan Dashboard
                     </h2>
 
-                    {/* Stats Grid - Premium Cards */}
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
-                            <Package className="text-emerald-500 mb-2" size={24} />
-                            <p className="text-2xl font-black dark:text-white">{stats.activeListings}</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Active Listings</p>
+                    {/* Stats Grid - Premium 3D Cards */}
+                    <div className="grid grid-cols-2 gap-4 mb-8 perspective-1000">
+                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-500/30">
+                            <Package className="text-emerald-400 mb-2" size={20} />
+                            <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.activeListings}</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Listings</p>
                         </div>
-                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
-                            <Clock className="text-warm-500 mb-2" size={24} />
-                            <p className="text-2xl font-black dark:text-white">{stats.pendingOrders}</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Pending Orders</p>
+                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-warm-500/30" style={{ transform: 'translateZ(20px)' }}>
+                            <Clock className="text-warm-500 mb-2" size={20} />
+                            <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.pendingOrders}</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pending Orders</p>
                         </div>
-                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
-                            <DollarSign className="text-blue-500 mb-2" size={24} />
-                            <p className="text-2xl font-black dark:text-white">₹{(stats.totalRevenue / 1000).toFixed(0)}K</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Total Revenue</p>
+                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-blue-500/30">
+                            <DollarSign className="text-blue-500 mb-2" size={20} />
+                            <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">₹{(stats.totalRevenue / 1000).toFixed(0)}K</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Revenue</p>
                         </div>
-                        <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
-                            <Milk className="text-emerald-400 mb-2" size={24} />
-                            <p className="text-2xl font-black dark:text-white">{stats.milkSupplied}L</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase">Milk Logged</p>
+                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-400/30" style={{ transform: 'translateZ(-10px)' }}>
+                            <Milk className="text-emerald-400 mb-2" size={20} />
+                            <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.milkSupplied}L</p>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Milk Logged</p>
                         </div>
                     </div>
 

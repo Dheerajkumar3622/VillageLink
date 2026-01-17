@@ -334,6 +334,7 @@ body,
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   color: #000;
 }
+
 /* ========================================
    3D & NANO BANANA UTILITIES
    ======================================== */
@@ -375,10 +376,119 @@ body,
 }
 
 @keyframes float-banana {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
 }
 
 .animate-float-banana {
   animation: float-banana 4s ease-in-out infinite;
+}
+
+/* ========================================
+   WHISK 3.0: AI-AESTHETIC & NANO BANANA
+   ======================================== */
+
+.veo-cinematic-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: radial-gradient(circle at 20% 30%, rgba(30, 27, 75, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(49, 46, 129, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, #020617 0%, transparent 100%);
+  filter: contrast(1.1) brightness(0.9);
+}
+
+.gemini-morph-card {
+  @apply bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[32px] transition-all duration-500 ease-out overflow-hidden;
+}
+
+.gemini-morph-card:hover {
+  @apply bg-white/10 border-brand-500/40 -translate-y-2 scale-[1.02] shadow-whisk-float;
+}
+
+.nano-banana-3d {
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  transform-style: preserve-3d;
+}
+
+.nano-banana-3d:hover {
+  transform: perspective(1000px) rotateY(10deg) rotateX(10deg);
+}
+
+.glass-3 {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profit-alert-glow {
+  animation: alertPulse 2s infinite alternate;
+}
+
+@keyframes alertPulse {
+  0% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+    border-color: rgba(245, 158, 11, 0.6);
+  }
+}
+
+.scan-line-anim {
+  position: absolute;
+  width: 80%;
+  height: 2px;
+  background: theme('colors.brand.500');
+  box-shadow: 0 0 15px theme('colors.brand.500');
+  left: 10%;
+  animation: scanLineMove 4s infinite ease-in-out;
+}
+
+@keyframes scanLineMove {
+  0% {
+    top: 20%;
+    opacity: 0;
+  }
+
+  50% {
+    top: 80%;
+    opacity: 1;
+  }
+
+  100% {
+    top: 20%;
+    opacity: 0;
+  }
+}
+
+.veo-drift-grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+  opacity: 0.03;
+  animation: driftGrain 60s linear infinite;
+  pointer-events: none;
+  z-index: -5;
+}
+
+@keyframes driftGrain {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-5%, -5%);
+  }
 }

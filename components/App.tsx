@@ -208,9 +208,13 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500 overflow-x-hidden">
 
-      <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4">
+      {/* Whisk 3.0: Cinematic Layers */}
+      <div className="veo-cinematic-bg" />
+      <div className="veo-drift-grain" />
+
+      <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10">
 
         {/* Fixed Header */}
         <header className="sticky top-0 z-50 flex justify-between items-center py-4 mb-6 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md -mx-4 px-4 border-b border-slate-200/50 dark:border-slate-800/50">
