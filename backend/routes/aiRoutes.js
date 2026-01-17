@@ -3,6 +3,7 @@ import express from 'express';
 import { chatWithSarpanch, diagnoseLeaf, estimateParcel, verifyBiometrics, analyzeHygiene } from '../controllers/aiController.js';
 import { authenticate } from '../auth.js';
 
+// Routes for AI features
 const router = express.Router();
 
 // Public chatbot (or protected, depending on preference)
