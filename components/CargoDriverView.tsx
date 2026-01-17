@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../config';
 import {
     Package, Truck, MapPin, Scale, Clock, DollarSign,
     Check, X, Loader2, Settings, ToggleLeft, ToggleRight,
-    Navigation, Phone, Camera, AlertCircle, ChevronRight
+    Navigation, Phone, Camera, AlertCircle, ChevronRight, Zap
 } from 'lucide-react';
 
 interface CargoDriverViewProps {
@@ -270,8 +270,8 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
             <div
                 onClick={toggleAcceptingCargo}
                 className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${capacity?.acceptingCargo
-                        ? 'bg-emerald-500/20 border border-emerald-500/50'
-                        : 'bg-slate-700/50 border border-slate-600'
+                    ? 'bg-emerald-500/20 border border-emerald-500/50'
+                    : 'bg-slate-700/50 border border-slate-600'
                     }`}
             >
                 <span className="text-sm font-medium text-white">Accept Cargo Requests</span>
@@ -300,8 +300,8 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                                     maxWeightKg: VEHICLE_CAPACITIES[type].weight
                                 })}
                                 className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${capacity?.vehicleType === type
-                                        ? 'bg-orange-100 border-orange-500 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                                        : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'
+                                    ? 'bg-orange-100 border-orange-500 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                                    : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'
                                     }`}
                             >
                                 {type}
@@ -326,8 +326,8 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                                         updateCapacity({ acceptedTypes: updated });
                                     }}
                                     className={`py-1.5 px-3 rounded-full text-xs font-medium border transition-all ${isSelected
-                                            ? 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                            : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400'
+                                        ? 'bg-emerald-100 border-emerald-500 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                        : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400'
                                         }`}
                                 >
                                     {getItemEmoji(type)} {type}
@@ -380,7 +380,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                                 </div>
                             </div>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${cargo.status === 'DRIVER_ACCEPTED' ? 'bg-purple-100 text-purple-700' :
-                                    cargo.status === 'PICKED_UP' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                cargo.status === 'PICKED_UP' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
                                 }`}>
                                 {cargo.status === 'DRIVER_ACCEPTED' ? '📍 Pickup' : cargo.status === 'PICKED_UP' ? '🚛 Deliver' : cargo.status}
                             </span>
@@ -451,7 +451,14 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                                         <p className="text-xs text-slate-500">{cargo.weightKg}kg from {cargo.shipperName}</p>
                                     </div>
                                 </div>
-                                <p className="font-bold text-lg text-orange-600">₹{cargo.offeredPrice}</p>
+                                <div className="text-right">
+                                    <p className="font-bold text-lg text-orange-600">₹{cargo.offeredPrice}</p>
+                                    {currentRoute && (cargo.pickupLocation.name === currentRoute.from || cargo.dropoffLocation.name === currentRoute.to) && (
+                                        <div className="flex items-center gap-1 bg-brand-500 text-white px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse mt-1">
+                                            <Zap size={10} /> Smart Match
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 mb-3">
@@ -462,17 +469,19 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                                 <span className="truncate">{cargo.dropoffLocation.name}</span>
                             </div>
 
-                            {match && (
-                                <div className="flex gap-2 text-xs text-slate-500 mb-3">
-                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                                        <Clock size={10} className="inline mr-1" />
-                                        Pickup: {match.estimatedPickupTime} min
-                                    </span>
-                                    <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                                        Delivery: {match.estimatedDeliveryTime} min
-                                    </span>
-                                </div>
-                            )}
+                            {
+                                match && (
+                                    <div className="flex gap-2 text-xs text-slate-500 mb-3">
+                                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                                            <Clock size={10} className="inline mr-1" />
+                                            Pickup: {match.estimatedPickupTime} min
+                                        </span>
+                                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
+                                            Delivery: {match.estimatedDeliveryTime} min
+                                        </span>
+                                    </div>
+                                )
+                            }
 
                             <div className="flex gap-2">
                                 <button
@@ -490,7 +499,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                     );
                 })
             )}
-        </div>
+        </div >
     );
 
     const renderOTPModal = (type: 'pickup' | 'delivery') => (

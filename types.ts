@@ -472,6 +472,7 @@ export interface MarketItem {
   supplier: string;
   inStock: boolean;
   isDidiProduct?: boolean; // Feature 5: Gram-Lakshmi
+  type?: string;
 }
 
 export interface NewsItem {

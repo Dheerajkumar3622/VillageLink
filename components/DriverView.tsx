@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation } from '../services/transportService';
+import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles } from '../services/transportService';
 import { fetchSmartRoute } from '../services/graphService';
 import { getRoutes } from '../services/adminService';
 import { getWallet } from '../services/blockchainService';
@@ -9,7 +9,7 @@ import { checkForRouteDeviations, analyzeDriverDrowsiness, analyzeBusAudioOccupa
 import { startPotholeMonitoring, stopPotholeMonitoring } from '../services/iotService';
 import { playSonicToken } from '../services/advancedFeatures';
 import { Button } from './Button';
-import { Camera, Activity, Check, MapPin, Clock, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Volume2, VolumeX, Plus, CreditCard } from 'lucide-react';
+import { Camera, Activity, Check, MapPin, Clock, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Volume2, VolumeX, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight } from 'lucide-react';
 import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
 import { TRANSLATIONS } from '../constants';
@@ -89,6 +89,10 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [isOnline, setIsOnline] = useState(false);
     const [currentStopIndex, setCurrentStopIndex] = useState(0);
     const [currentGPS, setCurrentGPS] = useState<{ lat: number, lng: number } | null>(null);
+    const [pathDemand, setPathDemand] = useState<Record<string, number>>({});
+    const [aheadCompetitors, setAheadCompetitors] = useState<any[]>([]);
+    const [profitWarning, setProfitWarning] = useState<string | null>(null);
+    const [logisticsAdvice, setLogisticsAdvice] = useState<any>(null);
     const routeListRef = useRef<HTMLDivElement>(null);
 
     const currentOccupancy = useMemo(() => {
@@ -150,6 +154,39 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             } else {
                                 setDeviation(null);
                             }
+                        }
+
+                        // Smart Profit Analysis
+                        const demand = getPathDemand(tripConfig.path);
+                        setPathDemand(demand);
+
+                        const competitors = getAheadVehicles(tripConfig.path, currentStopIndex, user.id);
+                        setAheadCompetitors(competitors);
+
+                        // Profitability Logic
+                        const upcomingStops = tripConfig.path.slice(currentStopIndex + 1);
+                        const totalUpcomingDemand = upcomingStops.reduce((acc, stop) => acc + (demand[stop] || 0), 0);
+                        const competitorCapacity = competitors.reduce((acc, c) => acc + ((c.capacity || 40) - (c.occupancy || 0)), 0);
+
+                        if (totalUpcomingDemand > 0 && competitorCapacity >= totalUpcomingDemand) {
+                            if (!profitWarning) {
+                                setProfitWarning(`Market Saturated: ${competitors.length} vehicles ahead have enough capacity for all waiting passengers. Highly recommend switching to Cargo or picking up GramMandi logistics.`);
+                                announce("Warning. Demand ahead is low. Consider cargo pickup.");
+                            }
+                        } else {
+                            setProfitWarning(null);
+                        }
+
+                        // Suggest Logistics (Intersects with Path)
+                        const nearbyLogistics = parcels.find(p =>
+                            p.status === 'PENDING' &&
+                            upcomingStops.includes(p.from) &&
+                            (p.weightKg || 1) <= ((user.vehicleCapacity || 100) - currentOccupancy) // Simple capacity check
+                        );
+                        if (nearbyLogistics) {
+                            setLogisticsAdvice(nearbyLogistics);
+                        } else {
+                            setLogisticsAdvice(null);
                         }
                     },
                     (err) => console.error("GPS Error", err),
@@ -407,13 +444,30 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             {tripConfig.path.map((stop, idx) => {
                                 const isCurrent = idx === currentStopIndex;
                                 const isPassed = idx < currentStopIndex;
+                                const waitingCount = pathDemand[stop] || 0;
+                                const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
+
                                 return (
                                     <div key={idx} className={`flex items-center justify-between py-3 border-b border-slate-800/50 last:border-0 ${isCurrent ? 'bg-slate-800/50 -mx-2 px-2 rounded-lg' : ''}`}>
                                         <div className="flex items-center gap-4">
                                             <div className={`relative w-6 h-6 rounded-full flex items-center justify-center border-2 ${isCurrent ? 'border-emerald-500 bg-emerald-500/20' : (isPassed ? 'border-slate-600 bg-slate-700' : 'border-slate-600')}`}>
                                                 {isCurrent && <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>}
                                             </div>
-                                            <span className={`text-sm font-medium ${isCurrent ? 'text-white' : (isPassed ? 'text-slate-500 line-through' : 'text-slate-400')}`}>{stop}</span>
+                                            <div>
+                                                <span className={`text-sm font-medium ${isCurrent ? 'text-white' : (isPassed ? 'text-slate-500 line-through' : 'text-slate-400')}`}>{stop}</span>
+                                                {!isPassed && waitingCount > 0 && (
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <div className="px-1.5 py-0.5 bg-brand-500/20 rounded text-[9px] font-black text-brand-400 uppercase tracking-tighter flex items-center gap-1">
+                                                            <Users size={8} /> {waitingCount} Waiting
+                                                        </div>
+                                                        {aheadBusesAtStop.length > 0 && (
+                                                            <div className="px-1.5 py-0.5 bg-red-500/20 rounded text-[9px] font-black text-red-300 uppercase tracking-tighter">
+                                                                {aheadBusesAtStop.length} Vehicle Ahead
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         {isCurrent && (
                                             <div className="flex gap-2">
@@ -434,6 +488,37 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 <p className="font-bold text-sm uppercase">Off-Route Warning</p>
                                 <p className="text-xs opacity-90">{deviation.extraDistance.toFixed(2)}km deviation detected.</p>
                             </div>
+                        </div>
+                    )}
+
+                    {profitWarning && (
+                        <div className="bg-amber-600/90 backdrop-blur-md text-white p-4 rounded-2xl flex items-start gap-3 shadow-xl border border-amber-500/50 animate-fade-in">
+                            <TrendingDown size={32} className="shrink-0 text-amber-300" />
+                            <div>
+                                <p className="font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+                                    Profit Alert <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                                </p>
+                                <p className="text-[11px] leading-relaxed opacity-90 font-bold">{profitWarning}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {logisticsAdvice && (
+                        <div
+                            onClick={() => { setViewMode('CARGO'); setLogisticsAdvice(null); }}
+                            className="bg-brand-600 text-white p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl border border-brand-400 cursor-pointer hover:bg-brand-700 transition-all group active:scale-95"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+                                    <ShoppingCart size={24} />
+                                </div>
+                                <div>
+                                    <p className="font-black text-xs uppercase tracking-widest leading-none mb-1">Fill Capacity Gap</p>
+                                    <h4 className="font-bold text-sm">Pickup {logisticsAdvice.itemType} at {logisticsAdvice.from}</h4>
+                                    <p className="text-[10px] opacity-70">Earnings: ₹{logisticsAdvice.price || 450} (Intersects your path)</p>
+                                </div>
+                            </div>
+                            <ChevronRight size={20} className="text-white/50" />
                         </div>
                     )}
 
