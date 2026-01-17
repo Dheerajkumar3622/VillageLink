@@ -134,8 +134,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
         getMandiRates().then(rates => setMandiRates(rates));
         getJobs().then(j => setJobs(j));
-        setMarketItems(getMarketItems());
-        setPackages(getPackages());
+        getMarketItems().then(items => setMarketItems(items));
+        getPackages().then(p => setPackages(p));
 
         setLostItems([
             { id: 'L1', item: 'Red School Bag', location: 'Bus 404', date: 'Yesterday', contact: '9988...', status: 'LOST' },

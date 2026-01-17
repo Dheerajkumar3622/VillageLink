@@ -10,8 +10,9 @@ import { Button } from './Button';
 import {
     Loader2, ArrowLeft, Wheat, Milk, Plus, Package, DollarSign, BarChart3,
     TrendingUp, MapPin, Phone, Mail, Lock, User, Leaf, ChevronRight, LogOut,
-    Camera, Calendar, Check, Clock
+    Camera, Calendar, Check, Clock, Sun, Cloud, CloudRain
 } from 'lucide-react';
+import { getWeatherData, getNewsData } from '../services/mlService';
 
 type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS';
 
@@ -48,6 +49,8 @@ export const KisanApp: React.FC = () => {
 
     // Listings
     const [listings, setListings] = useState<any[]>([]);
+    const [weather, setWeather] = useState<any>(null);
+    const [news, setNews] = useState<any[]>([]);
 
     useEffect(() => {
         // Check if already logged in
@@ -142,6 +145,14 @@ export const KisanApp: React.FC = () => {
             if (listingsRes.ok) {
                 setListings(await listingsRes.json());
             }
+
+            // Fetch weather
+            const weatherData = await getWeatherData();
+            setWeather(weatherData);
+
+            // Fetch news
+            const newsData = await getNewsData();
+            setNews(newsData);
         } catch (e) {
             console.error('Fetch error:', e);
         }
@@ -291,6 +302,28 @@ export const KisanApp: React.FC = () => {
                 </div>
             </div>
 
+            {/* Weather Card */}
+            {weather && (
+                <div className="mx-4 mt-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg overflow-hidden relative">
+                    <div className="absolute -right-4 -top-4 opacity-20">
+                        {weather.condition.includes('Sun') ? <Sun size={120} /> : <Cloud size={120} />}
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="text-sm opacity-80 flex items-center gap-1"><MapPin size={14} /> {weather.location}</p>
+                                <h3 className="text-3xl font-bold mt-1">{weather.temp}°C</h3>
+                                <p className="font-medium">{weather.condition}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs bg-white/20 px-2 py-1 rounded-full inline-block">Mausam Salah</p>
+                                <p className="text-[10px] mt-2 max-w-[120px] leading-tight font-medium">{weather.advisory}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Quick Actions */}
             <div className="px-4 mt-6">
                 <h2 className="font-bold dark:text-white mb-3">Quick Actions</h2>
@@ -339,9 +372,27 @@ export const KisanApp: React.FC = () => {
                         ))}
                     </div>
                 )}
+                {/* News Section */}
+                {news.length > 0 && (
+                    <div className="px-4 mt-6">
+                        <h2 className="font-bold dark:text-white mb-3">Mandi Khabar</h2>
+                        <div className="space-y-3">
+                            {news.map((item, idx) => (
+                                <div key={idx} className="bg-white dark:bg-slate-900 rounded-xl p-3 flex gap-3 shadow-sm">
+                                    <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                                        📰
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-sm dark:text-white leading-tight">{item.title}</h4>
+                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.summary}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-        </div>
-    );
+            );
 };
 
-export default KisanApp;
+            export default KisanApp;

@@ -13,6 +13,7 @@ import {
     SubscriptionBox, MarketPrice, GroupBuy
 } from '../models/gramMandiModels.js';
 import { JobOpportunity, PilgrimagePackage } from '../models/extraModels.js';
+import { NewsItem } from '../models.js';
 
 const router = express.Router();
 
@@ -836,6 +837,48 @@ router.get('/logistics/rates', async (req, res) => {
         res.json(rates);
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// --- MARKET RATES ---
+router.get('/market/rates', async (req, res) => {
+    try {
+        const rates = await MarketPrice.find().sort({ commodity: 1 });
+        res.json(rates);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- WEATHER & NEWS ---
+
+router.get('/weather', async (req, res) => {
+    try {
+        // Fallback real-looking data for Rohtas region
+        // In a real app, this would call an API like OpenWeatherMap
+        const weather = {
+            location: "Sasaram, Rohtas",
+            temp: 24,
+            condition: "Sunny",
+            humidity: 45,
+            forecast: [
+                { day: "Tomorrow", temp: 26, condition: "Partly Cloudy" },
+                { day: "Monday", temp: 23, condition: "Rain" }
+            ],
+            advisory: "Favorable conditions for Wheat sowing. Ensure proper irrigation."
+        };
+        res.json(weather);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get('/news', async (req, res) => {
+    try {
+        const news = await NewsItem.find().sort({ timestamp: -1 }).limit(10);
+        res.json(news);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

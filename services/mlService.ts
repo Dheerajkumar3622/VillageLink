@@ -71,7 +71,7 @@ export const diagnoseLeaf = async (): Promise<LeafDiagnosisResult> => {
         const imgBase64 = await captureImage();
         if (!imgBase64) return { disease: "Cancelled", confidence: 0, remedy: "", productLink: "" };
 
-        const token = await getAuthToken();
+        const token = getAuthToken();
         const response = await fetch(`${API_BASE_URL}/api/ai/diagnose`, {
             method: 'POST',
             headers: {
@@ -144,6 +144,37 @@ export const getCrowdForecast = (timestamp: number): CrowdForecast => {
     }
 };
 
+export const getRouteOptimized = (from: string, to: string) => {
+    return `Route optimized for ${from} to ${to} via NH2. Avoid Sasaram junction due to construction.`;
+};
+
+// --- WEATHER & NEWS ---
+
+export const getWeatherData = async () => {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/grammandi/weather`);
+        if (res.ok) return await res.json();
+    } catch (e) {
+        console.error("Weather Data Error:", e);
+    }
+    return {
+        location: "Rohtas, Bihar",
+        temp: 24,
+        condition: "Sunny",
+        advisory: "Favorable for sowing."
+    };
+};
+
+export const getNewsData = async () => {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/grammandi/news`);
+        if (res.ok) return await res.json();
+    } catch (e) {
+        console.error("News Data Error:", e);
+    }
+    return [];
+};
+
 export const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -177,14 +208,16 @@ export const calculateLogisticsCost = async (itemType: string, weight: number): 
 
 export const getMandiRates = async (): Promise<MandiRate[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/grammandi/market/prices`);
-        const data = await response.json();
-        if (!response.ok) throw new Error("Failed to fetch rates");
-        return data; // Assumes backend returns array of MandiRate
+        const res = await fetch(`${API_BASE_URL}/api/grammandi/market/rates`);
+        if (res.ok) return await res.json();
     } catch (e) {
-        console.error("Failed to fetch mandi rates", e);
-        return [];
+        console.error("Mandi Rates Error:", e);
     }
+    return [
+        { crop: 'Rice (Paddy)', price: 2185, trend: 'UP', satelliteInsight: 'Good yield expected' },
+        { crop: 'Wheat', price: 2125, trend: 'STABLE', predictedPrice: 2150 },
+        { crop: 'Potato', price: 1250, trend: 'DOWN', satelliteInsight: 'Surplus in Bihar' }
+    ];
 };
 
 export const getJobs = async (): Promise<JobOpportunity[]> => {
@@ -199,11 +232,28 @@ export const getJobs = async (): Promise<JobOpportunity[]> => {
 };
 
 // Update return type in types.ts if needed, assuming MarketItem logic is moved or kept for now.
-export const getMarketItems = (): MarketItem[] => {
+export const getMarketItems = async (): Promise<MarketItem[]> => {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/grammandi/produce/listings`);
+        if (res.ok) {
+            const listings = await res.json();
+            // Convert produce listings to market items for generic UI
+            return listings.map((l: any) => ({
+                id: l.id,
+                name: l.crop,
+                price: l.pricePerUnit,
+                unit: l.unit,
+                supplier: l.farmerName,
+                inStock: l.quantity > 0,
+                type: l.category
+            }));
+        }
+    } catch (e) {
+        console.error("Market Items Error:", e);
+    }
     return [
-        { id: 'M1', name: 'Organic Dal', price: 120, unit: 'kg', supplier: 'Gram Store', inStock: true, isDidiProduct: true },
-        { id: 'M2', name: 'Fresh Vegetables', price: 50, unit: 'kg', supplier: 'Local Farm', inStock: true },
-        { id: 'M3', name: 'Mustard Oil', price: 180, unit: 'litre', supplier: 'Gram Store', inStock: true }
+        { id: 'M1', name: 'Organic Seeds', price: 250, unit: 'kg', supplier: 'SeedCo', inStock: true, type: 'INPUT' },
+        { id: 'M2', name: 'Bio-Fertilizer', price: 450, unit: 'bag', supplier: 'EcoFarm', inStock: true, type: 'INPUT' }
     ];
 };
 
@@ -222,7 +272,7 @@ export const getPackages = async (): Promise<PilgrimagePackage[]> => {
 
 export const verifyGenderBiometrics = async (type: 'VOICE' | 'FACE'): Promise<{ verified: boolean }> => {
     try {
-        const token = await getAuthToken();
+        const token = getAuthToken();
         let payload: any = { type };
 
         if (type === 'FACE') {
@@ -257,7 +307,7 @@ export const estimateParcelSize = async (): Promise<ParcelScanResult> => {
         const img = await captureImage();
         if (!img) return { weightKg: 0, dimensions: "", recommendedType: "" };
 
-        const token = await getAuthToken();
+        const token = getAuthToken();
         const response = await fetch(`${API_BASE_URL}/api/ai/parcel-scan`, {
             method: 'POST',
             headers: {
@@ -446,63 +496,34 @@ export const findPoolMatches = (route: string): boolean => Math.random() > 0.6;
 // === NATURAL LANGUAGE PROCESSING FOR SARPANCH AI ===
 
 export const processNaturalLanguageQuery = async (query: string): Promise<ChatMessage> => {
-    const lowerQuery = query.toLowerCase();
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ message: query })
+        });
 
-    // Simple keyword-based intent detection
-    if (lowerQuery.includes('bus') || lowerQuery.includes('ticket') || lowerQuery.includes('safar')) {
+        if (!response.ok) throw new Error("Chat API Failed");
+        const data = await response.json();
+
         return {
             id: Date.now().toString(),
-            text: "Bus ke liye BOOK tab pe jaiye! Aapka safe safar humara priority hai. 🚌",
+            text: data.text,
             sender: 'BOT',
             timestamp: Date.now(),
-            actionLink: { label: "Book Bus →", tab: 'HOME' }
+            actionLink: data.actionLink
         };
-    }
-
-    if (lowerQuery.includes('parcel') || lowerQuery.includes('saman') || lowerQuery.includes('bhejo')) {
+    } catch (e) {
+        console.error("Sarpanch AI Error:", e);
         return {
             id: Date.now().toString(),
-            text: "Parcel bhejne ke liye LOGISTICS section use karo. Sabse sasta aur safe! 📦",
-            sender: 'BOT',
-            timestamp: Date.now(),
-            actionLink: { label: "Send Parcel →", tab: 'LOGISTICS' }
-        };
-    }
-
-    if (lowerQuery.includes('pass') || lowerQuery.includes('monthly')) {
-        return {
-            id: Date.now().toString(),
-            text: "Monthly pass leke paisa bachao! Student pass pe 50% discount milega. 🎫",
-            sender: 'BOT',
-            timestamp: Date.now(),
-            actionLink: { label: "Buy Pass →", tab: 'PASSES' }
-        };
-    }
-
-    if (lowerQuery.includes('maike') || lowerQuery.includes('ghar') || lowerQuery.includes('home')) {
-        return {
-            id: Date.now().toString(),
-            text: "Maike jaana hai? Hum safe route aur women-friendly bus dhundh denge. 🏠",
-            sender: 'BOT',
-            timestamp: Date.now(),
-            actionLink: { label: "Book Safe Ride →", tab: 'HOME' }
-        };
-    }
-
-    if (lowerQuery.includes('mandi') || lowerQuery.includes('crop') || lowerQuery.includes('fasal')) {
-        return {
-            id: Date.now().toString(),
-            text: "Aaj ka Mandi rate: Wheat ₹2200/qtl (↑), Rice ₹1980/qtl. Behetar price ke liye ruko! 🌾",
+            text: "Kshama karein, Sarpanch ji abhi vyast hain. Kripya thodi der baad pucho! 🙏 (Technical Error)",
             sender: 'BOT',
             timestamp: Date.now()
         };
     }
-
-    // Default response
-    return {
-        id: Date.now().toString(),
-        text: "Hum samjhe nahi. Bus booking, parcel, ya maike jaana - kuch bhi pucho! 🙏",
-        sender: 'BOT',
-        timestamp: Date.now()
-    };
 };

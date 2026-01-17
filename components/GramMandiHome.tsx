@@ -60,6 +60,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
     const [cart, setCart] = useState<{ listing: ProduceListing; quantity: number }[]>([]);
     const [farmerStats, setFarmerStats] = useState<any>(null);
     const [consumerStats, setConsumerStats] = useState<any>(null);
+    const [news, setNews] = useState<any[]>([]);
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +110,10 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
             // Fetch orders
             const ordersRes = await fetch(`${API_BASE_URL}/api/grammandi/orders/my`, { headers });
             if (ordersRes.ok) setOrders(await ordersRes.json());
+
+            // Fetch news
+            const newsRes = await fetch(`${API_BASE_URL}/api/grammandi/news`);
+            if (newsRes.ok) setNews(await newsRes.json());
 
         } catch (e) {
             console.error('GramMandi fetch error:', e);
@@ -507,6 +512,22 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                     ))}
                 </div>
             </div>
+
+            {/* Mandi Khabar */}
+            {news.length > 0 && (
+                <div className="px-4 mt-6">
+                    <h2 className="font-bold dark:text-white mb-3">Mandi Khabar</h2>
+                    <div className="flex gap-3 overflow-x-auto pb-4">
+                        {news.map((item, idx) => (
+                            <div key={idx} className="min-w-[280px] bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase">Update</span>
+                                <h4 className="font-bold text-sm dark:text-white mt-2 line-clamp-1">{item.title}</h4>
+                                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.summary}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
