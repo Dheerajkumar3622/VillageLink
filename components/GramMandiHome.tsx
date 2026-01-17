@@ -112,14 +112,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
 
         } catch (e) {
             console.error('GramMandi fetch error:', e);
-            // Mock data for demo
-            setListings([
-                { id: 'pl1', farmerId: 'f1', farmerName: 'Ramesh Kumar', category: 'VEGETABLE', crop: 'Onion', variety: 'Red', grade: 'A', quantity: 500, unit: 'KG', pricePerUnit: 25, harvestDate: new Date().toISOString(), photos: [], location: { village: 'Kotha', district: 'Rohtas' }, organic: false, status: 'ACTIVE' },
-                { id: 'pl2', farmerId: 'f2', farmerName: 'Suresh Yadav', category: 'VEGETABLE', crop: 'Tomato', variety: 'Desi', grade: 'B', quantity: 200, unit: 'KG', pricePerUnit: 35, harvestDate: new Date().toISOString(), photos: [], location: { village: 'Dehri', district: 'Rohtas' }, organic: true, status: 'ACTIVE' },
-                { id: 'pl3', farmerId: 'f3', farmerName: 'Mohan Singh', category: 'GRAIN', crop: 'Wheat', variety: 'Lokwan', grade: 'A', quantity: 50, unit: 'QUINTAL', pricePerUnit: 2200, harvestDate: new Date().toISOString(), photos: [], location: { village: 'Sasaram', district: 'Rohtas' }, organic: false, status: 'ACTIVE' },
-                { id: 'pl4', farmerId: 'f4', farmerName: 'Geeta Devi', category: 'DAIRY', crop: 'Fresh Milk', variety: 'Cow', grade: 'A', quantity: 50, unit: 'LITER', pricePerUnit: 50, harvestDate: new Date().toISOString(), photos: [], location: { village: 'Nasriganj', district: 'Rohtas' }, organic: true, status: 'ACTIVE' }
-            ]);
-            setFarmerStats({ activeListings: 3, totalRevenue: 45000, pendingOrders: 2 });
+            // Handle error state if needed
         }
         setLoading(false);
     };
