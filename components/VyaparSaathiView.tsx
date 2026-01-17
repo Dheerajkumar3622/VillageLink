@@ -4,7 +4,7 @@ import { User, VendorKhata, VendorKhataEntry, CreditScore, BulkOrder, HygieneAud
 import { Button } from './Button';
 import {
     getVendorKhata, recordKhataEntry,
-    getMockCreditScore, getOpenBulkOrders,
+    getOpenBulkOrders,
     submitHygieneSelfAudit
 } from '../services/vyaparSaathiService';
 import {
@@ -41,7 +41,10 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
             // Parallel fetch simulation
             const khataRes = await getVendorKhata();
             // For demo, we use mock credit score if API fails or returns nothing
-            const score = getMockCreditScore();
+            // Mock Credit Score removed. Replaced with placeholder or fetch.
+            // const score = getMockCreditScore(); 
+            const score: CreditScore = { vendorId: user.id, score: 700, tier: 'GOOD', factors: [], metrics: {} as any, loanEligibility: {} as any }; // Placeholder
+
             const ordersRes = await getOpenBulkOrders(0, 0); // Mock lat/lng
 
             if (khataRes.success) setKhata(khataRes.khata || null);
@@ -90,8 +93,8 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
                     <button
                         onClick={handleVoiceCommand}
                         className={`flex items-center gap-3 px-6 py-4 rounded-full font-bold text-lg transition-all ${isRecording
-                                ? 'bg-red-100 text-red-600 animate-pulse'
-                                : 'bg-white text-orange-600 shadow-md active:scale-95'
+                            ? 'bg-red-100 text-red-600 animate-pulse'
+                            : 'bg-white text-orange-600 shadow-md active:scale-95'
                             }`}
                     >
                         <Mic className={`w-6 h-6 ${isRecording ? 'animate-bounce' : ''}`} />

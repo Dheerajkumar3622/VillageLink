@@ -4,7 +4,7 @@ import { User, PreOrder, DhabaAmenity, Restaurant } from '../types';
 import { Button } from './Button';
 import {
     createPreOrder, getActivePreOrders,
-    getDhabaAmenities, rateAmenity, getMockDhabas
+    getDhabaAmenities, rateAmenity
 } from '../services/highwayHostService';
 import {
     Navigation, Wifi, ParkingCircle, Star,
@@ -32,7 +32,9 @@ export const HighwayHostView: React.FC<HighwayHostViewProps> = ({ user, onBack }
     const loadData = async () => {
         setIsLoading(true);
         // Simulate API calls
-        setDhabas(getMockDhabas());
+        // setDhabas(getMockDhabas());
+        setDhabas([]); // Initialize as empty, waiting for real search
+
         const ordersRes = await getActivePreOrders();
         if (ordersRes.success) setActiveOrders(ordersRes.orders || []);
         setIsLoading(false);
