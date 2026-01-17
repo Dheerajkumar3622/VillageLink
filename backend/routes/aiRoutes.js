@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { chatWithSarpanch, diagnoseLeaf, estimateParcel, verifyBiometrics } from '../controllers/aiController.js';
+import { chatWithSarpanch, diagnoseLeaf, estimateParcel, verifyBiometrics, analyzeHygiene } from '../controllers/aiController.js';
 import { authenticate } from '../auth.js';
 
 const router = express.Router();
