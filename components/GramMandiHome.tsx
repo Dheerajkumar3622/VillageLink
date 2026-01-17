@@ -372,21 +372,21 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                     ))}
                 </div>
 
-                {/* Listings Grid */}
-                <div className="px-4 grid grid-cols-2 gap-3">
+                {/* Listings Grid - Whisk Adaptive Elevation */}
+                <div className="px-4 grid grid-cols-2 gap-3 pb-24">
                     {filteredListings.map(listing => (
-                        <div key={listing.id} className="bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                            <div className="w-full h-24 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg flex items-center justify-center text-4xl mb-2">
+                        <div key={listing.id} className="group bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800 transition-all duration-300 hover:shadow-whisk-float hover:-translate-y-1 hover:border-green-200 dark:hover:border-green-800">
+                            <div className="w-full h-24 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-lg flex items-center justify-center text-4xl mb-2 transition-transform group-hover:scale-105">
                                 {getCropEmoji(listing.category, listing.crop)}
                             </div>
-                            <h3 className="font-bold text-sm dark:text-white">{listing.crop}</h3>
+                            <h3 className="font-bold text-sm dark:text-white group-hover:text-green-700 dark:group-hover:text-green-400 transition-colors">{listing.crop}</h3>
                             <p className="text-xs text-slate-500 flex items-center gap-1"><MapPin size={10} /> {listing.location.village}</p>
                             <div className="flex items-center justify-between mt-2">
                                 <div>
                                     <p className="text-lg font-bold text-green-600">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
                                     {listing.organic && <span className="text-[10px] bg-green-100 text-green-700 px-1 rounded">🌿 Organic</span>}
                                 </div>
-                                <button onClick={() => addToCart(listing)} className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
+                                <button onClick={() => addToCart(listing)} className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95">
                                     <Plus size={16} />
                                 </button>
                             </div>
@@ -414,15 +414,20 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
     // ==================== HOME VIEW ====================
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 pt-6 pb-8 rounded-b-3xl">
-                {onBack && (
-                    <button onClick={onBack} className="flex items-center gap-2 mb-4">
-                        <ArrowLeft size={20} /> Back
-                    </button>
-                )}
-                <h1 className="text-2xl font-bold">🌾 GramMandi</h1>
-                <p className="text-green-100">Farm to Kitchen Marketplace</p>
+            {/* Header - Veo Cinematic Background */}
+            <div className="relative overflow-hidden p-4 pt-6 pb-8 rounded-b-3xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 animate-[bgDrift_25s_ease-in-out_infinite_alternate] scale-110"></div>
+                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
+
+                <div className="relative z-10">
+                    {onBack && (
+                        <button onClick={onBack} className="flex items-center gap-2 mb-4 text-white hover:text-green-100 transition-colors">
+                            <ArrowLeft size={20} /> Back
+                        </button>
+                    )}
+                    <h1 className="text-2xl font-bold text-white drop-shadow-md">🌾 GramMandi</h1>
+                    <p className="text-green-50 font-medium opacity-90">Farm to Kitchen Marketplace</p>
+                </div>
             </div>
 
             {/* Quick Stats */}

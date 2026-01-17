@@ -38,6 +38,31 @@ export default {
                     500: '#06b6d4',
                     600: '#0891b2',
                 },
+                // Whisk "Micro-Palettes"
+                organic: {
+                    50: '#f0fdf4',
+                    100: '#dcfce7',
+                    400: '#4ade80',
+                    500: '#22c55e',
+                    600: '#16a34a', // Soft Organic Green
+                    900: '#14532d',
+                },
+                industrial: {
+                    50: '#f8fafc',
+                    100: '#f1f5f9',
+                    400: '#94a3b8',
+                    500: '#64748b', // Metallic Industrial Grey
+                    600: '#475569',
+                    800: '#1e293b',
+                    900: '#0f172a',
+                },
+                warm: {
+                    50: '#fff7ed',
+                    100: '#ffedd5',
+                    500: '#f97316',
+                    600: '#ea580c', // Warm Candle-light
+                    900: '#7c2d12',
+                }
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -46,6 +71,30 @@ export default {
                 'glow-sm': '0 0 15px -3px rgba(99, 102, 241, 0.4)',
                 'glow-md': '0 0 25px -5px rgba(99, 102, 241, 0.5)',
                 'glow-lg': '0 0 40px -8px rgba(99, 102, 241, 0.6)',
+                // Whisk "Multi-layered Shadows" (Umbra, Penumbra, Antumbra)
+                'whisk-float': '0 1px 2px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.04), 0 8px 16px rgba(0,0,0,0.04), 0 16px 32px rgba(0,0,0,0.04)',
+                'whisk-subtle': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+            },
+            animation: {
+                'blob': 'blob 7s infinite',
+                'waveform': 'waveform 1.2s ease-in-out infinite',
+                'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+            },
+            keyframes: {
+                blob: {
+                    '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                    '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                    '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                    '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                },
+                waveform: {
+                    '0%, 100%': { height: '10px' },
+                    '50%': { height: '24px' },
+                },
+                fadeInUp: {
+                    '0%': { opacity: '0', transform: 'translateY(10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
             },
         },
     },

@@ -6,10 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "vite",
+    "dev:live": "vite --host 0.0.0.0",
     "build": "vite build",
     "build:backend": "echo 'Backend ready'",
     "start:backend": "node server.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:sync": "npx cap sync android",
+    "cap:live": "npx cap run android --live-reload"
   },
   "dependencies": {
     "@capacitor/core": "^8.0.0",

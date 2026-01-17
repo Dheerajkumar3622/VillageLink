@@ -6,10 +6,11 @@ const config: CapacitorConfig = {
   appName: 'VillageLink',
   webDir: 'dist',
   server: {
-    // Use the production Render URL so APK always uses latest code
-    url: 'https://villagelink-jh20.onrender.com',
+    // LOCAL DEV MODE - switch back to Render URL for production:
+    // url: 'https://villagelink-jh20.onrender.com',
+    url: 'http://10.0.2.2:3000', // 10.0.2.2 is localhost from Android emulator
     cleartext: true,
-    androidScheme: 'https'
+    androidScheme: 'http'
   }
 };
 

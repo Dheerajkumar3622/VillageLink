@@ -684,40 +684,61 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 <div className="animate-fade-in">
                     {/* ... Header Area ... */}
                     {activeTab === 'HOME' && (
-                        <div className="mb-6 px-2">
-                            {/* ... existing header ... */}
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">{t('welcome')},</span>
-                                        <h2 className="text-xl font-bold dark:text-white" onClick={() => speak(`Welcome ${user.name}`)}>{user.name.split(' ')[0]}</h2>
+                        <div className="mb-6 px-4">
+                            {/* Whisk 2.0: Dashboard Top Bar (Inspired by Image 1 & 3) */}
+                            <div className="flex justify-between items-center mb-6 bg-white dark:bg-slate-900 p-4 super-rounded shadow-whisk-subtle border border-slate-100 dark:border-slate-800 animate-fade-in-up">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                        <UserIcon size={20} className="text-slate-400" />
                                     </div>
-                                    {isOfflineMode && <div className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1"><WifiOff size={8} /> {t('offline_mode')}</div>}
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{t('welcome')}</p>
+                                        <h2 className="text-sm font-bold text-slate-800 dark:text-white leading-none">{user.name.split(' ')[0]}</h2>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    {/* Audio Guide Toggle */}
-                                    <div onClick={() => setVoiceGuideActive(!voiceGuideActive)} className={`p-2 rounded-full border flex items-center justify-center cursor-pointer transition-all ${voiceGuideActive ? 'bg-yellow-400 text-black border-yellow-500 animate-pulse' : 'bg-white dark:bg-slate-800 border-slate-200 text-slate-400'}`}>
-                                        {voiceGuideActive ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                                    </div>
 
-                                    {/* SOS BUTTON */}
-                                    <div onClick={triggerSOS} className="bg-red-600 text-white px-3 py-1.5 rounded-full border border-red-500 flex items-center gap-2 shadow-sm cursor-pointer animate-pulse">
-                                        <Siren size={14} />
-                                        <span className="text-xs font-bold">SOS</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Balance</p>
+                                        <div className="flex items-center gap-1 justify-end">
+                                            <Gem size={14} className="text-yellow-500" />
+                                            <span className="text-sm font-bold text-slate-800 dark:text-white">₹{wallet?.balance || 0}</span>
+                                        </div>
                                     </div>
-
-                                    <div className="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-2 shadow-sm">
-                                        <Gem size={14} className="text-yellow-500" />
-                                        <span className="text-xs font-bold dark:text-white">{wallet?.balance || 0}</span>
-                                    </div>
+                                    <button onClick={triggerSOS} className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-900/50 text-red-600 pulse-heartbeat">
+                                        <Siren size={20} />
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-200 dark:bg-slate-800 p-1 rounded-full flex relative cursor-pointer shadow-inner">
-                                <div className={`absolute top-1 bottom-1 w-[32%] bg-white dark:bg-slate-600 rounded-full shadow-md transition-all duration-300 ${appMode === 'TRANSPORT' ? 'left-1' : (appMode === 'MARKET' ? 'left-[34%]' : 'left-[67%]')}`}></div>
-                                <button onClick={() => { setAppMode('TRANSPORT'); speak("Transport Mode Active"); }} className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${appMode === 'TRANSPORT' ? 'text-brand-600 dark:text-white' : 'text-slate-500'}`}><Bus size={14} /> {t('transport')}</button>
-                                <button onClick={() => { setAppMode('MARKET'); speak("Market Mode Active"); }} className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${appMode === 'MARKET' ? 'text-orange-600 dark:text-white' : 'text-slate-500'}`}><Store size={14} /> {t('market')}</button>
-                                <button onClick={() => { setAppMode('FOOD'); speak("Food Section"); }} className={`flex-1 relative z-10 flex items-center justify-center gap-2 py-2 text-xs font-bold transition-colors ${appMode === 'FOOD' ? 'text-brand-600 dark:text-white' : 'text-slate-500'}`}><Utensils size={14} /> Mess</button>
+                            {/* Mode Selection Grid (Inspired by Image 3) */}
+                            <div className="grid grid-cols-4 gap-3 mb-6">
+                                {[
+                                    { id: 'TRANSPORT', label: 'Ride', icon: Bus, color: 'bg-brand-50 text-brand-600 border-brand-100' },
+                                    { id: 'MARKET', label: 'Haat', icon: Store, color: 'bg-orange-50 text-orange-600 border-orange-100' },
+                                    { id: 'FOOD', label: 'Mess', icon: Utensils, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+                                    { id: 'SOS', label: 'Help', icon: ShieldCheck, color: 'bg-red-50 text-red-600 border-red-100' }
+                                ].map((mode) => (
+                                    <button
+                                        key={mode.id}
+                                        onClick={() => {
+                                            if (mode.id === 'SOS') triggerSOS();
+                                            else {
+                                                setAppMode(mode.id as any);
+                                                speak(`${mode.label} Mode Active`);
+                                            }
+                                        }}
+                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${appMode === mode.id
+                                            ? `${mode.color} shadow-lg -translate-y-1 scale-105 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ${mode.id === 'TRANSPORT' ? 'ring-brand-500' : (mode.id === 'MARKET' ? 'ring-orange-500' : 'ring-emerald-500')}`
+                                            : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        <div className={`p-2 rounded-xl ${appMode === mode.id ? 'bg-white shadow-sm' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                                            <mode.icon size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-tight">{mode.label}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -751,26 +772,41 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                             ) : (
                                 <div className="space-y-4">
                                     {myPasses.map(pass => (
-                                        <div key={pass.id} className="bg-gradient-to-r from-brand-600 to-brand-800 text-white p-5 rounded-2xl shadow-xl relative overflow-hidden">
-                                            <div className="relative z-10">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div>
-                                                        <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest">{pass.type} PASS</p>
-                                                        <h3 className="text-lg font-bold">{pass.from} ↔ {pass.to}</h3>
-                                                    </div>
-                                                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                                        <QrCode size={24} />
+                                        <div key={pass.id} className="ticket-stub relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-whisk-float super-rounded p-6">
+                                            {/* Left Perforation Detail */}
+                                            <div className="absolute top-1/2 -left-2 w-4 h-4 bg-slate-50 dark:bg-slate-950 rounded-full -translate-y-1/2 border border-slate-100 dark:border-slate-800"></div>
+                                            <div className="absolute top-1/2 -right-2 w-4 h-4 bg-slate-50 dark:bg-slate-950 rounded-full -translate-y-1/2 border border-slate-100 dark:border-slate-800"></div>
+                                            <div className="absolute top-1/2 left-0 right-0 border-t-2 border-dashed border-slate-100 dark:border-slate-800 -translate-y-1/2 mx-4"></div>
+
+                                            <div className="relative z-10 flex flex-col justify-between h-full">
+                                                <div className="mb-8">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest mb-1">{pass.type} PASS</p>
+                                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">{pass.from} <span className="text-slate-300 mx-1">↔</span> {pass.to}</h3>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                            <QrCode size={24} className="text-slate-800 dark:text-white" />
+                                                        </div>
                                                     </div>
                                                 </div>
+
                                                 <div className="flex justify-between items-end">
                                                     <div>
-                                                        <p className="text-xs opacity-80">Valid until {new Date(pass.expiryDate).toLocaleDateString()}</p>
-                                                        <p className="text-[10px] opacity-60 mt-1">ID: {pass.id}</p>
+                                                        <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase mb-2">
+                                                            <span>EXP: {new Date(pass.expiryDate).toLocaleDateString()}</span>
+                                                            <span>ID: {pass.id.slice(-6).toUpperCase()}</span>
+                                                        </div>
+                                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold border border-emerald-100 dark:border-emerald-800 inline-block uppercase tracking-wider">ACTIVE PASS</div>
                                                     </div>
-                                                    <div className="bg-emerald-500 px-3 py-1 rounded-full text-xs font-bold shadow-lg">ACTIVE</div>
+                                                    <button
+                                                        onClick={() => handleShowQR(pass.id)}
+                                                        className="bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-brand-500/20 hover:scale-105 transition-transform"
+                                                    >
+                                                        Open QR
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                                         </div>
                                     ))}
                                 </div>
@@ -781,56 +817,88 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     {(activeTab === 'LOGISTICS' || currentView === 'BOOK_PARCEL') && (
                         <div className="px-4 py-6 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><ArrowLeft size={20} /></button>
-                                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><Package className="text-orange-500" /> Send Parcel</h2>
+                                <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><ArrowLeft size={20} /></button>
+                                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                                    <div className="bg-orange-500 p-1.5 rounded-lg text-white shadow-lg shadow-orange-500/20"><Package size={20} /></div>
+                                    CargoLink
+                                </h2>
                             </div>
 
-                            <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-lg border border-slate-100 dark:border-slate-800">
-                                <div className="space-y-4">
-                                    <LocationSelector label="Pickup Location" onSelect={setFromLocation} />
-                                    <LocationSelector label="Drop Location" onSelect={setToLocation} />
+                            <div className="bg-white dark:bg-slate-900 p-6 super-rounded shadow-whisk-float border border-slate-100 dark:border-slate-800 animate-fade-in-up">
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <LocationSelector label="Pickup Terminal" onSelect={setFromLocation} />
+                                        <LocationSelector label="Drop-off Point" onSelect={setToLocation} />
+                                    </div>
 
-                                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-3">Item Details</label>
-
-                                        <div className="flex gap-2 mb-4">
-                                            <button onClick={() => setLogisticsItemType('BOX_SMALL')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${logisticsItemType === 'BOX_SMALL' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white dark:bg-slate-700 border-slate-200 text-slate-500'}`}>Small Box</button>
-                                            <button onClick={() => setLogisticsItemType('SACK_GRAIN')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${logisticsItemType === 'SACK_GRAIN' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white dark:bg-slate-700 border-slate-200 text-slate-500'}`}>Grain Sack</button>
-                                            <button onClick={() => setLogisticsItemType('DOCUMENT')} className={`flex-1 py-2 rounded-lg text-xs font-bold border ${logisticsItemType === 'DOCUMENT' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'bg-white dark:bg-slate-700 border-slate-200 text-slate-500'}`}>Docs</button>
+                                    {/* Whisk 2.0: Cargo Vehicle Selection (Inspired by Image 2) */}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Load Capacity</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {[
+                                                { id: 'BOX_SMALL', label: 'Mini Van', cap: '50kg', icon: Package, color: 'text-orange-600' },
+                                                { id: 'SACK_GRAIN', label: 'E-Rickshaw', cap: '200kg', icon: Bike, color: 'text-yellow-600' },
+                                                { id: 'HEAVY_LORRY', label: 'Truck', cap: '2000kg', icon: Bus, color: 'text-blue-600' }
+                                            ].map((v) => (
+                                                <button
+                                                    key={v.id}
+                                                    onClick={() => {
+                                                        setLogisticsItemType(v.id as any);
+                                                        setLogisticsWeight(v.id === 'BOX_SMALL' ? 5 : (v.id === 'SACK_GRAIN' ? 50 : 500));
+                                                    }}
+                                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${logisticsItemType === v.id
+                                                            ? 'bg-orange-50 border-orange-500 shadow-lg -translate-y-1'
+                                                            : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-orange-200'
+                                                        }`}
+                                                >
+                                                    <div className={`p-2 rounded-xl scale-125 mb-1 ${v.color}`}>
+                                                        <v.icon size={24} />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-[9px] font-bold text-slate-800 dark:text-white uppercase leading-none mb-0.5">{v.label}</p>
+                                                        <p className="text-[8px] font-bold text-slate-400">Up to {v.cap}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
                                         </div>
+                                    </div>
 
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex-1">
-                                                <label className="text-[10px] text-slate-400 font-bold uppercase">Weight (Kg)</label>
-                                                <input
-                                                    type="number"
-                                                    value={logisticsWeight}
-                                                    onChange={(e) => setLogisticsWeight(Number(e.target.value))}
-                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg p-2 mt-1 text-sm font-bold dark:text-white outline-none"
-                                                />
-                                            </div>
-                                            <button onClick={handleParcelScan} className="bg-slate-200 dark:bg-slate-700 p-3 rounded-xl mt-4 text-slate-600 dark:text-slate-300 hover:bg-orange-100 hover:text-orange-600 transition-colors">
-                                                <Camera size={20} />
-                                            </button>
+                                    {/* Payload Visualizer (Inspired by High-Vis Benchmarks) */}
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Load Weight</label>
+                                            <span className="text-sm font-bold text-orange-600">{logisticsWeight} kg</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max={logisticsItemType === 'HEAVY_LORRY' ? 2000 : 500}
+                                            value={logisticsWeight}
+                                            onChange={(e) => setLogisticsWeight(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                        />
+                                        <div className="flex justify-between mt-2">
+                                            <span className="text-[8px] font-bold text-slate-400 capitalize">Min Load</span>
+                                            <span className="text-[8px] font-bold text-slate-400 capitalize">Full Capacity</span>
                                         </div>
                                     </div>
 
                                     {logisticsPoolFound && (
-                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl flex items-center gap-3 border border-emerald-100 dark:border-emerald-900/50 animate-pulse">
+                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl flex items-center gap-3 border border-emerald-100 dark:border-emerald-800 animate-pulse">
                                             <Users size={18} className="text-emerald-600" />
                                             <div>
-                                                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Pooling Available!</p>
-                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-500">Save 30% by sharing space with others.</p>
+                                                <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">POOLING ACTIVE</p>
+                                                <p className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-0.5">30% discount applied for shared route.</p>
                                             </div>
                                         </div>
                                     )}
 
                                     <div className="flex justify-between items-center pt-2">
                                         <div>
-                                            <p className="text-xs text-slate-500 font-bold uppercase">Estimated Cost</p>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Estimated Fare</p>
                                             <p className="text-2xl font-bold text-slate-800 dark:text-white">₹{logisticsPoolFound ? (logisticsPrice * 0.7).toFixed(0) : logisticsPrice}</p>
                                         </div>
-                                        <Button onClick={initiateBook} className="px-8 bg-orange-600 hover:bg-orange-500" disabled={!fromLocation || !toLocation}>
+                                        <Button onClick={initiateBook} className="px-8 super-rounded bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20" disabled={!fromLocation || !toLocation}>
                                             Book Parcel
                                         </Button>
                                     </div>
@@ -939,61 +1007,46 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                         </button>
                                     </div>
 
-                                    {/* REDESIGNED ACTIVE TRIP CARD (LIGHT/GLASS THEME) */}
+                                    {/* REDESIGNED ACTIVE TRIP CARD (Whisk 2.0 Ticket Stub) */}
                                     {activeTickets.length > 0 && (
-                                        <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden relative">
-                                            {/* decorative top gradient line */}
-                                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-400 via-purple-500 to-brand-600"></div>
+                                        <div className="ticket-stub relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-whisk-float super-rounded mb-6">
+                                            {/* Top Perforation Area */}
+                                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-400 via-indigo-500 to-brand-600"></div>
 
-                                            <div className="p-4 flex flex-col md:flex-row gap-0 md:gap-4 relative">
-                                                {/* LEFT: LIVE TRACKER SECTION */}
-                                                <div className="flex-1 md:pr-4">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div onClick={() => speak("Current Trip Active")}>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ON BOARD
-                                                                </span>
-                                                                {isAudioShieldActive && (
-                                                                    <span className="flex items-center gap-1 text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 animate-pulse">
-                                                                        <Mic size={10} /> Rec
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">
-                                                                {activeTickets[0].from} <span className="text-slate-300 dark:text-slate-600 mx-1">→</span> {activeTickets[0].to}
-                                                            </h3>
+                                            <div className="p-5 relative z-10">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">{t('active_trip')}</span>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-xs font-bold text-slate-400">BUS 404</p>
-                                                        </div>
+                                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">
+                                                            {activeTickets[0].from} <span className="text-slate-300 mx-1">→</span> {activeTickets[0].to}
+                                                        </h3>
                                                     </div>
-
-                                                    <div className="mt-4">
-                                                        <LiveTracker desiredPath={activeTickets[0].routePath} layout="HORIZONTAL" showHeader={false} />
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bus 404</p>
+                                                        <p className="text-xs font-bold text-brand-600 dark:text-brand-400 mt-0.5">₹{activeTickets[0].totalPrice}</p>
                                                     </div>
                                                 </div>
 
-                                                {/* RIGHT: TICKET STUB SECTION (Dotted Divider) */}
-                                                <div className="mt-4 md:mt-0 md:w-28 flex md:flex-col justify-between md:justify-center items-center md:items-center gap-3 md:border-l-2 md:border-dashed border-slate-200 dark:border-slate-700 md:pl-4 pt-4 md:pt-0 border-t md:border-t-0">
+                                                {/* Live Tracker Integration */}
+                                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
+                                                    <LiveTracker desiredPath={activeTickets[0].routePath} layout="HORIZONTAL" showHeader={false} />
+                                                </div>
 
-                                                    {/* HOLOGRAPHIC TICKET BUTTON */}
+                                                <div className="flex justify-between items-center border-t border-dashed border-slate-200 dark:border-slate-700 pt-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] text-slate-400 uppercase font-bold">Ticket ID</span>
+                                                        <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">#{activeTickets[0].id.slice(-6).toUpperCase()}</span>
+                                                    </div>
                                                     <button
                                                         onClick={() => handleShowQR(activeTickets[0].id)}
-                                                        className="holographic-sheen group relative bg-slate-900 text-white p-3 rounded-xl shadow-lg hover:scale-105 transition-transform w-full max-w-[120px] flex flex-col items-center gap-2"
+                                                        className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-colors flex items-center gap-2"
                                                     >
-                                                        <div className="bg-white p-1 rounded-lg">
-                                                            <QrCode size={40} className="text-slate-900" />
-                                                        </div>
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider">Show Ticket</span>
-
-                                                        {/* Shine effect handled by index.css .holographic-sheen */}
+                                                        <QrCode size={14} />
+                                                        Show Ticket
                                                     </button>
-
-                                                    <div className="text-center hidden md:block">
-                                                        <p className="text-[9px] text-slate-400 uppercase font-bold">Ticket ID</p>
-                                                        <p className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">#{activeTickets[0].id.slice(-6).toUpperCase()}</p>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1001,16 +1054,26 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                                     {/* ... (Rest of existing dashboard UI) ... */}
                                     {/* Removed overflow-hidden to allow dropdown to display */}
-                                    <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-lg border border-slate-100 dark:border-slate-800 relative">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
-                                                {gramSetuMode ? <Bike className="text-yellow-600" /> : <Bus className="text-brand-600" />}
-                                                {gramSetuMode ? 'Village Feeder' : 'Plan Your Journey'}
-                                            </h3>
-                                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                                                <button onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${!isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Ticket</button>
-                                                <button onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Pass</button>
+                                    <div className="bg-white dark:bg-slate-900 p-6 super-rounded shadow-whisk-float border border-slate-100 dark:border-slate-800 relative animate-fade-in-up">
+                                        <div className="flex flex-col gap-4 mb-6">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                                                    {gramSetuMode ? <Bike className="text-yellow-600" /> : <Bus className="text-brand-600" />}
+                                                    {gramSetuMode ? 'Village Feeder' : 'Plan Your Journey'}
+                                                </h3>
+                                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                                                    <button onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${!isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Ticket</button>
+                                                    <button onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Pass</button>
+                                                </div>
                                             </div>
+
+                                            {/* Whisk 2.0: Trip Type Toggle (Inspired by Image 4) */}
+                                            {!isBuyingPass && (
+                                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
+                                                    <button onClick={() => setTripType('ONE_WAY')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>One-Way</button>
+                                                    <button onClick={() => setTripType('ROUND_TRIP')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Round-Trip</button>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="space-y-4 relative z-10">
@@ -1076,6 +1139,43 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <div onClick={() => setIsGift(!isGift)} className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${isGift ? 'bg-brand-500' : 'bg-slate-300'}`}><div className={`absolute top-1 bottom-1 w-3 bg-white rounded-full transition-all ${isGift ? 'left-6' : 'left-1'}`}></div></div>
                                         </div>
                                         {isGift && (<div className="mt-2 animate-fade-in"><input type="tel" placeholder="Enter Friend's Phone Number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-brand-200 dark:border-brand-800 outline-none text-sm" /></div>)}
+
+                                        {/* Whisk 2.0: Schedule Comparison List (Inspired by Image 1) */}
+                                        {fareDetails && (
+                                            <div className="mt-6 space-y-3">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Available Rides</label>
+                                                {[
+                                                    { time: '08:00', duration: '45m', type: 'Express Bus', price: fareDetails.totalFare, logo: Bus, color: 'text-brand-600' },
+                                                    { time: '08:30', duration: '55m', type: 'Regular Bus', price: Math.round(fareDetails.totalFare * 0.8), logo: Bus, color: 'text-slate-500' },
+                                                    { time: '09:00', duration: '40m', type: 'Shared Cab', price: Math.round(fareDetails.totalFare * 1.5), logo: Car, color: 'text-indigo-600' },
+                                                ].map((ride, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between hover:border-brand-300 transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-right border-r border-slate-100 dark:border-slate-700 pr-4">
+                                                                <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">{ride.time}</p>
+                                                                <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">{ride.duration}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`p-2 rounded-lg bg-slate-50 dark:bg-slate-900 ${ride.color}`}>
+                                                                    <ride.logo size={16} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{ride.type}</p>
+                                                                    <p className="text-[9px] text-slate-400 font-medium">Daily Service</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-sm font-bold text-brand-600 dark:text-brand-400">₹{ride.price}</p>
+                                                            <button className="text-[9px] font-bold text-slate-400 uppercase mt-1 group-hover:text-brand-500">Details →</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
 
                                         {fareDetails && (
                                             <div className="mt-6">

@@ -32,9 +32,10 @@ const MessApp = lazy(() => import('./MessApp').then(m => ({ default: m.MessApp }
 const StorageApp = lazy(() => import('./StorageApp').then(m => ({ default: m.StorageApp })));
 const LogisticsApp = lazy(() => import('./LogisticsApp').then(m => ({ default: m.LogisticsApp })));
 const UserPanel = lazy(() => import('./UserPanel').then(m => ({ default: m.UserPanel })));
+const CargoShipmentView = lazy(() => import('./CargoShipmentView'));
 
 // Check if accessing a dedicated provider app URL
-const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'USER' => {
+const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USER' => {
   const path = window.location.pathname.toLowerCase();
   if (path.startsWith('/kisan')) return 'KISAN';
   if (path.startsWith('/driver')) return 'DRIVER';
@@ -42,6 +43,7 @@ const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LO
   if (path.startsWith('/mess')) return 'MESS';
   if (path.startsWith('/storage')) return 'STORAGE';
   if (path.startsWith('/logistics')) return 'LOGISTICS';
+  if (path.startsWith('/cargo')) return 'CARGO';
   return 'USER'; // Default to consumer super-app
 };
 
@@ -192,6 +194,15 @@ const App: React.FC = () => {
     return (
       <Suspense fallback={<ViewSkeleton />}>
         <LogisticsApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'CARGO') {
+    // CargoLink shipper interface
+    const mockUser = { id: 'guest', name: 'Guest User', phone: '' };
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <CargoShipmentView user={user || mockUser} />
       </Suspense>
     );
   }

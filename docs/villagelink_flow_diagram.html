@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Application Flow Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            color: #1a202c;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 10mm;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3 {
+            font-size: 1.2rem;
+            color: #4a5568;
+            margin: 20px 0 15px 0;
+        }
+
+        .diagram-container {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tr:hover {
+            background: #edf2f7;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .feature-card p {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .module-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            border: 2px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .modules-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 3px;
+        }
+
+        .role-passenger {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .role-driver {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .role-vendor {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .role-admin {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .toc {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .toc ul {
+            list-style: none;
+            columns: 2;
+        }
+
+        .toc li {
+            padding: 8px 0;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🚐 VillageLink</h1>
+            <p>Application Flow Diagram & Feature Guide</p>
+            <p style="font-size: 0.9rem; margin-top: 10px;">Version 3.5 | January 2026</p>
+        </header>
+
+        <!-- Table of Contents -->
+        <div class="section">
+            <h2>📋 Table of Contents</h2>
+            <div class="toc">
+                <ul>
+                    <li><a href="#overview">1. Platform Overview</a></li>
+                    <li><a href="#architecture">2. System Architecture</a></li>
+                    <li><a href="#roles">3. User Roles & Access</a></li>
+                    <li><a href="#auth-flow">4. Authentication Flow</a></li>
+                    <li><a href="#booking-flow">5. Ticket Booking Flow</a></li>
+                    <li><a href="#food-flow">6. Food Order Flow</a></li>
+                    <li><a href="#modules">7. Service Modules</a></li>
+                    <li><a href="#features">8. Feature Summary</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Platform Overview -->
+        <div class="section" id="overview">
+            <h2>🏠 Platform Overview</h2>
+            <p>VillageLink is an integrated rural mobility and commerce platform connecting villages with
+                transportation, food services, agricultural marketplaces, and digital payments.</p>
+
+            <div class="modules-container">
+                <div class="module-box">🚐 Transport</div>
+                <div class="module-box">🍲 FoodLink</div>
+                <div class="module-box">🌾 GramMandi</div>
+                <div class="module-box">💰 Payments</div>
+                <div class="module-box">📦 Logistics</div>
+            </div>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+                    graph TB
+                    subgraph "VillageLink Platform"
+                    CORE["🏠 VillageLink Core"]
+                    TRANSPORT["🚐 Transport Services"]
+                    FOOD["🍲 FoodLink"]
+                    MARKET["🌾 GramMandi"]
+                    PAYMENTS["💰 Digital Payments"]
+
+                    CORE --> TRANSPORT
+                    CORE --> FOOD
+                    CORE --> MARKET
+                    CORE --> PAYMENTS
+                    end
+
+                    USERS["👥 Users"] --> CORE
+                    DRIVERS["🚗 Drivers"] --> CORE
+                    VENDORS["🏪 Vendors"] --> CORE
+                </div>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- System Architecture -->
+        <div class="section" id="architecture">
+            <h2>⚙️ System Architecture</h2>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+                    graph TB
+                    subgraph "Frontend Layer"
+                    WEB["🌐 Web App"]
+                    MOBILE["📱 Mobile App"]
+                    SMS["📨 SMS Interface"]
+                    end
+
+                    subgraph "API Gateway"
+                    GATEWAY["🔀 API Gateway<br />Port 3000"]
+                    end
+
+                    subgraph "Microservices"
+                    AUTH["🔐 Auth<br />:3001"]
+                    BOOKING["🎫 Booking<br />:3002"]
+                    TRACKING["📍 Tracking<br />:3003"]
+                    FOODSVC["🍽️ Food<br />:3004"]
+                    PAYMENT["💳 Payment<br />:3005"]
+                    NOTIF["📱 Notify<br />:3006"]
+                    ML["🧠 ML<br />:5000"]
+                    end
+
+                    subgraph "Databases"
+                    MONGODB[("🍃 MongoDB")]
+                    POSTGRES[("🐘 PostgreSQL")]
+                    REDIS[("⚡ Redis")]
+                    end
+
+                    WEB --> GATEWAY
+                    MOBILE --> GATEWAY
+                    SMS --> GATEWAY
+                    GATEWAY --> AUTH
+                    GATEWAY --> BOOKING
+                    GATEWAY --> TRACKING
+                    GATEWAY --> FOODSVC
+                    GATEWAY --> PAYMENT
+                    GATEWAY --> NOTIF
+                    AUTH --> POSTGRES
+                    BOOKING --> MONGODB
+                    TRACKING --> REDIS
+                    PAYMENT --> POSTGRES
+                </div>
+            </div>
+        </div>
+
+        <!-- User Roles -->
+        <div class="section" id="roles">
+            <h2>👥 User Roles & Access</h2>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <span class="role-badge role-passenger">👤 PASSENGER</span>
+                <span class="role-badge role-driver">🚗 DRIVER</span>
+                <span class="role-badge role-vendor">🏪 VENDOR</span>
+                <span class="role-badge role-vendor">👨‍🍳 MESS MANAGER</span>
+                <span class="role-badge role-admin">👔 ADMIN</span>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Passenger</th>
+                        <th>Driver</th>
+                        <th>Vendor</th>
+                        <th>Admin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Book Tickets</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>Accept Rides</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>Manage Menu</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>Process Orders</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>View Analytics</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>System Settings</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Authentication Flow -->
+        <div class="section" id="auth-flow">
+            <h2>🔐 Authentication Flow</h2>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant U as 👤 User
+                    participant APP as 📱 VillageLink App
+                    participant AUTH as 🔐 Auth Service
+                    participant DB as 💾 Database
+
+                    U->>APP: Open App
+                    APP->>APP: Check Token
+
+                    alt Token Valid
+                    APP->>U: Show Dashboard
+                    else Token Invalid
+                    APP->>U: Show Login
+                    U->>APP: Enter Credentials
+                    APP->>AUTH: POST /auth/login
+                    AUTH->>DB: Verify User
+                    DB-->>AUTH: User Data
+                    AUTH-->>APP: JWT Token
+                    APP->>U: Role-based Dashboard
+                    end
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Booking Flow -->
+        <div class="section" id="booking-flow">
+            <h2>🎫 Ticket Booking Flow</h2>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant P as 👤 Passenger
+                    participant APP as 📱 App
+                    participant API as 🖥️ Backend
+                    participant PAY as 💳 Payment
+                    participant DRV as 🚗 Driver
+
+                    P->>APP: Select Route
+                    APP->>API: Search Routes
+                    API-->>APP: Available Routes
+                    P->>APP: Choose From/To
+                    P->>APP: Select Passengers
+                    P->>APP: Choose Payment
+                    APP->>PAY: Process Payment
+                    PAY-->>APP: Confirmed
+                    APP->>API: Create Ticket
+                    API-->>APP: Ticket + QR
+                    APP->>DRV: Notify Driver
+                    APP->>P: Show QR Ticket
+                </div>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Food Order Flow -->
+        <div class="section" id="food-flow">
+            <h2>🍲 Food Order Flow</h2>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+                    sequenceDiagram
+                    participant C as 👤 Customer
+                    participant APP as 📱 App
+                    participant V as 🏪 Vendor
+                    participant PAY as 💳 Payment
+
+                    C->>APP: Browse FoodLink
+                    APP->>APP: Show Nearby Vendors
+                    C->>APP: Select Vendor
+                    C->>APP: Add to Cart
+                    C->>APP: Place Order
+                    APP->>PAY: Process Payment
+                    PAY-->>APP: Confirmed
+                    APP->>V: New Order Alert
+                    V->>APP: Accept Order
+                    V->>APP: Mark Ready
+                    APP->>C: Push Notification
+                    C->>V: Show Token/QR
+                    V->>APP: Complete Order
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Modules -->
+        <div class="section" id="modules">
+            <h2>📦 Service Modules</h2>
+
+            <h3>🚐 Transport Module</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+                    graph LR
+                    subgraph "Transport Services"
+                    TICKET["🎫 Tickets"]
+                    PASS["📋 Passes"]
+                    RENTAL["🚐 Rentals"]
+                    PARCEL["📦 Parcels"]
+                    TRACK["📍 Tracking"]
+                    end
+
+                    PASSENGER["👤 Passenger"] --> TICKET
+                    PASSENGER --> PASS
+                    PASSENGER --> RENTAL
+                    PASSENGER --> PARCEL
+                    PASSENGER --> TRACK
+                </div>
+            </div>
+
+            <h3>🍲 FoodLink Module</h3>
+            <div class="diagram-container">
+                <div class="mermaid">
+                    graph LR
+                    subgraph "FoodLink"
+                    STALL["🛒 Street Stalls"]
+                    MESS["🍱 Mess/Canteen"]
+                    RESTO["🏨 Restaurants"]
+                    DHABA["🚛 Highway Dhabas"]
+                    end
+
+                    subgraph "Features"
+                    ORDER["📦 Orders"]
+                    SUB["📅 Subscriptions"]
+                    TABLE["🪑 Table Booking"]
+                    end
+
+                    USER["👤 User"] --> STALL
+                    USER --> MESS
+                    USER --> RESTO
+                    USER --> DHABA
+                    MESS --> SUB
+                    RESTO --> TABLE
+                </div>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Feature Summary -->
+        <div class="section" id="features">
+            <h2>✨ Feature Summary</h2>
+
+            <h3>🚐 Transport Features</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎫 Ticket Booking</h4>
+                    <p>One-way/round-trip tickets with QR verification</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📋 Monthly Pass</h4>
+                    <p>NFT-based passes with blockchain verification</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🚐 Charter/Rental</h4>
+                    <p>Full vehicle booking for groups</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📦 Parcel Service</h4>
+                    <p>Inter-village parcel delivery with tracking</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📍 Live Tracking</h4>
+                    <p>Real-time GPS tracking with ETA updates</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🛡️ Guardian Mode</h4>
+                    <p>Safety features with trusted contacts</p>
+                </div>
+            </div>
+
+            <h3>🍲 FoodLink Features</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📍 Nearby Discovery</h4>
+                    <p>GPS-based vendor discovery</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📋 Digital Menu</h4>
+                    <p>Photos, prices, and descriptions</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📅 Mess Subscription</h4>
+                    <p>Weekly/monthly meal plans</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🪑 Table Booking</h4>
+                    <p>Restaurant reservations</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📒 Digital Khata</h4>
+                    <p>Vendor accounting system</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🧼 Hygiene Audits</h4>
+                    <p>AI-verified hygiene checks</p>
+                </div>
+            </div>
+
+            <h3>💰 Payment Features</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>💰 Digital Wallet</h4>
+                    <p>In-app balance management</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🪙 GramCoin</h4>
+                    <p>Blockchain-based rewards</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📱 UPI/Cards</h4>
+                    <p>Razorpay integration</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💳 Credit System</h4>
+                    <p>Buy-now-pay-later option</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="section">
+            <h2>📚 Quick Reference</h2>
+
+            <h3>Dedicated App Entry Points</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>App</th>
+                        <th>URL Pattern</th>
+                        <th>Target User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>KisanApp</td>
+                        <td>/kisan/*</td>
+                        <td>Farmers</td>
+                    </tr>
+                    <tr>
+                        <td>DriverApp</td>
+                        <td>/driver/*</td>
+                        <td>Transport Drivers</td>
+                    </tr>
+                    <tr>
+                        <td>VyapariApp</td>
+                        <td>/vyapari/*</td>
+                        <td>Wholesalers</td>
+                    </tr>
+                    <tr>
+                        <td>MessApp</td>
+                        <td>/mess/*</td>
+                        <td>Mess Managers</td>
+                    </tr>
+                    <tr>
+                        <td>StorageApp</td>
+                        <td>/storage/*</td>
+                        <td>Cold Storage Operators</td>
+                    </tr>
+                    <tr>
+                        <td>LogisticsApp</td>
+                        <td>/logistics/*</td>
+                        <td>Delivery Partners</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>API Endpoints Overview</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Base Route</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Authentication</td>
+                        <td>/auth/*</td>
+                        <td>Login, Register, OTP</td>
+                    </tr>
+                    <tr>
+                        <td>Users</td>
+                        <td>/users/*</td>
+                        <td>Profile, Wallet</td>
+                    </tr>
+                    <tr>
+                        <td>Tickets</td>
+                        <td>/tickets/*</td>
+                        <td>Booking, Passes</td>
+                    </tr>
+                    <tr>
+                        <td>Food</td>
+                        <td>/food/*</td>
+                        <td>Orders, Vendors</td>
+                    </tr>
+                    <tr>
+                        <td>Payments</td>
+                        <td>/payments/*</td>
+                        <td>Razorpay, Wallet</td>
+                    </tr>
+                    <tr>
+                        <td>Fleet</td>
+                        <td>/fleet/*</td>
+                        <td>Driver Management</td>
+                    </tr>
+                    <tr>
+                        <td>UMG</td>
+                        <td>/umg/*</td>
+                        <td>Unified Mobility Grid</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="highlight-box">
+            <h3>🖨️ Print Instructions</h3>
+            <p>Click the "Print Document" button below or use Ctrl+P</p>
+            <p>Recommended: Landscape orientation, A3 paper for best visibility</p>
+        </div>
+
+        <footer>
+            <p>VillageLink Platform v3.5 | Generated: January 2026</p>
+            <p>© 2026 VillageLink. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Print Document</button>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+    </script>
+</body>
+
+</html>

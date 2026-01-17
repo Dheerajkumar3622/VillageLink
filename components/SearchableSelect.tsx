@@ -24,14 +24,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, val
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(opt => 
+  const filteredOptions = options.filter(opt =>
     opt.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="relative space-y-2" ref={wrapperRef}>
       <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1">{label}</label>
-      <div 
+      <div
         className="relative group cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -59,14 +59,13 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({ options, val
           </div>
           <div className="max-h-48 overflow-y-auto">
             {filteredOptions.length > 0 ? (
-              filteredOptions.map(option => (
+              filteredOptions.map((option, index) => (
                 <div
                   key={option}
-                  className={`px-4 py-3 cursor-pointer transition-colors text-sm font-medium ${
-                    option === value 
-                      ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300' 
+                  className={`px-4 py-3 cursor-pointer transition-colors text-sm font-medium ${option === value
+                      ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    } ${index === 0 && searchTerm.length > 2 ? 'shadow-[0_0_15px_rgba(34,197,94,0.5)] border-green-500' : ''}`}
                   onClick={() => {
                     onChange(option);
                     setIsOpen(false);

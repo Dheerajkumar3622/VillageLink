@@ -42,6 +42,7 @@ import ticketRoutes from './backend/routes/ticketRoutes.js';
 import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
 import gramMandiRoutes from './backend/routes/gramMandiRoutes.js';
+import indiaLocationRoutes from './backend/routes/indiaLocationRoutes.js';
 
 import EmailService from './backend/services/emailService.js';
 const { sendEmail } = EmailService;
@@ -222,6 +223,7 @@ app.use('/api/sms', smsRoutes);
 app.use('/api/ticket', ticketRoutes);
 app.use('/api/route', routeIntelRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/india', indiaLocationRoutes); // Pan-India location search API
 
 // --- FOODLINK VENDOR ROUTES ---
 import vendorRoutes from './backend/routes/vendorRoutes.js';
@@ -229,11 +231,13 @@ import foodLinkRoutes from './backend/routes/foodLinkRoutes.js';
 import umgRoutes from './backend/routes/umgRoutes.js';
 import fleetRoutes from './backend/routes/fleetRoutes.js';
 import becknRoutes from './backend/routes/becknRoutes.js';
+import cargoRoutes from './backend/routes/cargoRoutes.js';
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/foodlink', foodLinkRoutes);
 app.use('/api', umgRoutes); // UMG Routes for subscriptions, FLMC, guardian
 app.use('/api/fleet', fleetRoutes); // Fleet management for operators
 app.use('/api/beckn', becknRoutes); // ONDC/Beckn Protocol endpoints
+app.use('/api/cargo', cargoRoutes); // CargoLink crowdsourced logistics
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 

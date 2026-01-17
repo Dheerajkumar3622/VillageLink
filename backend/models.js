@@ -1492,6 +1492,145 @@ multimodalJourneySchema.index({ status: 1 });
 
 export const MultimodalJourney = mongoose.model('MultimodalJourney', multimodalJourneySchema);
 
+// --- CARGOLINK: CROWDSOURCED SUPPLY CHAIN INTEGRATION ---
+
+// CargoRequest - Items needing transport
+const cargoRequestSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  shipperId: String,
+  shipperType: { type: String, enum: ['FARMER', 'VENDOR', 'USER', 'MESS', 'SHOPKEEPER'] },
+  shipperName: String,
+  shipperPhone: String,
+
+  // Item Details
+  itemType: { type: String, enum: ['PRODUCE', 'GOODS', 'FOOD', 'DOCUMENTS', 'PACKAGE'] },
+  itemName: String,
+  description: String,
+  weightKg: Number,
+  volumeLiters: Number,
+  photos: [String],
+  isFragile: { type: Boolean, default: false },
+
+  // Route
+  pickupLocation: {
+    name: String,
+    lat: Number,
+    lng: Number,
+    address: String
+  },
+  dropoffLocation: {
+    name: String,
+    lat: Number,
+    lng: Number,
+    address: String
+  },
+  distanceKm: Number,
+  pickupWindow: { start: Number, end: Number },
+  deliveryDeadline: Number,
+
+  // Pricing (Hybrid Model)
+  basePrice: Number,
+  offeredPrice: Number,
+  acceptedPrice: Number,
+  paymentMethod: { type: String, enum: ['WALLET', 'CASH', 'UPI'], default: 'WALLET' },
+
+  // Receiver Details
+  receiverName: String,
+  receiverPhone: String,
+
+  // Status
+  status: {
+    type: String,
+    enum: ['POSTED', 'MATCHED', 'DRIVER_ACCEPTED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'DISPUTED'],
+    default: 'POSTED'
+  },
+  matchedDriverId: String,
+  matchedDriverName: String,
+  matchedVehicleType: String,
+
+  // Verification
+  pickupOTP: String,
+  deliveryOTP: String,
+  pickupPhoto: String,
+  deliveryPhoto: String,
+  pickupTimestamp: Number,
+  deliveryTimestamp: Number,
+  blockchainHash: String,
+
+  // Tracking
+  currentLocation: { lat: Number, lng: Number },
+  lastUpdated: Number,
+
+  createdAt: { type: Number, default: Date.now }
+});
+
+cargoRequestSchema.index({ shipperId: 1, status: 1 });
+cargoRequestSchema.index({ status: 1, 'pickupLocation.lat': 1, 'pickupLocation.lng': 1 });
+cargoRequestSchema.index({ matchedDriverId: 1, status: 1 });
+
+export const CargoRequest = mongoose.model('CargoRequest', cargoRequestSchema);
+
+// CargoCapacity - Driver's cargo settings
+const cargoCapacitySchema = new mongoose.Schema({
+  driverId: { type: String, unique: true },
+  driverName: String,
+  vehicleType: { type: String, enum: ['AUTO', 'BUS', 'TEMPO', 'TRUCK', 'BIKE', 'CAR'] },
+  vehicleNumber: String,
+  maxWeightKg: { type: Number, default: 20 },
+  maxVolumeLiters: { type: Number, default: 50 },
+  currentLoadKg: { type: Number, default: 0 },
+  acceptingCargo: { type: Boolean, default: true },
+  acceptedTypes: [String],
+  pricePerKmPerKg: { type: Number, default: 2 },
+  currentRoute: {
+    from: String,
+    to: String,
+    fromLat: Number,
+    fromLng: Number,
+    toLat: Number,
+    toLng: Number,
+    estimatedArrival: Number
+  },
+  rating: { type: Number, default: 5 },
+  totalDeliveries: { type: Number, default: 0 },
+  successRate: { type: Number, default: 100 },
+  lastUpdated: { type: Number, default: Date.now }
+});
+
+cargoCapacitySchema.index({ driverId: 1 });
+cargoCapacitySchema.index({ acceptingCargo: 1, vehicleType: 1 });
+
+export const CargoCapacity = mongoose.model('CargoCapacity', cargoCapacitySchema);
+
+// CargoMatch - Route matching results
+const cargoMatchSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  cargoRequestId: String,
+  driverId: String,
+  driverName: String,
+  vehicleType: String,
+  pickupDetourKm: Number,
+  dropoffDetourKm: Number,
+  totalDetourKm: Number,
+  estimatedPickupTime: Number,
+  estimatedDeliveryTime: Number,
+  driverCurrentLocation: { lat: Number, lng: Number },
+  offerPrice: Number,
+  shipperPrice: Number,
+  score: Number,
+  status: { type: String, enum: ['PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'COUNTER_OFFER'], default: 'PENDING' },
+  counterOfferPrice: Number,
+  createdAt: { type: Number, default: Date.now },
+  expiresAt: Number,
+  respondedAt: Number
+});
+
+cargoMatchSchema.index({ cargoRequestId: 1, status: 1 });
+cargoMatchSchema.index({ driverId: 1, status: 1 });
+cargoMatchSchema.index({ expiresAt: 1 });
+
+export const CargoMatch = mongoose.model('CargoMatch', cargoMatchSchema);
+
 // Default export for CJS compatibility (required for Render deployment)
 export default {
   User,
@@ -1542,5 +1681,8 @@ export default {
   WasteEntry,
   PrepSheet,
   GuestProfile,
-  MultimodalJourney
+  MultimodalJourney,
+  CargoRequest,
+  CargoCapacity,
+  CargoMatch
 };

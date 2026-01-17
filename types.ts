@@ -44,13 +44,17 @@ export enum PaymentMethod {
 // Flattened Location Interface for Direct Search (v9.1.0)
 export interface LocationData {
   name: string;
-  address: string; // e.g., "Village Name, Panchayat, Block"
+  address?: string; // Made optional for simpler location objects
   lat: number;
   lng: number;
-  block: string;
-  panchayat: string;
-  district?: string; // Added for specific display
-  villageCode: string;
+  block?: string;  // Made optional
+  panchayat?: string;  // Made optional
+  district?: string;
+  villageCode?: string;  // Made optional
+  // New fields for enhanced location picker (v18.5)
+  type?: 'STATE' | 'DISTRICT' | 'TEHSIL' | 'BLOCK' | 'VILLAGE' | 'CITY' | 'TOWN' | 'POI' | 'RAILWAY_STATION' | 'BUS_STAND' | 'HOSPITAL' | 'SCHOOL' | 'TEMPLE' | 'BANK' | string;
+  state?: string;
+  pincode?: string;
 }
 
 export interface RouteDefinition {

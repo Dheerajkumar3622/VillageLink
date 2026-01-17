@@ -54,6 +54,14 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     const [loading, setLoading] = useState(true);
     const [filterTab, setFilterTab] = useState<FilterTab>('ALL');
 
+    // Banana: Dynamic Time-Based Theming
+    const [isNightTime, setIsNightTime] = useState(false);
+
+    useEffect(() => {
+        const hour = new Date().getHours();
+        setIsNightTime(hour >= 18 || hour < 6);
+    }, []);
+
     // Data states
     const [stalls, setStalls] = useState<FoodVendor[]>([]);
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -420,17 +428,20 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         const vendor = selectedVendor as FoodVendor;
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
-                {/* Header */}
-                <div className="relative h-48 bg-gradient-to-r from-orange-500 to-amber-500">
-                    <button onClick={() => { setView('HOME'); setCart([]); }} className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur rounded-full text-white">
+                {/* Header - Veo Cinematic Background */}
+                <div className="relative h-48 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 animate-[bgDrift_20s_ease-in-out_infinite_alternate] scale-110"></div>
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+
+                    <button onClick={() => { setView('HOME'); setCart([]); }} className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-colors z-10">
                         <ArrowLeft size={20} />
                     </button>
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent text-white">
-                        <h1 className="text-2xl font-bold">{vendor.stallName}</h1>
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white z-10">
+                        <h1 className="text-2xl font-bold drop-shadow-md">{vendor.stallName}</h1>
                         <div className="flex items-center gap-3 mt-1 text-sm">
-                            <span className="flex items-center gap-1"><Star size={14} fill="currentColor" /> {vendor.rating}</span>
+                            <span className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm"><Star size={14} fill="currentColor" className="text-yellow-400" /> {vendor.rating}</span>
                             <span className="flex items-center gap-1"><MapPin size={14} /> {vendor.location}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${vendor.isOpen ? 'bg-green-500' : 'bg-red-500'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${vendor.isOpen ? 'bg-green-500/20 border-green-400 text-green-300' : 'bg-red-500/20 border-red-400 text-red-300'}`}>
                                 {vendor.isOpen ? 'OPEN' : 'CLOSED'}
                             </span>
                         </div>
@@ -679,18 +690,24 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                     </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                {/* Search Bar - Enhanced */}
+                <div className="relative group variable-font-transition focus-within:ring-2 ring-orange-400 rounded-xl transition-all">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" size={18} />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search for food, stalls, restaurants..."
-                        className="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 shadow-lg"
+                        className="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 shadow-lg outline-none font-medium transition-all group-focus-within:font-bold"
                     />
-                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500">
-                        <Filter size={18} />
+                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
+                        {/* Waveform for Voice UI hint if filters not active */}
+                        <div className="flex items-end gap-0.5 h-3 w-4">
+                            <div className="w-0.5 bg-orange-500 animate-[waveform_1s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-orange-500 animate-[waveform_1.2s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-orange-500 animate-[waveform_0.8s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-orange-500 animate-[waveform_1.1s_ease-in-out_infinite]"></div>
+                        </div>
                     </button>
                 </div>
             </div>
