@@ -54,6 +54,9 @@ const __dirname = path.dirname(__filename);
 import MarketService from './backend/services/marketService.js';
 const { refreshMarketPrices } = MarketService;
 
+import JobService from './backend/services/jobService.js';
+const { initializeJobs } = JobService;
+
 import TrafficService from './backend/services/trafficAggregatorService.js';
 const { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } = TrafficService;
 
@@ -74,7 +77,8 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Initialize Real Data
-refreshMarketPrices(); // Update prices on server start
+refreshMarketPrices();
+initializeJobs(); // Seed jobs if empty
 
 // --- SECURITY MIDDLEWARE ---
 app.use(helmet({ contentSecurityPolicy: false }));

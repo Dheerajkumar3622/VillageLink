@@ -276,6 +276,7 @@
                     <li><a href="#food-flow">6. Food Order Flow</a></li>
                     <li><a href="#modules">7. Service Modules</a></li>
                     <li><a href="#features">8. Feature Summary</a></li>
+                    <li><a href="#tutorials">9. Detailed User Tutorials</a></li>
                 </ul>
             </div>
         </div>
@@ -291,7 +292,8 @@
                 <div class="module-box">🍲 FoodLink</div>
                 <div class="module-box">🌾 GramMandi</div>
                 <div class="module-box">💰 Payments</div>
-                <div class="module-box">📦 Logistics</div>
+                <div class="module-box">📦 CargoLink</div>
+                <div class="module-box">⚡ UMG Grid</div>
             </div>
 
             <div class="diagram-container">
@@ -308,11 +310,14 @@
                     CORE --> FOOD
                     CORE --> MARKET
                     CORE --> PAYMENTS
+                    CORE --> CARGO["📦 CargoLink"]
+                    CORE --> UMG["⚡ UMG Grid"]
                     end
 
                     USERS["👥 Users"] --> CORE
                     DRIVERS["🚗 Drivers"] --> CORE
                     VENDORS["🏪 Vendors"] --> CORE
+                    KISAN["🌾 Farmers"] --> CORE
                 </div>
             </div>
         </div>
@@ -661,6 +666,100 @@
                     <h4>💳 Credit System</h4>
                     <p>Buy-now-pay-later option</p>
                 </div>
+            </div>
+
+            <h3>📦 Cargo & Logistics</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🚛 CargoLink</h4>
+                    <p>Drivers list extra space for cargo transport</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📦 Smart Shipments</h4>
+                    <p>Automated parcel size & weight estimation</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⚡ UMG Integration</h4>
+                    <p>Unified Mobility Grid for inter-modal parcel movement</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📍 Real-time Tracking</h4>
+                    <p>Door-to-door tracking for rural logistics</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Detailed Tutorials -->
+        <div class="section" id="tutorials">
+            <h2>📖 9. Detailed User Tutorials</h2>
+
+            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #2e7d32;">
+                <h4>🌾 For Kisan (Farmers)</h4>
+                <ul>
+                    <li><strong>Mandi Rates:</strong> Go to <em>GramMandi</em> to see live prices for Wheat, Rice, and
+                        Vegetables from nearby mandis.</li>
+                    <li><strong>Dr. Kisan AI:</strong> Take a photo of a sick leaf. The AI will diagnose the disease and
+                        suggest the right pesticide.</li>
+                    <li><strong>Cold Storage:</strong> Book space in local cold storages to prevent crop rot during low
+                        price seasons.</li>
+                    <li><strong>Mandi Transport:</strong> Book a tractor or mini-truck (CargoLink) to transport your
+                        harvest directly from the farm.</li>
+                </ul>
+            </div>
+
+            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #fb8c00;">
+                <h4>🏪 For Vendors (Shops/Dhabas)</h4>
+                <ul>
+                    <li><strong>Digital Storefront:</strong> List your items in <em>FoodLink</em>. Add photos and prices
+                        for village customers.</li>
+                    <li><strong>Digital Khata:</strong> Keep track of customer credits (Udhari) digitally. No more paper
+                        notebooks!</li>
+                    <li><strong>Hygiene Audit:</strong> Use the AI scanner to upload photos of your kitchen. High
+                        hygiene scores attract more customers.</li>
+                    <li><strong>Order Management:</strong> Get real-time alerts for new orders. Mark them 'Ready' so
+                        passengers can pick them up when the bus arrives.</li>
+                </ul>
+            </div>
+
+            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #1565c0;">
+                <h4>🚗 For Drivers (Bus/Jeep/Truck)</h4>
+                <ul>
+                    <li><strong>Subscription:</strong> Pay a small monthly fee to access infinite passenger leads
+                        without commission.</li>
+                    <li><strong>CargoLink:</strong> If you have empty space, list it under 'Cargo'. Earn extra by
+                        carrying small parcels.</li>
+                    <li><strong>Route Optimization:</strong> Follow the AI-suggested route to find more passengers in
+                        intermediate villages.</li>
+                    <li><strong>Drowsiness Alert:</strong> Keep your phone mounted. The app will alert you if it senses
+                        unsafe driving patterns.</li>
+                </ul>
+            </div>
+
+            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #c2185b;">
+                <h4>📦 For Logistics Partners</h4>
+                <ul>
+                    <li><strong>Parcel Hub:</strong> Manage incoming and outgoing parcels for your village.</li>
+                    <li><strong>Fleet Management:</strong> Track all your vehicles in one place with the Operator
+                        Dashboard.</li>
+                    <li><strong>UMG Grid:</strong> Connect with other transport providers to move parcels across long
+                        distances seamlessly.</li>
+                </ul>
+            </div>
+
+            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #7b1fa2;">
+                <h4>👤 For Passengers (Village Citizens)</h4>
+                <ul>
+                    <li><strong>Smart Booking:</strong> Select your route and book tickets via UPI or GramCoin wallet.
+                    </li>
+                    <li><strong>Guardian Mode:</strong> Share your live trip with family. If the vehicle deviates, they
+                        are alerted instantly.</li>
+                    <li><strong>Food on the Go:</strong> Order food from dhabas on your route. It will be ready when
+                        your bus reaches.</li>
+                    <li><strong>GramScore:</strong> Regular travelers earn GramCoins which can be used for free rides
+                        later.</li>
+                </ul>
             </div>
         </div>
 

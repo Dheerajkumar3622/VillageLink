@@ -12,6 +12,7 @@ import {
     StorageBooking, LogisticsTrip, WholesaleBid,
     SubscriptionBox, MarketPrice, GroupBuy
 } from '../models/gramMandiModels.js';
+import { JobOpportunity, PilgrimagePackage } from '../models/extraModels.js';
 
 const router = express.Router();
 
@@ -744,6 +745,95 @@ router.get('/dashboard/consumer', Auth.authenticate, async (req, res) => {
         };
 
         res.json(stats);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ==================== JOBS & TRAVEL APIs (REAL IMPLEMENTATION) ====================
+
+// --- JOBS ---
+
+// Get all jobs
+router.get('/jobs', async (req, res) => {
+    try {
+        const jobs = await JobOpportunity.find({ isActive: true }).sort({ createdAt: -1 });
+        res.json(jobs);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Post a job
+router.post('/jobs', Auth.authenticate, async (req, res) => {
+    try {
+        const { title, location, wage, contact, type, description } = req.body;
+        const job = new JobOpportunity({
+            id: `JOB-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            title,
+            location,
+            wage,
+            contact,
+            type,
+            description,
+            postedBy: req.user.id
+        });
+        await job.save();
+        res.json({ success: true, job });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- TRAVEL PACKAGES ---
+
+// Get all packages
+router.get('/travel/packages', async (req, res) => {
+    try {
+        const packages = await PilgrimagePackage.find({ isActive: true }).sort({ price: 1 });
+        res.json(packages);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Add a package (Operator/Admin)
+router.post('/travel/packages', Auth.authenticate, async (req, res) => {
+    try {
+        const { name, locations, price, duration, image, description, nextDate } = req.body;
+        const pkg = new PilgrimagePackage({
+            id: `PKG-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            name,
+            locations,
+            price,
+            duration,
+            image,
+            description,
+            nextDate,
+            operatorId: req.user.id
+        });
+        await pkg.save();
+        res.json({ success: true, package: pkg });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- LOGISTICS RATES ---
+
+// Get dynamic logistics rates
+router.get('/logistics/rates', async (req, res) => {
+    try {
+        // In a real system, this might query a Rates table or 3rd party API
+        // For now, we standardize the logic here instead of client-side
+        const rates = {
+            'BOX_SMALL': 20,
+            'SACK_GRAIN': 15,
+            'DOCUMENT': 30,
+            'DEFAULT': 18,
+            'perKgMultiplier': 2
+        };
+        res.json(rates);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

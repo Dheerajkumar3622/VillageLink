@@ -12,5 +12,6 @@ router.post('/chat', chatWithSarpanch);
 router.post('/diagnose', authenticate, diagnoseLeaf);
 router.post('/parcel-scan', authenticate, estimateParcel);
 router.post('/verify-bio', authenticate, verifyBiometrics);
+router.post('/hygiene-audit', authenticate, analyzeHygiene);
 
 export default router;

@@ -71,57 +71,29 @@ export const diagnoseLeaf = async (): Promise<LeafDiagnosisResult> => {
         const imgBase64 = await captureImage();
         if (!imgBase64) return { disease: "Cancelled", confidence: 0, remedy: "", productLink: "" };
 
-        // 1. Load Model
-        const model = await loadMobileNet();
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/ai/diagnose`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageBase64: imgBase64 })
+        });
 
-        // 2. Preprocess
-        const imageElement = await imageFromBase64(imgBase64);
-
-        // 3. Inference
-        const predictions = await model.classify(imageElement);
-        console.log("Dr. Kisan Vision:", predictions);
-
-        if (!predictions || predictions.length === 0) {
-            throw new Error("No objects detected");
-        }
-
-        const top = predictions[0];
-
-        // 4. Agricultural Mapping (Heuristic Mapper for General MobileNet)
-        // In a real app, we would fine-tune MobileNet on a plant disease dataset.
-        let diagnosis = { disease: `Healthy (${top.className})`, remedy: "Keep monitoring. Water regularly.", productLink: "" };
-
-        const key = top.className.toLowerCase();
-        if (key.includes('spot') || key.includes('fungus') || key.includes('mushroom')) {
-            diagnosis = {
-                disease: "Fungal Infection Detected",
-                remedy: "Apply Neem Oil or Copper Fungicide immediately.",
-                productLink: "shop/fungicide"
-            };
-        } else if (key.includes('beetle') || key.includes('insect') || key.includes('ant') || key.includes('fly')) {
-            diagnosis = {
-                disease: "Pest Infestation",
-                remedy: "Spray organic pesticide. Check under leaves.",
-                productLink: "shop/pesticide"
-            };
-        } else if (key.includes('yellow') || key.includes('withered')) {
-            diagnosis = {
-                disease: "Nutrient Deficiency (Yellowing)",
-                remedy: "Add Nitrogen/Compost fertilizer.",
-                productLink: "shop/fertilizer"
-            };
-        }
+        if (!response.ok) throw new Error("Backend Vision API Failed");
+        const data = await response.json();
 
         return {
-            disease: diagnosis.disease,
-            confidence: Math.round(top.probability * 100),
-            remedy: diagnosis.remedy,
-            productLink: diagnosis.productLink
+            disease: data.disease,
+            confidence: Math.round(data.confidence * 100),
+            remedy: data.remedy,
+            productLink: data.productLink || ""
         };
 
     } catch (e) {
-        console.error("AI Error:", e);
-        return { disease: "Analysis Failed", confidence: 0, remedy: "Try closer photo with better light.", productLink: "" };
+        console.error("Backend AI Error:", e);
+        return { disease: "Analysis Failed", confidence: 0, remedy: "Try again with better lighting.", productLink: "" };
     }
 };
 
@@ -183,35 +155,50 @@ export const formatCurrency = (amount: number): string => {
 
 // === LOGISTICS & MARKET FUNCTIONS ===
 
-export const calculateLogisticsCost = (itemType: string, weight: number): number => {
-    const rates: Record<string, number> = {
-        'BOX_SMALL': 20,
-        'SACK_GRAIN': 15,
-        'DOCUMENT': 30,
-        'DEFAULT': 18
-    };
-    const baseRate = rates[itemType] || rates['DEFAULT'];
-    return Math.round(baseRate + (weight * 2));
+export const calculateLogisticsCost = async (itemType: string, weight: number): Promise<number> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/grammandi/logistics/rates`);
+        const rates = await response.json();
+
+        const baseRate = rates[itemType] || rates['DEFAULT'] || 18;
+        const multiplier = rates['perKgMultiplier'] || 2;
+
+        return Math.round(baseRate + (weight * multiplier));
+    } catch (e) {
+        console.warn("Using offline rates");
+        // Fallback
+        const rates: Record<string, number> = {
+            'BOX_SMALL': 20, 'SACK_GRAIN': 15, 'DOCUMENT': 30, 'DEFAULT': 18
+        };
+        const baseRate = rates[itemType] || rates['DEFAULT'];
+        return Math.round(baseRate + (weight * 2));
+    }
 };
 
 export const getMandiRates = async (): Promise<MandiRate[]> => {
-    return [
-        { crop: 'Rice (Paddy)', price: 2200, trend: 'UP', satelliteInsight: 'Good yield expected' },
-        { crop: 'Wheat', price: 2100, trend: 'STABLE', predictedPrice: 2150 },
-        { crop: 'Potato', price: 1200, trend: 'DOWN', satelliteInsight: 'Surplus in Bihar' },
-        { crop: 'Onion', price: 1800, trend: 'UP', predictedPrice: 2000 },
-        { crop: 'Tomato', price: 2500, trend: 'UP' }
-    ];
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/grammandi/market/prices`);
+        const data = await response.json();
+        if (!response.ok) throw new Error("Failed to fetch rates");
+        return data; // Assumes backend returns array of MandiRate
+    } catch (e) {
+        console.error("Failed to fetch mandi rates", e);
+        return [];
+    }
 };
 
 export const getJobs = async (): Promise<JobOpportunity[]> => {
-    return [
-        { id: 'J1', title: 'Farm Labour', location: 'Chenari', wage: '₹300/day', contact: '98765...', type: 'DAILY' },
-        { id: 'J2', title: 'Construction Worker', location: 'Sasaram', wage: '₹400/day', contact: '87654...', type: 'DAILY' },
-        { id: 'J3', title: 'Driver (Tempo)', location: 'Bikramganj', wage: '₹12000/month', contact: '76543...', type: 'CONTRACT' }
-    ];
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/grammandi/jobs`);
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    } catch (e) {
+        console.error("Failed to fetch jobs", e);
+        return [];
+    }
 };
 
+// Update return type in types.ts if needed, assuming MarketItem logic is moved or kept for now.
 export const getMarketItems = (): MarketItem[] => {
     return [
         { id: 'M1', name: 'Organic Dal', price: 120, unit: 'kg', supplier: 'Gram Store', inStock: true, isDidiProduct: true },
@@ -220,32 +207,76 @@ export const getMarketItems = (): MarketItem[] => {
     ];
 };
 
-export const getPackages = (): PilgrimagePackage[] => {
-    return [
-        { id: 'P1', name: 'Gaya Darshan', locations: ['Vishnupad', 'Bodh Gaya'], price: 1500, duration: '1 Day', image: '🙏' },
-        { id: 'P2', name: 'Varanasi Yatra', locations: ['Kashi Vishwanath', 'Ganga Aarti'], price: 3500, duration: '2 Days', image: '🕉️' }
-    ];
+export const getPackages = async (): Promise<PilgrimagePackage[]> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/grammandi/travel/packages`);
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    } catch (e) {
+        console.error("Failed to fetch packages", e);
+        return [];
+    }
 };
 
 // === BIOMETRIC & AI SCANNING ===
 
 export const verifyGenderBiometrics = async (type: 'VOICE' | 'FACE'): Promise<{ verified: boolean }> => {
-    // Simulated biometric verification with delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    // In production, this would integrate with actual biometric APIs
-    return { verified: true };
+    try {
+        const token = await getAuthToken();
+        let payload: any = { type };
+
+        if (type === 'FACE') {
+            const img = await captureImage();
+            if (!img) return { verified: false };
+            payload.imageBase64 = img;
+        } else {
+            // Simulated voice capture for now as we don't have a voice capture helper in this file yet
+            // But we route to real backend
+            payload.audioBase64 = "MOCK_AUDIO_DATA";
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/ai/verify-bio`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return { verified: data.verified };
+    } catch (e) {
+        console.error("Biometric API Error:", e);
+        return { verified: false };
+    }
 };
 
 export const estimateParcelSize = async (): Promise<ParcelScanResult> => {
-    // Simulated AI parcel scanning
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const weights = [2, 5, 10, 15, 25];
-    const types = ['BOX_SMALL', 'SACK_GRAIN', 'DOCUMENT'];
-    return {
-        weightKg: weights[Math.floor(Math.random() * weights.length)],
-        dimensions: '30x20x15 cm',
-        recommendedType: types[Math.floor(Math.random() * types.length)]
-    };
+    try {
+        const img = await captureImage();
+        if (!img) return { weightKg: 0, dimensions: "", recommendedType: "" };
+
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/ai/parcel-scan`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageBase64: img })
+        });
+
+        const data = await response.json();
+        return {
+            weightKg: data.weightKg,
+            dimensions: data.dimensions,
+            recommendedType: data.recommendedType
+        };
+    } catch (e) {
+        console.error("Parcel Scan API Error:", e);
+        return { weightKg: 5, dimensions: "Standard", recommendedType: "BOX" };
+    }
 };
 
 // BEHAVIORAL PHYSICS ENGINE

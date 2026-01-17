@@ -9,16 +9,16 @@ export const chatWithSarpanch = async (req, res) => {
         const { message, history } = req.body;
         const systemInstruction = "You are 'Sarpanch AI', a wise, helpful, and rustic village headman for the 'VillageLink' transport app. You speak in a mix of Hindi/Bhojpuri and English. You help users book tickets, find buses, and check market prices. Keep answers short and concise.";
         const model = "gemini-2.5-flash";
-        
+
         const response = await ai.models.generateContent({
             model: model,
             contents: message,
             config: { systemInstruction: systemInstruction, temperature: 0.7 }
         });
 
-        res.json({ 
-            text: response.text, 
-            actionLink: response.text.toLowerCase().includes("book") ? { label: "Book Now", tab: "HOME" } : null 
+        res.json({
+            text: response.text,
+            actionLink: response.text.toLowerCase().includes("book") ? { label: "Book Now", tab: "HOME" } : null
         });
     } catch (e) {
         console.error("Gemini Chat Error:", e);
@@ -102,7 +102,7 @@ export const verifyBiometrics = async (req, res) => {
         });
 
         const result = JSON.parse(response.text);
-        
+
         if (result.isFemale && result.confidence > 0.6) {
             res.json({ verified: true, confidence: result.confidence });
         } else {
@@ -112,5 +112,29 @@ export const verifyBiometrics = async (req, res) => {
     } catch (e) {
         console.error("Biometric Error:", e);
         res.status(500).json({ verified: false, error: e.message });
+    }
+};
+
+export const analyzeHygiene = async (req, res) => {
+    try {
+        const { imageBase64 } = req.body;
+        const cleanBase64 = imageBase64.split(',')[1] || imageBase64;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: {
+                parts: [
+                    { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } },
+                    { text: "Act as an FSSAI health inspector. Analyze this commercial kitchen image for hygiene. Provide a hygiene score from 0-100 and list specific health hazards or cleanliness issues. Return JSON with keys: score, hazards (array of strings)." }
+                ]
+            },
+            config: { responseMimeType: "application/json" }
+        });
+
+        const result = JSON.parse(response.text);
+        res.json(result);
+    } catch (e) {
+        console.error("Hygiene Analysis Error:", e);
+        res.status(500).json({ score: 50, hazards: ["Analysis technical failure"], error: e.message });
     }
 };

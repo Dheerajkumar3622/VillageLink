@@ -107,49 +107,5 @@ export const registerHotspot = async (dhabaId: string): Promise<{ success: boole
     }
 };
 
-// ==================== MOCK GENERATORS ====================
+// Mock data removed. Use backend API.
 
-export const getMockDhabas = (): Restaurant[] => [
-    {
-        id: 'dhaba_1',
-        ownerId: 'owner_1',
-        name: 'Sher-e-Punjab Dhaba',
-        category: 'DHABA',
-        budgetTier: 'MID_RANGE',
-        starRating: 4,
-        cuisines: ['NORTH_INDIAN'],
-        location: 'NH 48, km 45',
-        isOpen: true,
-        openingTime: '24 HRS',
-        closingTime: '24 HRS',
-        avgCostForTwo: 400,
-        hasTableBooking: true,
-        hasParcel: true,
-        hasSubscription: false,
-        isPureVeg: false,
-        images: [],
-        features: ['PARKING', 'WIFI'],
-        description: 'Famous for Butter Chicken and Parathas',
-    },
-    {
-        id: 'dhaba_2',
-        ownerId: 'owner_2',
-        name: 'Vaishno Dhaba',
-        category: 'DHABA',
-        budgetTier: 'BUDGET',
-        starRating: 3,
-        cuisines: ['NORTH_INDIAN', 'SOUTH_INDIAN'],
-        location: 'NH 48, km 52',
-        isOpen: true,
-        openingTime: '06:00',
-        closingTime: '23:00',
-        avgCostForTwo: 250,
-        hasTableBooking: false,
-        hasParcel: true,
-        hasSubscription: false,
-        isPureVeg: true,
-        images: [],
-        features: ['PARKING'],
-        description: 'Pure Veg Family Restaurant',
-    }
-];

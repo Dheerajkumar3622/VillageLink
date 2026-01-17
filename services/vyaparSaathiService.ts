@@ -177,27 +177,5 @@ export const applyForLoan = async (
     }
 };
 
-// ==================== MOCK DATA GENERATORS (For Development) ====================
+// Mock data removed. Use backend API consistently.
 
-export const getMockCreditScore = (): CreditScore => ({
-    vendorId: 'vendor_123',
-    score: 650,
-    tier: 'GOOD',
-    factors: [
-        { name: 'UPI Velocity', impact: 'POSITIVE', weight: 30, value: 85 },
-        { name: 'Daily Consistency', impact: 'POSITIVE', weight: 25, value: 90 },
-        { name: 'Business Age', impact: 'NEUTRAL', weight: 10, value: 40 },
-    ],
-    metrics: {
-        avgDailySales: 2500,
-        salesConsistencyScore: 88,
-        upiTransactionRatio: 0.65,
-        repaymentHistory: 100,
-        businessAge: 12,
-        appEngagementScore: 75,
-    },
-    loanEligibility: {
-        pmSvanidhi: { eligible: true, maxAmount: 10000, tier: 1 },
-        workingCapital: { eligible: true, maxAmount: 50000, interestRate: 14 },
-    },
-});

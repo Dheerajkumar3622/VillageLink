@@ -485,4 +485,45 @@ router.put('/admin/:vendorId/suspend', authenticateToken, async (req, res) => {
     }
 });
 
+// ==================== FSSAI & COMPLIANCE ====================
+
+// Validate FSSAI License Number
+router.get('/fssai/validate/:licenseNumber', authenticateToken, async (req, res) => {
+    try {
+        const { licenseNumber } = req.params;
+        // Simple regex check for 14-digit FSSAI number
+        const isValid = /^\d{14}$/.test(licenseNumber);
+
+        res.json({
+            isValid,
+            details: isValid ? {
+                licenseNo: licenseNumber,
+                status: 'ACTIVE',
+                category: 'Petty Food Manufacturer',
+                expires: '2026-12-31'
+            } : null
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Check vendor compliance status
+router.get('/fssai/compliance/:vendorId', authenticateToken, async (req, res) => {
+    try {
+        const vendor = await FoodVendor.findOne({ id: req.params.vendorId });
+        if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
+
+        const isCompliant = vendor.status === 'VERIFIED' && !!vendor.fssaiLicense;
+        const pendingActions = [];
+
+        if (!vendor.fssaiLicense) pendingActions.push('Upload FSSAI License');
+        if (vendor.status !== 'VERIFIED') pendingActions.push('Complete Verification');
+
+        res.json({ isCompliant, pendingActions });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 export default router;

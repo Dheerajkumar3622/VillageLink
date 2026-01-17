@@ -238,11 +238,15 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     };
 
     useEffect(() => {
-        if (currentView === 'BOOK_PARCEL' || marketBooking) {
-            setLogisticsPrice(calculateLogisticsCost(logisticsItemType, logisticsWeight));
-            const hasPool = findPoolMatches(fromLocation?.name || '');
-            setLogisticsPoolFound(hasPool);
-        }
+        const calculateLogistics = async () => {
+            if (currentView === 'BOOK_PARCEL' || marketBooking) {
+                const price = await calculateLogisticsCost(logisticsItemType, logisticsWeight);
+                setLogisticsPrice(price);
+                const hasPool = findPoolMatches(fromLocation?.name || '');
+                setLogisticsPoolFound(hasPool);
+            }
+        };
+        calculateLogistics();
 
         const updateRoute = async () => {
             if (fromLocation && toLocation) {
@@ -847,8 +851,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                         setLogisticsWeight(v.id === 'BOX_SMALL' ? 5 : (v.id === 'SACK_GRAIN' ? 50 : 500));
                                                     }}
                                                     className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${logisticsItemType === v.id
-                                                            ? 'bg-orange-50 border-orange-500 shadow-lg -translate-y-1'
-                                                            : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-orange-200'
+                                                        ? 'bg-orange-50 border-orange-500 shadow-lg -translate-y-1'
+                                                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-orange-200'
                                                         }`}
                                                 >
                                                     <div className={`p-2 rounded-xl scale-125 mb-1 ${v.color}`}>

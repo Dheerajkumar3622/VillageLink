@@ -7,7 +7,10 @@ import { HygieneAudit } from '../types';
 
 export const validateLicense = async (licenseNumber: string): Promise<{ isValid: boolean; details?: any; error?: string }> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/fssai/validate/${licenseNumber}`);
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/vendor/fssai/validate/${licenseNumber}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         const data = await response.json();
         return { isValid: data.isValid, details: data.details };
     } catch (error: any) {
@@ -16,22 +19,41 @@ export const validateLicense = async (licenseNumber: string): Promise<{ isValid:
 };
 
 export const checkComplianceStatus = async (vendorId: string): Promise<{ isCompliant: boolean; pendingActions: string[] }> => {
-    // Mock logic
-    return {
-        isCompliant: false,
-        pendingActions: ['Renew License', 'Upload Water Test Report']
-    };
+    try {
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/vendor/fssai/compliance/${vendorId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return { isCompliant: data.isCompliant, pendingActions: data.pendingActions || [] };
+    } catch (e) {
+        return { isCompliant: false, pendingActions: ['System Error: Check manually'] };
+    }
 };
 
 // ==================== AI HYGIENE AUDIT ====================
 
 export const analyzeHygieneImage = async (base64Image: string): Promise<{ score: number; hazards: string[] }> => {
-    // Mock AI Analysis
-    // In real app, send to Python/TensorFlow backend
-    return {
-        score: 85,
-        hazards: ['Uncovered Dustbin']
-    };
+    try {
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/api/ai/hygiene-audit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageBase64: base64Image })
+        });
+
+        const data = await response.json();
+        return {
+            score: data.score,
+            hazards: data.hazards || []
+        };
+    } catch (e) {
+        console.error("Hygiene Analysis API Error:", e);
+        return { score: 0, hazards: ["Analysis technical failure"] };
+    }
 };
 
 export const generateHygieneCertificate = async (vendorId: string): Promise<string> => {
