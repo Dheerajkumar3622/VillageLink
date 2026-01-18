@@ -28,7 +28,13 @@ const userSchema = new mongoose.Schema({
   connectionType: { type: String, enum: ['APP', 'SMS', 'USSD', 'IVR'], default: 'APP' },
   smsSessionState: { type: String },
   lastCommandTimestamp: { type: Number },
-  preferredLanguage: { type: String, enum: ['EN', 'HI', 'LOCAL'], default: 'HI' }
+  preferredLanguage: { type: String, enum: ['EN', 'HI', 'LOCAL'], default: 'HI' },
+  trustedContacts: [
+    {
+      name: String,
+      phone: String,
+    },
+  ],
 });
 
 // Hash password before saving
