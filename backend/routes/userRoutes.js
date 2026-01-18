@@ -1,7 +1,8 @@
 
 import express from 'express';
-import { User, Transaction } from '../models.js';
+import { User, Transaction, SafetyAlert } from '../models.js';
 import { authenticate } from '../auth.js';
+import { sendSMS } from '../services/smsGateway.js';
 
 const router = express.Router();
 
@@ -46,6 +47,87 @@ router.post('/transaction', authenticate, async (req, res) => {
         }
 
         res.json({ success: true, transaction });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/sos', authenticate, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.user.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const { message, location } = req.body;
+
+        for (const contact of user.trustedContacts) {
+            const sosMessage = `SOS from ${user.name}: ${message}. Location: ${location}`;
+            await sendSMS(contact.phone, sosMessage);
+        }
+
+        const alert = new SafetyAlert({
+            id: `SA-${Date.now()}`,
+            type: 'SOS',
+            userId: user.id,
+            message,
+            location,
+        });
+        await alert.save();
+
+        res.json({ success: true, message: "SOS sent to trusted contacts" });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/sos', authenticate, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.user.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const { message, location } = req.body;
+
+        for (const contact of user.trustedContacts) {
+            const sosMessage = `SOS from ${user.name}: ${message}. Location: ${location}`;
+            await sendSMS(contact.phone, sosMessage);
+        }
+
+        const alert = new SafetyAlert({
+            id: `SA-${Date.now()}`,
+            type: 'SOS',
+            userId: user.id,
+            message,
+            location,
+        });
+        await alert.save();
+
+        res.json({ success: true, message: "SOS sent to trusted contacts" });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/sos', authenticate, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.user.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const { message, location } = req.body;
+
+        for (const contact of user.trustedContacts) {
+            const sosMessage = `SOS from ${user.name}: ${message}. Location: ${location}`;
+            await sendSMS(contact.phone, sosMessage);
+        }
+
+        const alert = new SafetyAlert({
+            id: `SA-${Date.now()}`,
+            type: 'SOS',
+            userId: user.id,
+            message,
+            location,
+        });
+        await alert.save();
+
+        res.json({ success: true, message: "SOS sent to trusted contacts" });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
