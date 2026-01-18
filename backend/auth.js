@@ -35,7 +35,12 @@ const loginSchema = z.object({
 // --- REAL FAST2SMS INTEGRATION ---
 const sendFast2SMS = async (phone, otp) => {
   // YOUR REAL API KEY
-  const apiKey = "3VZns2qWUdbyQm40oeEXa5RLpIF17TNfKkczhMP8OvYCgBiJxwVbMRPqE1BeoGA25SNzgiXhQpIcjTFW";
+  const apiKey = process.env.FAST2SMS_API_KEY;
+
+  if (!apiKey) {
+    console.warn("⚠️ Fast2SMS API Key missing. OTP not sent via SMS.");
+    return false;
+  }
 
   // Using bulkV2 route 'otp' which sends a standard OTP message
   const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&route=otp&variables_values=${otp}&flash=0&numbers=${phone}`;
