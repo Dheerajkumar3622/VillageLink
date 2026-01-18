@@ -16,7 +16,12 @@ try {
     console.log("Could not set custom DNS", e);
 }
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error("❌ CRITICAL: MONGO_URI Missing in .env!");
+    process.exit(1);
+}
 
 console.log("SEEDING REAL DATA...");
 console.log("Connecting to DB...");

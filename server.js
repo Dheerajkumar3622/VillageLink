@@ -108,8 +108,8 @@ if (!razorpayKeyId || !razorpaySecret) {
 }
 
 const razorpay = new Razorpay({
-    key_id: razorpayKeyId,
-    key_secret: razorpaySecret,
+    key_id: razorpayKeyId || "placeholder",
+    key_secret: razorpaySecret || "placeholder",
 });
 
 app.get('/api/config/razorpay', (req, res) => {
@@ -118,7 +118,12 @@ app.get('/api/config/razorpay', (req, res) => {
 
 // --- DATABASE STATE ---
 let isDbConnected = false;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error("❌ CRITICAL: MONGO_URI Missing in .env!");
+    process.exit(1);
+}
 
 mongoose.connect(MONGO_URI)
     .then(async () => {
@@ -325,8 +330,13 @@ app.post('/api/payment/verify', Auth.authenticate, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
         const body = razorpay_order_id + "|" + razorpay_payment_id;
+
+        if (!process.env.RAZORPAY_SECRET) {
+            throw new Error("Razorpay secret not configured");
+        }
+
         const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_SECRET || 'a5EZHDxPfUtRYnAw2c0huVp5')
+            .createHmac('sha256', process.env.RAZORPAY_SECRET)
             .update(body.toString())
             .digest('hex');
 
