@@ -67,21 +67,19 @@ router.post('/register', authenticateToken, async (req, res) => {
 
         // Add initial menu items if provided
         if (menuItems && menuItems.length > 0) {
-            for (const item of menuItems) {
-                const menuItem = new VendorMenuItem({
-                    id: generateId(),
-                    vendorId,
-                    vendorType: 'STALL',
-                    name: item.name,
-                    price: item.price,
-                    type: item.type || 'VEG',
-                    category: item.category || 'SNACKS',
-                    description: item.description || '',
-                    available: true,
-                    createdAt: Date.now()
-                });
-                await menuItem.save();
-            }
+            const itemsToInsert = menuItems.map(item => ({
+                id: generateId(),
+                vendorId,
+                vendorType: 'STALL',
+                name: item.name,
+                price: item.price,
+                type: item.type || 'VEG',
+                category: item.category || 'SNACKS',
+                description: item.description || '',
+                available: true,
+                createdAt: Date.now()
+            }));
+            await VendorMenuItem.insertMany(itemsToInsert);
         }
 
         res.json({ success: true, vendor, message: 'Registration submitted for review' });
