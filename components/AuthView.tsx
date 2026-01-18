@@ -270,10 +270,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
               ) : (
                 <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">{t('phone')} / Email</label>
+                    <label htmlFor="login-username" className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">{t('phone')} / Email</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input
+                        id="login-username"
                         type="text"
                         name="username"
                         value={loginId}
@@ -287,12 +288,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">{t('password')}</label>
+                      <label htmlFor="login-password" className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase ml-1">{t('password')}</label>
                       <button type="button" onClick={() => setViewState('FORGOT')} className="text-xs font-bold text-brand-600 dark:text-brand-400">Forgot?</button>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input
+                        id="login-password"
                         type="password"
                         name="password"
                         value={password}
@@ -336,26 +338,26 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                 <button type="button" onClick={() => setRegRole('SHOPKEEPER')} className={`p-2 rounded-xl border flex flex-col items-center gap-1 ${regRole === 'SHOPKEEPER' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'border-slate-200 text-slate-500'}`}><Store size={18} /><span className="text-[9px] font-bold">{t('shopkeeper')}</span></button>
                 <button type="button" onClick={() => setRegRole('MESS_MANAGER')} className={`p-2 rounded-xl border flex flex-col items-center gap-1 ${regRole === 'MESS_MANAGER' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'border-slate-200 text-slate-500'}`}><Utensils size={18} /><span className="text-[9px] font-bold">Mess</span></button>
               </div>
-              <input type="text" name="name" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder={regRole === 'MESS_MANAGER' ? "Mess Name" : "Full Name"} required />
+              <input type="text" name="name" aria-label={regRole === 'MESS_MANAGER' ? "Mess Name" : "Full Name"} value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder={regRole === 'MESS_MANAGER' ? "Mess Name" : "Full Name"} required />
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase">Contact Info (At least one)</label>
-                <div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="email" name="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Email Address" /></div>
-                <div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="tel" name="phone" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Mobile Number" /></div>
+                <div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="email" name="email" aria-label="Email Address" value={regEmail} onChange={e => setRegEmail(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Email Address" /></div>
+                <div className="relative"><Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="tel" name="phone" aria-label="Mobile Number" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Mobile Number" /></div>
               </div>
 
               {regRole === 'MESS_MANAGER' && (
                 <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 animate-fade-in">
                   <p className="text-xs font-bold text-slate-500 uppercase">Mess Location</p>
-                  <input type="text" value={regAddress} onChange={e => setRegAddress(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Full Address / Shop No." required />
-                  <input type="text" value={regPincode} onChange={e => setRegPincode(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Pin Code" maxLength={6} required />
+                  <input type="text" aria-label="Full Address / Shop No." value={regAddress} onChange={e => setRegAddress(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Full Address / Shop No." required />
+                  <input type="text" aria-label="Pin Code" value={regPincode} onChange={e => setRegPincode(e.target.value)} className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Pin Code" maxLength={6} required />
                 </div>
               )}
 
               {regRole === 'DRIVER' && (
                 <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
                   <p className="text-xs font-bold text-slate-500 uppercase">Vehicle Details</p>
-                  <div className="relative"><Armchair className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="number" value={regCapacity} onChange={e => setRegCapacity(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Seats Capacity" required /></div>
+                  <div className="relative"><Armchair className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="number" aria-label="Seats Capacity" value={regCapacity} onChange={e => setRegCapacity(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Seats Capacity" required /></div>
                   <div className="grid grid-cols-4 gap-2">
                     {(['BUS', 'TAXI', 'AUTO', 'BIKE'] as VehicleType[]).map(type => (
                       <div
@@ -374,7 +376,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                 </div>
               )}
 
-              <input type="password" name="new-password" value={regPass} onChange={e => setRegPass(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Password" autoComplete="new-password" required />
+              <input type="password" name="new-password" aria-label="Password" value={regPass} onChange={e => setRegPass(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Password" autoComplete="new-password" required />
 
               <Button type="submit" fullWidth disabled={loading}>{loading ? <Loader2 className="animate-spin" /> : t('register')}</Button>
               <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Back to Login</button>
@@ -384,7 +386,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
           {viewState === 'FORGOT' && (
             <form onSubmit={handleForgot} className="space-y-4">
               <p className="text-sm text-slate-500 mb-2">Enter your registered Email or Mobile Number to receive a reset OTP.</p>
-              <input type="text" value={resetIdentifier} onChange={e => setResetIdentifier(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Email or Phone" required />
+              <input type="text" aria-label="Email or Phone" value={resetIdentifier} onChange={e => setResetIdentifier(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Email or Phone" required />
               <div id="recaptcha-container"></div>
               <Button type="submit" fullWidth disabled={loading}>{loading ? <Loader2 className="animate-spin" /> : "Send OTP"}</Button>
               <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Cancel</button>
@@ -396,8 +398,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
               <div className="bg-brand-50 dark:bg-brand-900/30 p-3 rounded-lg text-center text-xs text-brand-700 dark:text-brand-300">
                 Enter the OTP sent to <b>{resetIdentifier}</b>
               </div>
-              <div className="relative"><Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" value={resetToken} onChange={e => setResetToken(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white text-center tracking-[0.5em] font-bold text-xl" placeholder="XXXXXX" maxLength={6} required /></div>
-              <div className="relative"><Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="New Password" required /></div>
+              <div className="relative"><Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" aria-label="OTP Code" value={resetToken} onChange={e => setResetToken(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white text-center tracking-[0.5em] font-bold text-xl" placeholder="XXXXXX" maxLength={6} required /></div>
+              <div className="relative"><Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="password" aria-label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="New Password" required /></div>
               <Button type="submit" fullWidth disabled={loading}>Verify & Reset Password</Button>
             </form>
           )}
