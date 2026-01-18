@@ -1,0 +1,3 @@
+## 2024-05-23 - Aggressive Polling in PassengerView
+**Learning:** `PassengerView` was polling all data endpoints (Tickets, Passes, Wallet, Parcels) every 5 seconds, regardless of whether the data was likely to change or if the socket connection was already handling updates. This created unnecessary network load and battery drain.
+**Action:** Split polling into "Fast" (local memory/socket synced) and "Slow" (network fetch) intervals, and pause all polling when the tab is hidden using `document.visibilityState`. Future components should distinguish between real-time critical data and relatively static data.
