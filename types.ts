@@ -265,7 +265,7 @@ export interface SecurityContext {
   lastLoginLocation?: GeoLocation;
 }
 
-export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | 'FARMER' | 'VENDOR' | 'STORAGE_OPERATOR' | 'LOGISTICS_PARTNER' | null;
+export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | 'FARMER' | 'VENDOR' | 'STORAGE_OPERATOR' | 'LOGISTICS_PARTNER' | 'VILLAGE_MANAGER' | null;
 export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 
@@ -1118,4 +1118,47 @@ export interface TrainingModule {
   duration: number; // minutes
   passingScore: number;
   isRequired: boolean;
+}
+
+// --- VILLAGE MANAGER TYPES (v19.0) ---
+
+export interface Beneficiary {
+  id: string;
+  name: string;
+  phone?: string;
+  aadharNumber?: string;
+  address: string;
+  village: string;
+  panchayat?: string;
+  district?: string;
+  managerId: string;
+  registeredAt: number;
+  isActive: boolean;
+}
+
+export type ProxyTransactionType = 'TICKET_BOOKING' | 'PRODUCT_LISTING' | 'PARCEL_BOOKING' | 'MESS_BOOKING' | 'RENTAL_BOOKING' | 'MARKET_INQUIRY';
+
+export interface ProxyTransaction {
+  id: string;
+  beneficiaryId: string;
+  beneficiaryName: string;
+  managerId: string;
+  managerName: string;
+  transactionType: ProxyTransactionType;
+  referenceId: string;
+  amount: number;
+  paymentMethod: 'CASH' | 'UPI' | 'CREDIT';
+  paymentReceived: boolean;
+  status: 'PENDING' | 'COMPLETED' | 'REFUNDED' | 'CANCELLED';
+  notes?: string;
+  timestamp: number;
+}
+
+export interface VillageManagerStats {
+  totalBeneficiaries: number;
+  activeBeneficiaries: number;
+  todaysTransactions: number;
+  totalTransactions: number;
+  totalRevenue: number;
+  pendingPayments: number;
 }

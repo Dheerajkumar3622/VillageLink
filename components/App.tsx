@@ -22,6 +22,7 @@ const MessManagerView = lazy(() => import('./MessManagerView').then(m => ({ defa
 const VendorView = lazy(() => import('./VendorView').then(m => ({ default: m.VendorView })));
 const VyaparSaathiView = lazy(() => import('./VyaparSaathiView').then(m => ({ default: m.VyaparSaathiView })));
 const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.LuxeOSView })));
+const VillageManagerView = lazy(() => import('./VillageManagerView').then(m => ({ default: m.VillageManagerView })));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
 
 // Provider Apps - Separate entry points
@@ -34,9 +35,18 @@ const LogisticsApp = lazy(() => import('./LogisticsApp').then(m => ({ default: m
 const UserPanel = lazy(() => import('./UserPanel').then(m => ({ default: m.UserPanel })));
 const CargoShipmentView = lazy(() => import('./CargoShipmentView'));
 
+// USS v3.0 - Unified Apps
+const UserApp = lazy(() => import('./UserApp'));
+const ProviderApp = lazy(() => import('./ProviderApp'));
+
 // Check if accessing a dedicated provider app URL
-const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USER' => {
+type AppMode = 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USS_USER' | 'USS_PROVIDER' | 'USER';
+const getAppMode = (): AppMode => {
   const path = window.location.pathname.toLowerCase();
+  // USS v3.0 unified app routes
+  if (path.startsWith('/app') || path.startsWith('/consumer')) return 'USS_USER';
+  if (path.startsWith('/provider') || path.startsWith('/partner')) return 'USS_PROVIDER';
+  // Legacy provider app routes
   if (path.startsWith('/kisan')) return 'KISAN';
   if (path.startsWith('/driver')) return 'DRIVER';
   if (path.startsWith('/vyapari')) return 'VYAPARI';
@@ -44,7 +54,7 @@ const getAppMode = (): 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LO
   if (path.startsWith('/storage')) return 'STORAGE';
   if (path.startsWith('/logistics')) return 'LOGISTICS';
   if (path.startsWith('/cargo')) return 'CARGO';
-  return 'USER'; // Default to consumer super-app
+  return 'USER'; // Default to role-based view
 };
 
 const App: React.FC = () => {
@@ -150,6 +160,8 @@ const App: React.FC = () => {
         return <LuxeOSView user={user} />;
       case 'FARMER':
         return <KisanApp />;
+      case 'VILLAGE_MANAGER':
+        return <VillageManagerView user={user} />;
       default:
         return <PassengerView user={user} lang={lang} />;
     }
@@ -205,6 +217,24 @@ const App: React.FC = () => {
     return (
       <Suspense fallback={<ViewSkeleton />}>
         <CargoShipmentView user={user || mockUser} />
+      </Suspense>
+    );
+  }
+
+  // USS v3.0 - Unified Consumer App
+  if (appMode === 'USS_USER') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <UserApp user={user} onLogout={handleLogout} />
+      </Suspense>
+    );
+  }
+
+  // USS v3.0 - Unified Service Provider App
+  if (appMode === 'USS_PROVIDER') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <ProviderApp user={user} onLogout={handleLogout} />
       </Suspense>
     );
   }

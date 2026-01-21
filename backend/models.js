@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true },
   name: { type: String, required: true },
-  role: { type: String, enum: ['PASSENGER', 'DRIVER', 'ADMIN', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR'], default: 'PASSENGER' },
+  role: { type: String, enum: ['PASSENGER', 'DRIVER', 'ADMIN', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR', 'VILLAGE_MANAGER'], default: 'PASSENGER' },
   password: { type: String, required: true },
   email: String,
   phone: String,
@@ -1631,6 +1631,54 @@ cargoMatchSchema.index({ expiresAt: 1 });
 
 export const CargoMatch = mongoose.model('CargoMatch', cargoMatchSchema);
 
+// --- VILLAGE MANAGER MODELS (v19.0) ---
+
+// Beneficiary Schema - Villagers without smartphones managed by VillageManager
+const beneficiarySchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  name: { type: String, required: true },
+  phone: String,
+  aadharNumber: String,
+  address: String,
+  village: String,
+  panchayat: String,
+  district: String,
+  managerId: { type: String, required: true },
+  registeredAt: { type: Number, default: Date.now },
+  isActive: { type: Boolean, default: true }
+});
+
+beneficiarySchema.index({ managerId: 1 });
+beneficiarySchema.index({ phone: 1 });
+beneficiarySchema.index({ village: 1 });
+
+export const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
+
+// Proxy Transaction Schema - Track all assisted bookings by VillageManager
+const proxyTransactionSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  beneficiaryId: { type: String, required: true },
+  beneficiaryName: String,
+  managerId: { type: String, required: true },
+  managerName: String,
+  transactionType: {
+    type: String,
+    enum: ['TICKET_BOOKING', 'PRODUCT_LISTING', 'PARCEL_BOOKING', 'MESS_BOOKING', 'RENTAL_BOOKING', 'MARKET_INQUIRY']
+  },
+  referenceId: String,
+  amount: { type: Number, default: 0 },
+  paymentMethod: { type: String, enum: ['CASH', 'UPI', 'CREDIT'], default: 'CASH' },
+  paymentReceived: { type: Boolean, default: false },
+  status: { type: String, enum: ['PENDING', 'COMPLETED', 'REFUNDED', 'CANCELLED'], default: 'PENDING' },
+  notes: String,
+  timestamp: { type: Number, default: Date.now }
+});
+
+proxyTransactionSchema.index({ managerId: 1, timestamp: -1 });
+proxyTransactionSchema.index({ beneficiaryId: 1 });
+
+export const ProxyTransaction = mongoose.model('ProxyTransaction', proxyTransactionSchema);
+
 // Default export for CJS compatibility (required for Render deployment)
 export default {
   User,
@@ -1684,5 +1732,7 @@ export default {
   MultimodalJourney,
   CargoRequest,
   CargoCapacity,
-  CargoMatch
+  CargoMatch,
+  Beneficiary,
+  ProxyTransaction
 };

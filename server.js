@@ -243,6 +243,20 @@ app.use('/api/fleet', fleetRoutes); // Fleet management for operators
 app.use('/api/beckn', becknRoutes); // ONDC/Beckn Protocol endpoints
 app.use('/api/cargo', cargoRoutes); // CargoLink crowdsourced logistics
 
+// --- USS v3.0 ROUTES (Unified Supply Chain System) ---
+import qrRoutes from './backend/routes/qrRoutes.js';
+import supplyChainRoutes from './backend/routes/supplyChainRoutes.js';
+import pricingRoutes from './backend/routes/pricingRoutes.js';
+import reelsRoutes from './backend/routes/reelsRoutes.js';
+import chatRoutes from './backend/routes/chatRoutes.js';
+import villageManagerRoutes from './backend/routes/villageManagerRoutes.js';
+app.use('/api/qr', qrRoutes);                   // Universal QR Scanner
+app.use('/api/supply', supplyChainRoutes);      // Supply Chain Marketplace
+app.use('/api/pricing', pricingRoutes);         // Admin Pricing Control
+app.use('/api/reels', reelsRoutes);             // Instagram-style Reels
+app.use('/api/chat', chatRoutes);               // WhatsApp-style Chat
+app.use('/api/village-manager', villageManagerRoutes); // Village Manager Proxy Services
+
 // --- SAFETY ENDPOINTS (Didi Style) ---
 
 app.post('/api/safety/sos', async (req, res) => {
