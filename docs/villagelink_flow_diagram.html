@@ -252,6 +252,41 @@
             color: #718096;
             font-size: 0.9rem;
         }
+
+        .header-sub {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .roles-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .kisan-card {
+            margin-bottom: 20px;
+            border-left-color: #2e7d32;
+        }
+
+        .vendor-card {
+            margin-bottom: 20px;
+            border-left-color: #fb8c00;
+        }
+
+        .driver-card {
+            margin-bottom: 20px;
+            border-left-color: #1565c0;
+        }
+
+        .logistics-card {
+            margin-bottom: 20px;
+            border-left-color: #c2185b;
+        }
+
+        .passenger-card {
+            margin-bottom: 20px;
+            border-left-color: #7b1fa2;
+        }
     </style>
 </head>
 
@@ -260,7 +295,7 @@
         <header>
             <h1>🚐 VillageLink</h1>
             <p>Application Flow Diagram & Feature Guide</p>
-            <p style="font-size: 0.9rem; margin-top: 10px;">Version 3.5 | January 2026</p>
+            <p class="header-sub">Version 3.5 | January 2026</p>
         </header>
 
         <!-- Table of Contents -->
@@ -378,7 +413,7 @@
         <div class="section" id="roles">
             <h2>👥 User Roles & Access</h2>
 
-            <div style="text-align: center; margin: 20px 0;">
+            <div class="roles-container">
                 <span class="role-badge role-passenger">👤 PASSENGER</span>
                 <span class="role-badge role-driver">🚗 DRIVER</span>
                 <span class="role-badge role-vendor">🏪 VENDOR</span>
@@ -695,7 +730,7 @@
         <div class="section" id="tutorials">
             <h2>📖 9. Detailed User Tutorials</h2>
 
-            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #2e7d32;">
+            <div class="feature-card kisan-card">
                 <h4>🌾 For Kisan (Farmers)</h4>
                 <ul>
                     <li><strong>Mandi Rates:</strong> Go to <em>GramMandi</em> to see live prices for Wheat, Rice, and
@@ -709,7 +744,7 @@
                 </ul>
             </div>
 
-            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #fb8c00;">
+            <div class="feature-card vendor-card">
                 <h4>🏪 For Vendors (Shops/Dhabas)</h4>
                 <ul>
                     <li><strong>Digital Storefront:</strong> List your items in <em>FoodLink</em>. Add photos and prices
@@ -723,7 +758,7 @@
                 </ul>
             </div>
 
-            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #1565c0;">
+            <div class="feature-card driver-card">
                 <h4>🚗 For Drivers (Bus/Jeep/Truck)</h4>
                 <ul>
                     <li><strong>Subscription:</strong> Pay a small monthly fee to access infinite passenger leads
@@ -737,7 +772,7 @@
                 </ul>
             </div>
 
-            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #c2185b;">
+            <div class="feature-card logistics-card">
                 <h4>📦 For Logistics Partners</h4>
                 <ul>
                     <li><strong>Parcel Hub:</strong> Manage incoming and outgoing parcels for your village.</li>
@@ -748,7 +783,7 @@
                 </ul>
             </div>
 
-            <div class="feature-card" style="margin-bottom: 20px; border-left-color: #7b1fa2;">
+            <div class="feature-card passenger-card">
                 <h4>👤 For Passengers (Village Citizens)</h4>
                 <ul>
                     <li><strong>Smart Booking:</strong> Select your route and book tickets via UPI or GramCoin wallet.

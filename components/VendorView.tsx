@@ -402,10 +402,10 @@ export const VendorView: React.FC<VendorViewProps> = ({ user }) => {
                                                 {item.available ? 'In Stock' : 'Out of Stock'}
                                             </span>
                                             <div className="flex gap-2">
-                                                <button onClick={() => { setEditingItem(item); setMenuForm({ ...item, price: String(item.price), description: item.description || '' }); setShowMenuForm(true); }} className="p-2 text-slate-500 hover:text-orange-500">
+                                                <button onClick={() => { setEditingItem(item); setMenuForm({ ...item, price: String(item.price), description: item.description || '' }); setShowMenuForm(true); }} className="p-2 text-slate-500 hover:text-orange-500" aria-label="Edit Item">
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => handleDeleteMenuItem(item.id)} className="p-2 text-slate-500 hover:text-red-500">
+                                                <button onClick={() => handleDeleteMenuItem(item.id)} className="p-2 text-slate-500 hover:text-red-500" aria-label="Delete Item">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -529,6 +529,7 @@ export const VendorView: React.FC<VendorViewProps> = ({ user }) => {
                                         value={menuForm.type}
                                         onChange={e => setMenuForm({ ...menuForm, type: e.target.value as any })}
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        aria-label="Food Type"
                                     >
                                         <option value="VEG">Veg</option>
                                         <option value="NON_VEG">Non-Veg</option>
@@ -543,6 +544,7 @@ export const VendorView: React.FC<VendorViewProps> = ({ user }) => {
                                     value={menuForm.category}
                                     onChange={e => setMenuForm({ ...menuForm, category: e.target.value as any })}
                                     className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                    aria-label="Food Category"
                                 >
                                     <option value="BREAKFAST">Breakfast</option>
                                     <option value="LUNCH">Lunch</option>

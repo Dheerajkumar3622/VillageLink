@@ -65,12 +65,12 @@ export const PaymentHistory: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 animate-fade-in">
             <div className="px-4 py-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                    <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Go Back">
                         <ArrowLeft size={20} className="dark:text-white" />
                     </button>
                     <h2 className="text-xl font-bold dark:text-white">Payment History</h2>
                 </div>
-                <button onClick={fetchHistory} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                <button onClick={fetchHistory} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Refresh History">
                     <RefreshCcw size={16} className={`dark:text-slate-400 ${loading ? 'animate-spin' : ''}`} />
                 </button>
             </div>
@@ -84,6 +84,7 @@ export const PaymentHistory: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 pl-10 pr-4 outline-none focus:ring-2 focus:ring-brand-500 transition-all text-sm dark:text-white"
+                        aria-label="Filter Payments"
                     />
                 </div>
 

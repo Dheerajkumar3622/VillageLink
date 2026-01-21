@@ -342,6 +342,7 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                 <button
                     onClick={(e) => toggleFavorite(location, e)}
                     className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+                    aria-label={isFavorite(location) ? "Remove from Favorites" : "Add to Favorites"}
                 >
                     {isFavorite(location) ? (
                         <Star size={18} className="text-amber-500 fill-amber-500" />
@@ -373,11 +374,12 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                     disabled={disabled}
                     className="flex-1 bg-transparent outline-none text-slate-700 placeholder-slate-400"
                     onFocus={() => { setIsOpen(true); fetchNearbyLocations(); }}
+                    aria-label={label}
                 />
 
                 <div className="flex items-center gap-1">
                     {selectedValue && (
-                        <button onClick={(e) => { e.stopPropagation(); handleClear(); }} className="p-1.5 rounded-full hover:bg-slate-100">
+                        <button onClick={(e) => { e.stopPropagation(); handleClear(); }} className="p-1.5 rounded-full hover:bg-slate-100" aria-label="Clear Selection">
                             <X size={16} className="text-slate-400" />
                         </button>
                     )}
@@ -385,6 +387,7 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                     <button
                         onClick={(e) => { e.stopPropagation(); handleVoiceSearch(); }}
                         className={`p-1.5 rounded-full transition-colors ${isListening ? 'bg-red-100 text-red-500' : 'hover:bg-slate-100 text-slate-400'}`}
+                        aria-label="Voice Search"
                     >
                         {isListening ? <Mic size={16} /> : <MicOff size={16} />}
                     </button>
@@ -392,6 +395,7 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                     <button
                         onClick={(e) => { e.stopPropagation(); handleAutoDetect(); }}
                         className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
+                        aria-label="Detect Current Location"
                     >
                         <Navigation size={16} />
                     </button>
@@ -504,6 +508,7 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                                         <button
                                             onClick={() => { setSelectedCategory(null); setResults([]); }}
                                             className="flex items-center gap-2 text-brand-600 text-sm mb-3 px-2"
+                                            aria-label="Back to Categories"
                                         >
                                             <ChevronRight size={16} className="rotate-180" />
                                             {lang === 'EN' ? 'Back to categories' : 'वापस श्रेणियों में'}

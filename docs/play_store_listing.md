@@ -1,9 +1,11 @@
 # VillageLink - Google Play Store Listing
 
 ## App Title (30 chars max)
+
 VillageLink - Rural Super App
 
 ## Short Description (80 chars max)
+
 Book rides, order food, buy fresh produce - everything rural India needs! 🚌🍽️🌾
 
 ## Full Description (4000 chars max)
@@ -58,19 +60,25 @@ Connecting villages with modern services. VillageLink brings together transport,
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 👨‍🌾 **FOR FARMERS (KisanApp)**
-Access villagelink.app/kisan
+
+Access <https://villagelink.app/kisan>
+
 • List your produce for sale
 • Track milk collection and payments
 • Get best prices through bidding
 
 🚗 **FOR DRIVERS (DriverApp)**
-Access villagelink.app/driver
+
+Access <https://villagelink.app/driver>
+
 • Accept ride requests
 • Track your earnings
 • Manage your schedule
 
 🏪 **FOR VENDORS (VyapariApp)**
-Access villagelink.app/vyapari
+
+Access <https://villagelink.app/vyapari>
+
 • Bid on wholesale produce
 • Manage inventory
 • Track orders
@@ -79,40 +87,49 @@ Access villagelink.app/vyapari
 
 📱 Download VillageLink today and experience the future of rural connectivity!
 
-🌐 Website: villagelink.app
-📧 Support: support@villagelink.app
+🌐 Website: <https://villagelink.app>
+
+📧 Support: <mailto:support@villagelink.app>
 
 Built with ❤️ for Rural India
 
-
 ## Category
+
 Primary: Travel & Local
 Secondary: Food & Drink
 
 ## Tags/Keywords
+
 rural transport, village bus booking, mess food, farm fresh vegetables, mandi prices, kisan app, driver app, rural India, gaon, bus tracking, auto booking
 
 ## Content Rating
+
 Everyone
 
 ## Contact Email
-support@villagelink.app
+
+<support@villagelink.app>
 
 ## Privacy Policy URL
-https://villagelink-jh20.onrender.com/privacy-policy.html
+
+<https://villagelink-jh20.onrender.com/privacy-policy.html>
 
 ---
 
 ## Required Assets Checklist
 
 ### App Icon
+
 - [ ] 512x512 PNG (Hi-res icon)
 
 ### Feature Graphic
+
 - [ ] 1024x500 PNG/JPG
 
 ### Screenshots (min 2, max 8)
+
 Phone:
+
 - [ ] Home screen with services
 - [ ] Transport booking view
 - [ ] Food ordering view
@@ -121,8 +138,10 @@ Phone:
 - [ ] Live tracking map
 
 Tablet (7-inch):
+
 - [ ] Dashboard view
 - [ ] Booking flow
 
 ### Video (Optional)
+
 - [ ] YouTube URL (30 sec - 2 min)

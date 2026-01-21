@@ -24,6 +24,7 @@ Use this skill when:
 - Rapid prototyping for clients or demos
 
 This is especially helpful for:
+
 - SaaS websites
 - Startup landing pages
 - Admin dashboards
@@ -37,6 +38,7 @@ This is especially helpful for:
 ### 1. Decide the placeholder context
 
 Identify:
+
 - Section type (hero, feature, testimonial, blog, product)
 - Mood (modern, minimal, corporate, playful)
 - Aspect ratio (square, wide, portrait)
@@ -50,7 +52,8 @@ Follow this structure:
 **Prompt Formula**:
 "A clean placeholder image for [CONTEXT], [DESCRIPTION OF SHAPES/COLORS], [STYLE TAGS], no text"
 
-**Examples**
+### Examples
+
 - **Hero section**  
   > A clean placeholder image for a SaaS landing page hero section, abstract shapes, soft gradients, modern minimal design, neutral colors, realistic lighting, no text
 

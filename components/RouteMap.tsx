@@ -21,7 +21,7 @@ L.Icon.Default.mergeOptions({
 
 const createIcon = (emoji: string, size: number = 32) => {
     return L.divIcon({
-        html: `<div style="font-size: ${size}px; line-height: 1;">${emoji}</div>`,
+        html: `<div style="font-size: var(--size, ${size}px); line-height: 1;">${emoji}</div>`,
         className: 'custom-div-icon',
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
@@ -41,8 +41,8 @@ const createVehicleIcon = (heading: number, vehicleType: 'BUS' | 'AUTO' | 'CAR' 
     return L.divIcon({
         html: `
             <div class="driver-marker-container">
-                <div class="driver-marker ${pulseClass}" style="transform: rotate(${heading - 90}deg);">
-                    <span style="font-size: 36px;">${emoji}</span>
+                <div class="driver-marker ${pulseClass}" style="transform: rotate(calc(var(--heading, ${heading}) * 1deg - 90deg));">
+                    <span style="font-size: var(--icon-size, 36px);">${emoji}</span>
                 </div>
             </div>
         `,
@@ -64,8 +64,8 @@ const createDriverIconWithETA = (heading: number, etaMinutes: number | null, veh
         html: `
             <div class="driver-marker-container">
                 ${etaBubble}
-                <div class="driver-marker" style="transform: rotate(${heading - 90}deg);">
-                    <span style="font-size: 36px;">${emoji}</span>
+                <div class="driver-marker" style="transform: rotate(calc(var(--heading, ${heading}) * 1deg - 90deg));">
+                    <span style="font-size: var(--icon-size, 36px);">${emoji}</span>
                 </div>
             </div>
         `,
@@ -370,6 +370,14 @@ export const RouteMap: React.FC<RouteMapProps> = ({
                 ? [pathCoordinates[0].lat, pathCoordinates[0].lng]
                 : defaultCenter;
 
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (mapContainerRef.current) {
+            mapContainerRef.current.style.setProperty('--map-height', String(height));
+        }
+    }, [height]);
+
     useEffect(() => {
         if (mapReady && onMapReady) {
             onMapReady();
@@ -383,8 +391,8 @@ export const RouteMap: React.FC<RouteMapProps> = ({
 
     return (
         <div
-            className={`rounded-2xl overflow-hidden shadow-lg relative isolate ${className}`}
-            style={{ height, width: '100%', zIndex: 0 }}
+            ref={mapContainerRef}
+            className={`rounded-2xl overflow-hidden shadow-lg relative isolate ${className} routemap-container`}
         >
             {/* CSS for animations */}
             <style>{`
@@ -520,9 +528,9 @@ export const RouteMap: React.FC<RouteMapProps> = ({
                 <div className="absolute bottom-2 left-2 bg-white/90 dark:bg-slate-800/90 rounded-lg p-2 text-xs z-[1000] shadow-lg">
                     <div className="font-bold mb-1">Traffic</div>
                     <div className="flex gap-2">
-                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded" style={{ background: '#22C55E' }}></span>Clear</span>
-                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded" style={{ background: '#F59E0B' }}></span>Slow</span>
-                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded" style={{ background: '#EF4444' }}></span>Heavy</span>
+                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded traffic-clear"></span>Clear</span>
+                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded traffic-slow"></span>Slow</span>
+                        <span className="flex items-center gap-1"><span className="w-3 h-2 rounded traffic-heavy"></span>Heavy</span>
                     </div>
                 </div>
             )}

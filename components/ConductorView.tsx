@@ -58,6 +58,7 @@ export const ConductorView: React.FC<ConductorViewProps> = ({
     } | null>(null);
     const [showMetrics, setShowMetrics] = useState(false);
     const [pendingSync, setPendingSync] = useState(0);
+    const bonusRef = useRef<HTMLDivElement>(null);
 
     const scanInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,11 +201,13 @@ export const ConductorView: React.FC<ConductorViewProps> = ({
         });
     };
 
-    const bonus = metrics ? {
-        amount: calculateConductorBonus(metrics),
-        level: 'BRONZE' as const,
-        progress: Math.min(100, (metrics.verifiedRevenue / 5000) * 100)
-    } : { amount: 0, level: 'BRONZE' as const, progress: 0 };
+    const bonus = calculateConductorBonus(metrics);
+
+    useEffect(() => {
+        if (bonusRef.current) {
+            bonusRef.current.style.setProperty('--progress', `${bonus.progress}%`);
+        }
+    }, [bonus.progress]);
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">
@@ -351,8 +354,8 @@ export const ConductorView: React.FC<ConductorViewProps> = ({
                     </div>
                     <div className="h-2 bg-black/30 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all"
-                            style={{ width: `${bonus.progress}%` }}
+                            ref={bonusRef}
+                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all conductor-progress-bar"
                         />
                     </div>
                     <p className="text-xs text-gray-500 mt-2">

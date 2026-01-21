@@ -1,5 +1,6 @@
 # Microservices Directory Structure
-# This file documents the microservices architecture
+
+This file documents the microservices architecture
 
 ## Services Overview
 
@@ -15,7 +16,7 @@
 ## Database Mapping
 
 | Service | Primary DB | Secondary DB |
-|---------|------------|--------------|
+| :--- | :--- | :--- |
 | Auth | PostgreSQL | - |
 | Booking | MongoDB | PostgreSQL (transactions) |
 | Tracking | Redis | MongoDB |

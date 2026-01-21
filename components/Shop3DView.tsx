@@ -27,7 +27,7 @@ export const Shop3DView: React.FC<Shop3DViewProps> = ({ shop, onBack, onBuy }) =
         <div className="fixed inset-0 z-50 bg-black overflow-hidden flex flex-col">
             {/* Header */}
             <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
-                <button onClick={onBack} className="text-white bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-white/20 transition">
+                <button onClick={onBack} className="text-white bg-white/10 p-2 rounded-full backdrop-blur-md hover:bg-white/20 transition" aria-label="Go Back">
                     <ArrowLeft size={24} />
                 </button>
                 <div className="text-center text-white">
@@ -45,7 +45,7 @@ export const Shop3DView: React.FC<Shop3DViewProps> = ({ shop, onBack, onBuy }) =
                 `}>
                     {/* Floor pattern overlay */}
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/concrete-wall.png')] opacity-20 pointer-events-none"></div>
-                    
+
                     {/* Shelf Lighting */}
                     <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
 
@@ -56,16 +56,21 @@ export const Shop3DView: React.FC<Shop3DViewProps> = ({ shop, onBack, onBuy }) =
                     ) : (
                         <div className="relative z-10 grid grid-cols-2 gap-6 p-8 pt-24 pb-32 max-w-md mx-auto">
                             {products.map((product, idx) => (
-                                <div 
+                                <div
                                     key={product.id}
+                                    onClick={() => onBuy(product)}
                                     className={`
-                                        relative group cursor-pointer transition-all duration-500 ease-out transform
+                                        relative group cursor-pointer transition-all duration-500 ease-out transform perspective-[500px]
                                         ${hoveredProduct === product.id ? 'scale-110 z-20 rotate-y-0' : 'scale-100 rotate-y-3 opacity-90'}
                                     `}
-                                    onMouseEnter={() => setHoveredProduct(product.id)}
-                                    onMouseLeave={() => setHoveredProduct(null)}
-                                    onClick={() => onBuy(product)}
-                                    style={{ perspective: '500px' }}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Buy ${product.name} for ${product.price} rupees per ${product.unit}`}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            onBuy(product);
+                                        }
+                                    }}
                                 >
                                     {/* Product "Card" representing a physical item on shelf */}
                                     <div className="bg-white rounded-xl shadow-2xl overflow-hidden border-b-4 border-slate-500 transform transition-transform duration-300 group-hover:-translate-y-2">
@@ -86,7 +91,7 @@ export const Shop3DView: React.FC<Shop3DViewProps> = ({ shop, onBack, onBuy }) =
                                         <div className="p-3">
                                             <h4 className="font-bold text-sm text-slate-800 leading-tight">{product.name}</h4>
                                             {product.description && <p className="text-[9px] text-slate-500 mt-1 line-clamp-1">{product.description}</p>}
-                                            
+
                                             <div className="mt-2 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                                 <span className="text-[10px] text-slate-600 font-bold">In Stock</span>
                                                 <div className="bg-slate-700 text-white p-1 rounded-full">

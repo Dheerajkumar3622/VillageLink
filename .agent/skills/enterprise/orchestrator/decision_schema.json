@@ -1,0 +1,103 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Antigravity Orchestrator Decision Schema",
+    "description": "Standardized schema for task classification and agent routing in Antigravity Brain.",
+    "type": "object",
+    "properties": {
+        "task_id": {
+            "type": "string",
+            "description": "Unique identifier for the task (e.g., JIRA-123 or TIMESTAMP)."
+        },
+        "intent": {
+            "type": "string",
+            "description": "Human-readable intent of the user request."
+        },
+        "risk_level": {
+            "type": "string",
+            "enum": [
+                "low",
+                "medium",
+                "high",
+                "critical"
+            ],
+            "description": "Assessed risk based on governance rules."
+        },
+        "domains": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "ui",
+                    "backend",
+                    "database",
+                    "infra",
+                    "security",
+                    "governance"
+                ]
+            }
+        },
+        "agents_invoked": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "agent": {
+                        "type": "string",
+                        "description": "The specific specialized agent (e.g., ui_agent, db_agent)."
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "SKILL.md files to be loaded by this agent."
+                    },
+                    "output_required": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Expected artifacts from this agent."
+                    }
+                },
+                "required": [
+                    "agent",
+                    "skills",
+                    "output_required"
+                ]
+            }
+        },
+        "approval": {
+            "type": "object",
+            "properties": {
+                "required": {
+                    "type": "boolean"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "audit": {
+            "type": "object",
+            "properties": {
+                "log": {
+                    "type": "boolean"
+                },
+                "retention_days": {
+                    "type": "integer"
+                }
+            }
+        }
+    },
+    "required": [
+        "task_id",
+        "intent",
+        "risk_level",
+        "domains",
+        "agents_invoked"
+    ]
+}

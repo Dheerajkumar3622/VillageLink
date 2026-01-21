@@ -1,0 +1,21 @@
+/* LiveTracker Styles */
+
+.fill-gauge-bar {
+    width: var(--fill-percentage, 0%);
+}
+
+.track-progress-bar {
+    width: var(--progress, 0%);
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bus-icon-wrapper {
+    left: var(--progress, 0%);
+    transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateX(-50%);
+}
+
+.vertical-track-line {
+    height: var(--vertical-progress, 0%);
+    transition: height 1s ease-in-out;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FoodVendor } from '../types';
 import { Button } from './Button';
 import { API_BASE_URL } from '../config';
@@ -45,6 +45,25 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
     const [data, setData] = useState<AnalyticsData | null>(null);
+    const analyticsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (analyticsRef.current) {
+            // Fix peak hours bars
+            const bars = analyticsRef.current.querySelectorAll('.analytics-chart-bar');
+            bars.forEach(bar => {
+                const h = bar.getAttribute('data-height');
+                if (h) (bar as HTMLElement).style.setProperty('--height', h);
+            });
+
+            // Fix ratings bars
+            const progressBars = analyticsRef.current.querySelectorAll('.mess-progress-bar');
+            progressBars.forEach(bar => {
+                const p = bar.getAttribute('data-progress');
+                if (p) (bar as HTMLElement).style.setProperty('--progress', p);
+            });
+        }
+    }, [data, timeRange]);
 
     useEffect(() => {
         fetchAnalytics();
@@ -118,7 +137,7 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
     const maxPeakOrders = Math.max(...data.peakHours.map(h => h.orders));
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6 pb-6" ref={analyticsRef}>
             {/* Time Range Selector */}
             <div className="flex gap-2 bg-white dark:bg-slate-900 p-2 rounded-xl">
                 {(['week', 'month', 'year'] as const).map(range => (
@@ -126,8 +145,8 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
                         key={range}
                         onClick={() => setTimeRange(range)}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${timeRange === range
-                                ? 'bg-orange-500 text-white'
-                                : 'text-slate-500 dark:text-slate-400'
+                            ? 'bg-orange-500 text-white'
+                            : 'text-slate-500 dark:text-slate-400'
                             }`}
                     >
                         This {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -189,9 +208,9 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
                     {data.bestSellers.map((item, idx) => (
                         <div key={item.name} className="flex items-center gap-3">
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' :
-                                    idx === 1 ? 'bg-slate-200 text-slate-700' :
-                                        idx === 2 ? 'bg-orange-100 text-orange-700' :
-                                            'bg-slate-100 text-slate-500'
+                                idx === 1 ? 'bg-slate-200 text-slate-700' :
+                                    idx === 2 ? 'bg-orange-100 text-orange-700' :
+                                        'bg-slate-100 text-slate-500'
                                 }`}>
                                 {idx + 1}
                             </span>
@@ -215,8 +234,8 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
                     {data.peakHours.map(hour => (
                         <div key={hour.hour} className="flex-1 flex flex-col items-center">
                             <div
-                                className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-sm"
-                                style={{ height: `${(hour.orders / maxPeakOrders) * 100}%` }}
+                                className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-sm analytics-chart-bar"
+                                data-height={`${(hour.orders / maxPeakOrders) * 100}%`}
                             ></div>
                             <span className="text-[10px] text-slate-500 mt-1 rotate-45 origin-left">{hour.hour}</span>
                         </div>
@@ -239,8 +258,8 @@ export const VendorAnalytics: React.FC<VendorAnalyticsProps> = ({ vendor }) => {
                                 <span className="text-sm w-8 text-slate-500">{stars}★</span>
                                 <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
                                     <div
-                                        className="h-full bg-yellow-400 rounded-full"
-                                        style={{ width: `${percentage}%` }}
+                                        className="h-full bg-yellow-400 rounded-full mess-progress-bar"
+                                        data-progress={`${percentage}%`}
                                     ></div>
                                 </div>
                                 <span className="text-xs text-slate-500 w-12 text-right">{count}</span>

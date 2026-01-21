@@ -88,6 +88,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
                         key={star}
                         onClick={() => updateRating(category, star)}
                         className="p-1"
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''} for ${label}`}
                     >
                         <Star
                             size={24}
@@ -157,7 +158,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
                 <div className="bg-white dark:bg-slate-900 rounded-2xl p-4">
                     <h2 className="font-bold dark:text-white mb-3 flex items-center justify-between">
                         Add Photos (Optional)
-                        <button className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-500">
+                        <button className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-500" aria-label="Add Photo">
                             <Camera size={20} />
                         </button>
                     </h2>
@@ -172,6 +173,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
                                     <button
                                         onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}
                                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full text-white flex items-center justify-center"
+                                        aria-label="Remove Photo"
                                     >
                                         <X size={12} />
                                     </button>

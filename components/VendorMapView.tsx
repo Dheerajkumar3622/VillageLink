@@ -78,7 +78,7 @@ export const VendorMapView: React.FC<{ onBack: () => void, userLocation: { lat: 
             {/* Header Over Map */}
             <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-col gap-3">
                 <div className="flex items-center gap-3">
-                    <button onClick={onBack} className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-white transition-transform active:scale-95">
+                    <button onClick={onBack} aria-label="Go Back" className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-white transition-transform active:scale-95">
                         <ArrowLeft size={20} />
                     </button>
                     <div className="flex-1 relative">
@@ -180,6 +180,7 @@ export const VendorMapView: React.FC<{ onBack: () => void, userLocation: { lat: 
                     <button
                         onClick={() => setSelectedVendor(null)}
                         className="absolute -top-12 left-1/2 -translate-y-1/2 bg-white dark:bg-slate-900 p-2 rounded-full shadow-lg border border-slate-100 dark:border-slate-800 text-slate-400"
+                        aria-label="Close"
                     >
                         <ArrowLeft size={20} className="rotate-[270deg]" />
                     </button>

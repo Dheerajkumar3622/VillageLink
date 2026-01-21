@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { subscribeToUpdates, getActiveBuses } from '../services/transportService';
-import { Bus, Map as MapIcon, Clock, Navigation, Circle, CheckCircle2, Users, Hourglass, AlertCircle } from 'lucide-react';
+import { MapPin, Users, Bus, Clock, Map as MapIcon, Hourglass, AlertCircle } from 'lucide-react';
 import { BusState } from '../types';
+import './LiveTracker.css';
 
 interface LiveTrackerProps {
     desiredPath?: string[];
@@ -18,6 +19,32 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
     const [buses, setBuses] = useState<BusState[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
     const scrollRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            // Fill gauge
+            const fillBars = containerRef.current.querySelectorAll('.fill-gauge-bar-container');
+            fillBars.forEach(bar => {
+                const p = bar.getAttribute('data-fill');
+                if (p) (bar as HTMLElement).style.setProperty('--fill-percentage', p);
+            });
+
+            // Track progress
+            const trackProgress = containerRef.current.querySelector('.track-progress-container');
+            if (trackProgress) {
+                const p = trackProgress.getAttribute('data-progress');
+                if (p) (trackProgress as HTMLElement).style.setProperty('--progress', p);
+            }
+
+            // Vertical progress
+            const verticalProgress = containerRef.current.querySelector('.vertical-track-container');
+            if (verticalProgress) {
+                const p = verticalProgress.getAttribute('data-progress');
+                if (p) (verticalProgress as HTMLElement).style.setProperty('--vertical-progress', p);
+            }
+        }
+    }, [buses, desiredPath]);
 
     useEffect(() => {
         setBuses(getActiveBuses());
@@ -138,10 +165,10 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                             </div>
 
                             {/* Progress Bar */}
-                            <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden fill-gauge-bar-container"
+                                data-fill={`${departureInfo!.fillPercentage}%`}>
                                 <div
-                                    className={`h-full transition-all duration-1000 relative ${departureInfo!.fillPercentage > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                    style={{ width: `${departureInfo!.fillPercentage}%` }}
+                                    className={`h-full relative fill-gauge-bar ${departureInfo!.fillPercentage > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`}
                                 ></div>
                             </div>
 
@@ -156,46 +183,46 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                 )}
 
                 <div className="relative overflow-x-auto pb-4 scrollbar-hide pt-2" ref={scrollRef}>
-                    <div className="min-w-[500px] px-2 relative">
-                        {/* Connection Line Background */}
-                        <div className="absolute top-2.5 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-700 rounded-full"></div>
+                    <div className="min-w-[500px] px-2 relative" ref={containerRef}>
+                        <div className="track-progress-container" data-progress={`${progressPercent}%`}>
+                            {/* Connection Line Background */}
+                            <div className="absolute top-2.5 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-700 rounded-full"></div>
 
-                        {/* Progress Line (Animated) */}
-                        <div
-                            className="absolute top-2.5 left-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000 ease-linear"
-                            style={{ width: `${progressPercent}%` }}
-                        ></div>
+                            {/* Progress Line (Animated) */}
+                            <div
+                                className="absolute top-2.5 left-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full track-progress-bar"
+                            ></div>
 
-                        {/* Moving Bus Icon */}
-                        <div
-                            className="absolute top-0 z-20 transition-all duration-1000 ease-linear"
-                            style={{ left: `${progressPercent}%`, transform: 'translateX(-50%)' }}
-                        >
-                            <div className={`text-white p-1 rounded-full shadow-lg border-2 border-white dark:border-slate-800 ${departureInfo?.status === 'MOVING' ? 'bg-emerald-600' : 'bg-amber-500'}`}>
-                                <Bus size={12} />
+                            {/* Moving Bus Icon */}
+                            <div
+                                className="absolute top-0 z-20 bus-icon-wrapper"
+                            >
+                                <div className={`text-white p-1 rounded-full shadow-lg border-2 border-white dark:border-slate-800 ${departureInfo?.status === 'MOVING' ? 'bg-emerald-600' : 'bg-amber-500'}`}>
+                                    <Bus size={12} />
+                                </div>
+                                {/* Tooltip Bubble */}
+                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap shadow-xl after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-[4px] after:border-transparent after:border-t-slate-900">
+                                    {departureInfo?.status === 'MOVING' ? `Next: ${displayStops[currentStopIndex + 1] || 'End'}` : 'Boarding'}
+                                </div>
                             </div>
-                            {/* Tooltip Bubble */}
-                            <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap shadow-xl after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-[4px] after:border-transparent after:border-t-slate-900">
-                                {departureInfo?.status === 'MOVING' ? `Next: ${displayStops[currentStopIndex + 1] || 'End'}` : 'Boarding'}
-                            </div>
-                        </div>
 
-                        {/* Stops */}
-                        <div className="flex justify-between relative z-10 pt-1">
-                            {displayStops.map((stop, index) => {
-                                const isPassed = index <= currentStopIndex;
-                                const isNext = index === currentStopIndex + 1;
+                            {/* Stops */}
+                            <div className="flex justify-between relative z-10 pt-1">
+                                {displayStops.map((stop, index) => {
+                                    const isPassed = index <= currentStopIndex;
+                                    const isNext = index === currentStopIndex + 1;
 
-                                return (
-                                    <div key={stop} className="flex flex-col items-center gap-2 w-20 text-center">
-                                        <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors duration-500 ${isPassed ? 'bg-emerald-600 border-emerald-600' : (isNext ? 'bg-white border-emerald-500 animate-pulse' : 'bg-white border-slate-300 dark:border-slate-600 dark:bg-slate-800')}`}></div>
-                                        <div>
-                                            <p className={`text-[10px] leading-tight font-bold ${isPassed ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{stop}</p>
-                                            <p className="text-[9px] text-slate-400 font-mono mt-0.5">{index === 0 ? 'Start' : (isPassed ? <span className="text-emerald-600">Failed</span> : getETA(index))}</p>
+                                    return (
+                                        <div key={stop} className="flex flex-col items-center gap-2 w-20 text-center">
+                                            <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors duration-500 ${isPassed ? 'bg-emerald-600 border-emerald-600' : (isNext ? 'bg-white border-emerald-500 animate-pulse' : 'bg-white border-slate-300 dark:border-slate-600 dark:bg-slate-800')}`}></div>
+                                            <div>
+                                                <p className={`text-[10px] leading-tight font-bold ${isPassed ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{stop}</p>
+                                                <p className="text-[9px] text-slate-400 font-mono mt-0.5">{index === 0 ? 'Start' : (isPassed ? <span className="text-emerald-600">Failed</span> : getETA(index))}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -218,7 +245,7 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="p-2 bg-white/20 rounded-full hover:bg-white/30"><MapIcon size={18} /></button>
+                        <button className="p-2 bg-white/20 rounded-full hover:bg-white/30" aria-label="View Map"><MapIcon size={18} /></button>
                     </div>
                 </div>
             )}
@@ -235,10 +262,10 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                             {activeBus.occupancy}/{activeBus.capacity} Seats
                         </span>
                     </div>
-                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden fill-gauge-bar-container"
+                        data-fill={`${departureInfo?.fillPercentage}%`}>
                         <div
-                            className="h-full bg-amber-500 rounded-full transition-all duration-1000"
-                            style={{ width: `${departureInfo?.fillPercentage}%` }}
+                            className="h-full bg-amber-500 rounded-full fill-gauge-bar"
                         ></div>
                     </div>
                     <p className="text-[10px] text-slate-500 mt-2 text-center">
@@ -255,16 +282,17 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
             </div>
 
             {/* Vertical Timeline Container */}
-            <div className="relative pb-10 bg-slate-50 dark:bg-slate-950 h-[400px] overflow-y-auto">
+            <div className="relative pb-10 bg-slate-50 dark:bg-slate-950 h-[400px] overflow-y-auto" ref={containerRef}>
 
-                {/* The Vertical Guide Line */}
-                <div className="absolute top-0 bottom-0 left-[74px] w-1 bg-slate-300 dark:bg-slate-800 z-0"></div>
+                <div className="vertical-track-container" data-progress={`${(currentStopIndex / Math.max(1, displayStops.length - 1)) * 100}%`}>
+                    {/* The Vertical Guide Line */}
+                    <div className="absolute top-0 bottom-0 left-[74px] w-1 bg-slate-300 dark:bg-slate-800 z-0"></div>
 
-                {/* The Active Blue Progress Line */}
-                <div
-                    className="absolute top-0 left-[74px] w-1 bg-sky-500 z-0 transition-all duration-1000 ease-out"
-                    style={{ height: `${(currentStopIndex / Math.max(1, displayStops.length - 1)) * 100}%` }}
-                ></div>
+                    {/* The Active Blue Progress Line */}
+                    <div
+                        className="absolute top-0 left-[74px] w-1 bg-sky-500 z-0 vertical-track-line"
+                    ></div>
+                </div>
 
                 {displayStops.map((stop, index) => {
                     const isPassed = index <= currentStopIndex;

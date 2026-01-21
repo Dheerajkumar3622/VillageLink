@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { User, AdminStats, RouteDefinition, LocationData } from '../types';
 import { getAdminStats, getAllUsers, verifyDriver, toggleUserBan, getRoutes, createRoute, deleteRoute, getPricingConfig, updatePricingConfig } from '../services/adminService';
 import { findDetailedPath, calculatePathDistance } from '../services/graphService';
@@ -36,6 +35,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [errorAnalytics, setErrorAnalytics] = useState<any>(null);
     const [recentErrors, setRecentErrors] = useState<any[]>([]);
     const [isLoadingErrors, setIsLoadingErrors] = useState(false);
+
+    const errorContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (errorContainerRef.current) {
+            const bars = errorContainerRef.current.querySelectorAll('.admin-progress-bar');
+            bars.forEach(bar => {
+                const p = bar.getAttribute('data-progress');
+                if (p) (bar as HTMLElement).style.setProperty('--progress', p);
+            });
+        }
+    }, [errorAnalytics, activeTab]);
 
     const fetchData = async () => {
         const s = await getAdminStats();
@@ -179,7 +190,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                         <p className="text-[10px] text-slate-400 font-mono">ADMIN: {user.name} ({user.id})</p>
                     </div>
                 </div>
-                <button onClick={() => { logoutUser(); window.location.reload(); }} className="bg-slate-800 hover:bg-slate-700 p-2 rounded-full transition-colors text-red-400">
+                <button onClick={() => { logoutUser(); window.location.reload(); }} className="bg-slate-800 hover:bg-slate-700 p-2 rounded-full transition-colors text-red-400" aria-label="Logout">
                     <LogOut size={20} />
                 </button>
             </div>
@@ -324,6 +335,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                                             <input
                                                 type="number"
+                                                aria-label="Base Fare"
                                                 value={baseFare}
                                                 onChange={e => setBaseFare(Number(e.target.value))}
                                                 className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white outline-none focus:border-red-500 font-bold text-lg"
@@ -338,6 +350,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
                                             <input
                                                 type="number"
+                                                aria-label="Rate Per Kilometer"
                                                 value={perKmRate}
                                                 onChange={e => setPerKmRate(Number(e.target.value))}
                                                 className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white outline-none focus:border-red-500 font-bold text-lg"
@@ -439,7 +452,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                                         {r.totalDistance.toFixed(1)} km • {r.stops.length} Stops
                                                     </p>
                                                 </div>
-                                                <button onClick={() => handleDeleteRoute(r.id)} className="p-3 bg-slate-800 hover:bg-red-900/20 hover:text-red-500 rounded-lg text-slate-500 transition-colors">
+                                                <button onClick={() => handleDeleteRoute(r.id)} className="p-3 bg-slate-800 hover:bg-red-900/20 hover:text-red-500 rounded-lg text-slate-500 transition-colors" aria-label="Delete Route">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>
@@ -459,7 +472,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     <h2 className="text-xl font-bold flex items-center gap-2"><Bug size={20} className="text-orange-500" /> Error Analytics</h2>
                                     <p className="text-sm text-slate-400">Automatic error detection across all users</p>
                                 </div>
-                                <button onClick={fetchErrorData} disabled={isLoadingErrors} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-slate-300 transition-colors">
+                                <button onClick={fetchErrorData} disabled={isLoadingErrors} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-slate-300 transition-colors" aria-label="Refresh Errors">
                                     <RefreshCw size={18} className={isLoadingErrors ? 'animate-spin' : ''} />
                                 </button>
                             </div>
@@ -494,13 +507,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         {errorAnalytics.byType.map((item: any) => (
                                             <div key={item._id} className="flex items-center gap-3">
                                                 <span className={`text-xs font-bold px-2 py-1 rounded ${item._id === 'CLIENT_ERROR' ? 'bg-blue-900 text-blue-300' :
-                                                        item._id === 'NETWORK_ERROR' ? 'bg-purple-900 text-purple-300' :
-                                                            item._id === 'PERFORMANCE' ? 'bg-yellow-900 text-yellow-300' :
-                                                                item._id === 'SERVICE_FAILURE' ? 'bg-red-900 text-red-300' :
-                                                                    'bg-slate-800 text-slate-300'
+                                                    item._id === 'NETWORK_ERROR' ? 'bg-purple-900 text-purple-300' :
+                                                        item._id === 'PERFORMANCE' ? 'bg-yellow-900 text-yellow-300' :
+                                                            item._id === 'SERVICE_FAILURE' ? 'bg-red-900 text-red-300' :
+                                                                'bg-slate-800 text-slate-300'
                                                     }`}>{item._id}</span>
-                                                <div className="flex-1 bg-slate-800 rounded-full h-2">
-                                                    <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${Math.min((item.count / errorAnalytics.summary.total) * 100, 100)}%` }}></div>
+                                                <div className="flex-1 bg-slate-800 rounded-full h-2" ref={errorContainerRef}>
+                                                    <div className="bg-orange-500 h-2 rounded-full admin-progress-bar" data-progress={`${Math.min((item.count / errorAnalytics.summary.total) * 100, 100)}%`}></div>
                                                 </div>
                                                 <span className="text-sm font-mono text-slate-400">{item.count}</span>
                                             </div>
@@ -518,16 +531,16 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     <div className="space-y-3 max-h-96 overflow-y-auto">
                                         {recentErrors.map((err: any) => (
                                             <div key={err.errorId || err._id} className={`p-4 rounded-xl border ${err.severity === 'CRITICAL' ? 'bg-red-900/20 border-red-800' :
-                                                    err.severity === 'HIGH' ? 'bg-orange-900/20 border-orange-800' :
-                                                        'bg-slate-800 border-slate-700'
+                                                err.severity === 'HIGH' ? 'bg-orange-900/20 border-orange-800' :
+                                                    'bg-slate-800 border-slate-700'
                                                 }`}>
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${err.severity === 'CRITICAL' ? 'bg-red-600 text-white' :
-                                                                    err.severity === 'HIGH' ? 'bg-orange-600 text-white' :
-                                                                        err.severity === 'MEDIUM' ? 'bg-yellow-600 text-black' :
-                                                                            'bg-slate-600 text-white'
+                                                                err.severity === 'HIGH' ? 'bg-orange-600 text-white' :
+                                                                    err.severity === 'MEDIUM' ? 'bg-yellow-600 text-black' :
+                                                                        'bg-slate-600 text-white'
                                                                 }`}>{err.severity}</span>
                                                             <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{err.type}</span>
                                                             {err.resolved && <CheckCircle size={12} className="text-emerald-500" />}

@@ -112,6 +112,7 @@ export const JourneyPlanner: React.FC<JourneyPlannerProps> = ({
                     <button
                         onClick={loadJourneys}
                         className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                        aria-label="Refresh Journey"
                     >
                         <RefreshCw className={`w-5 h-5 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -147,8 +148,8 @@ export const JourneyPlanner: React.FC<JourneyPlannerProps> = ({
                                     onJourneySelected?.(journey);
                                 }}
                                 className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${idx === selectedIndex
-                                        ? 'bg-emerald-500 text-white'
-                                        : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'bg-white/10 text-gray-400 hover:bg-white/20'
                                     }`}
                             >
                                 Option {idx + 1} • ₹{journey.totalFare}

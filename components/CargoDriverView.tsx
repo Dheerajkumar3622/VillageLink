@@ -241,6 +241,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                 <button
                     onClick={() => setShowSettings(!showSettings)}
                     className="text-slate-400 hover:text-white transition-colors"
+                    aria-label="Settings"
                 >
                     <Settings size={18} />
                 </button>
@@ -267,12 +268,13 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                 </div>
             </div>
 
-            <div
+            <button
                 onClick={toggleAcceptingCargo}
-                className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${capacity?.acceptingCargo
+                className={`w-full flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${capacity?.acceptingCargo
                     ? 'bg-emerald-500/20 border border-emerald-500/50'
                     : 'bg-slate-700/50 border border-slate-600'
                     }`}
+                aria-label={capacity?.acceptingCargo ? "Stop Accepting Cargo" : "Start Accepting Cargo"}
             >
                 <span className="text-sm font-medium text-white">Accept Cargo Requests</span>
                 {capacity?.acceptingCargo ? (
@@ -280,7 +282,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                 ) : (
                     <ToggleLeft size={24} className="text-slate-400" />
                 )}
-            </div>
+            </button>
         </div>
     );
 
@@ -348,6 +350,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                         value={capacity?.pricePerKmPerKg || 2}
                         onChange={(e) => updateCapacity({ pricePerKmPerKg: parseInt(e.target.value) })}
                         className="w-full"
+                        aria-label="Price per km/kg"
                     />
                 </div>
             </div>
@@ -414,6 +417,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
                             <a
                                 href={`tel:${cargo.shipperPhone}`}
                                 className="bg-slate-100 dark:bg-slate-700 p-2 rounded-lg"
+                                aria-label="Call Shipper"
                             >
                                 <Phone size={16} className="text-slate-600 dark:text-slate-300" />
                             </a>
@@ -524,6 +528,7 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
 
                 <input
                     type="text"
+                    aria-label="Enter OTP"
                     value={otpInput}
                     onChange={(e) => setOtpInput(e.target.value)}
                     placeholder="Enter 4-digit OTP"

@@ -216,7 +216,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
             <div className="bg-emerald-500 p-1 rounded-md text-white"><Lock size={12} /></div>
             <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">Secure Payment Gateway</span>
           </div>
-          {step === 'form' && <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>}
+          {step === 'form' && <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Close Modal"><X size={20} /></button>}
         </div>
 
         <div className="p-6 overflow-y-auto">
@@ -230,7 +230,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
               <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-x-auto scrollbar-hide">
                 <button type="button" onClick={() => setActiveTab('CARD')} className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap ${activeTab === 'CARD' ? 'bg-white dark:bg-slate-700 shadow-sm text-brand-600 dark:text-white' : 'text-slate-500'}`}>Online</button>
                 <button type="button" onClick={() => setActiveTab('UDHAAR')} className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap flex items-center gap-1 justify-center ${activeTab === 'UDHAAR' ? 'bg-pink-100 text-pink-600 shadow-sm' : 'text-slate-500'}`}>Udhaar</button>
-                <button type="button" onClick={() => setActiveTab('SONIC')} className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap flex items-center gap-1 justify-center ${activeTab === 'SONIC' ? 'bg-brand-500 shadow-sm text-white' : 'text-slate-500'}`}><Radio size={12} /></button>
+                <button type="button" onClick={() => setActiveTab('SONIC')} className={`flex-1 py-2 px-2 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap flex items-center gap-1 justify-center ${activeTab === 'SONIC' ? 'bg-brand-500 shadow-sm text-white' : 'text-slate-500'}`} aria-label="Sonic Payment"><Radio size={12} /></button>
               </div>
 
               {activeTab === 'CARD' && (

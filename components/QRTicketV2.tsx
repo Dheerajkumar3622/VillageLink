@@ -159,6 +159,7 @@ export const QRTicketV2: React.FC<QRTicketV2Props> = ({
                 <button
                     onClick={onClose}
                     className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors"
+                    aria-label="Close Ticket"
                 >
                     <X size={24} className="text-slate-600" />
                 </button>
@@ -223,6 +224,7 @@ export const QRTicketV2: React.FC<QRTicketV2Props> = ({
                             onClick={handleRefresh}
                             disabled={isRefreshing}
                             className="ml-2 p-1 rounded-full bg-white shadow hover:shadow-md transition-shadow"
+                            aria-label="Refresh QR Code"
                         >
                             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                         </button>

@@ -209,6 +209,7 @@ export const GuardianWidget: React.FC<GuardianWidgetProps> = ({
                         <button
                             onClick={() => setExpanded(true)}
                             className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                            aria-label="Expand Widget"
                         >
                             <Plus className="w-5 h-5 text-gray-400" />
                         </button>
@@ -236,6 +237,7 @@ export const GuardianWidget: React.FC<GuardianWidgetProps> = ({
                     <button
                         onClick={() => setExpanded(false)}
                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                        aria-label="Collapse Widget"
                     >
                         <X className="w-5 h-5 text-gray-400" />
                     </button>
@@ -291,11 +293,13 @@ export const GuardianWidget: React.FC<GuardianWidgetProps> = ({
                                         type="text"
                                         value={activeShare.shareUrl}
                                         readOnly
+                                        aria-label="Share URL"
                                         className="flex-1 bg-black/30 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300"
                                     />
                                     <button
                                         onClick={handleCopyLink}
                                         className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+                                        aria-label="Copy Link"
                                     >
                                         <Copy className="w-5 h-5 text-gray-400" />
                                     </button>
@@ -328,6 +332,7 @@ export const GuardianWidget: React.FC<GuardianWidgetProps> = ({
                         <button
                             onClick={() => setShowAddContact(!showAddContact)}
                             className="p-1.5 bg-blue-500/20 rounded-lg hover:bg-blue-500/30"
+                            aria-label="Add Trusted Contact"
                         >
                             <Plus className="w-4 h-4 text-blue-400" />
                         </button>
@@ -355,6 +360,7 @@ export const GuardianWidget: React.FC<GuardianWidgetProps> = ({
                                     value={newContact.relationship}
                                     onChange={(e) => setNewContact({ ...newContact, relationship: e.target.value as any })}
                                     className="flex-1 bg-white/10 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm"
+                                    aria-label="Relationship Type"
                                 >
                                     <option value="FAMILY">Family</option>
                                     <option value="FRIEND">Friend</option>

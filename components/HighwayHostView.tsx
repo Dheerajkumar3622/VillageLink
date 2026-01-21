@@ -163,7 +163,7 @@ export const HighwayHostView: React.FC<HighwayHostViewProps> = ({ user, onBack }
                             </div>
                             <div className="flex-1">
                                 <div className="w-full bg-gray-100 rounded-full h-2 mb-1">
-                                    <div className="bg-yellow-400 h-2 rounded-full" style={{ width: '60%' }}></div>
+                                    <div className="bg-yellow-400 h-2 rounded-full highway-progress-60"></div>
                                 </div>
                                 <p className="text-xs text-gray-400 text-center">Kitchen is syncing with your arrival</p>
                             </div>

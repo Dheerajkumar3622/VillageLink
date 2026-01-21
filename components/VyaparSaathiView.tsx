@@ -230,7 +230,7 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
 
                     {/* Progress Bar */}
                     <div className="w-full bg-gray-100 rounded-full h-2.5 mb-2">
-                        <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: '70%' }}></div>
+                        <div className="bg-purple-600 h-2.5 rounded-full highway-progress-70"></div>
                     </div>
                     <p className="text-xs text-right text-gray-500 mb-4">350kg / 500kg collected</p>
 
@@ -271,7 +271,7 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
             {/* Top Nav */}
             {activeTab !== 'DASHBOARD' && (
                 <div className="bg-white p-4 shadow-sm flex items-center gap-3 sticky top-0 z-20">
-                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('DASHBOARD')}>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('DASHBOARD')} aria-label="Go Back">
                         <ArrowRight className="w-5 h-5 rotate-180" />
                     </Button>
                     <h1 className="font-bold text-lg capitalize">{activeTab.toLowerCase().replace('_', ' ')}</h1>
@@ -314,6 +314,7 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
                 <button
                     onClick={() => setActiveTab('PROCURE')}
                     className={`relative -top-6 bg-orange-600 text-white p-4 rounded-full shadow-lg border-4 border-gray-50`}
+                    aria-label="Procure"
                 >
                     <ShoppingBag className="w-6 h-6" />
                 </button>

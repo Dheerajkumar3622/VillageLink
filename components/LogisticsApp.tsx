@@ -3,7 +3,7 @@
  * Separate app for logistics partners to manage pickups and deliveries
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import { getAuthToken, loginUser, registerUser, logoutUser } from '../services/authService';
 import { Button } from './Button';
@@ -56,6 +56,13 @@ export const LogisticsApp: React.FC = () => {
         weekEarnings: 0,
         totalDeliveries: 0
     });
+    const onlineToggleRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (onlineToggleRef.current) {
+            onlineToggleRef.current.setAttribute('aria-pressed', isOnline ? 'true' : 'false');
+        }
+    }, [isOnline]);
 
     useEffect(() => {
         const token = getAuthToken();
@@ -204,6 +211,58 @@ export const LogisticsApp: React.FC = () => {
         }
     };
 
+    // ==================== AUTH VIEW ====================
+    if (viewState === 'AUTH') {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-electric-50 to-indigo-100 dark:from-slate-950 dark:to-indigo-950 flex items-center justify-center p-4">
+                <div className="w-full max-w-md">
+                    <div className="text-center mb-8">
+                        <div className="w-20 h-20 bg-gradient-to-r from-electric-500 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                            <Truck className="text-white" size={40} />
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">LogisticsApp</h1>
+                        <p className="text-slate-500 text-sm">Delivery Partner Portal</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xl">
+                        {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+
+                        {authMode === 'LOGIN' ? (
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone / Email" required aria-label="Login ID" />
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required aria-label="Password" />
+                                <Button type="submit" fullWidth disabled={loading} className="bg-electric-600 hover:bg-electric-700">
+                                    {loading ? <Loader2 className="animate-spin" /> : 'Login'}
+                                </Button>
+                                <p className="text-center text-sm text-slate-500">
+                                    New partner? <button type="button" onClick={() => setAuthMode('REGISTER')} className="text-electric-600 font-bold">Register</button>
+                                </p>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleRegister} className="space-y-4">
+                                <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Your Name" required aria-label="Your Name" />
+                                <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone Number" required aria-label="Phone Number" />
+                                <input type="text" value={regVehicleNumber} onChange={e => setRegVehicleNumber(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Vehicle Number" required aria-label="Vehicle Number" />
+                                <select value={regVehicleType} onChange={e => setRegVehicleType(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" aria-label="Vehicle Type">
+                                    <option value="TEMPO">Tempo / Mini Truck</option>
+                                    <option value="BIKE">Bike</option>
+                                    <option value="TRUCK">Heavy Truck</option>
+                                </select>
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required aria-label="Password" />
+                                <Button type="submit" fullWidth disabled={loading} className="bg-electric-600 hover:bg-electric-700">
+                                    {loading ? <Loader2 className="animate-spin" /> : 'Register Vehicle'}
+                                </Button>
+                                <p className="text-center text-sm text-slate-500">
+                                    Already registered? <button type="button" onClick={() => setAuthMode('LOGIN')} className="text-electric-600 font-bold">Login</button>
+                                </p>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // ==================== DASHBOARD VIEW ====================
     if (viewState === 'DASHBOARD') {
         return (
@@ -223,7 +282,7 @@ export const LogisticsApp: React.FC = () => {
                                 <p className="text-[10px] font-black text-electric-600 uppercase tracking-widest">{user?.vehicleNumber || 'Vehicle Verified'}</p>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
                             <LogOut size={18} />
                         </button>
                     </div>
@@ -232,6 +291,9 @@ export const LogisticsApp: React.FC = () => {
                 <div className="px-4 mt-6 animate-fadeInUp">
                     {/* Online Toggle - Premium */}
                     <button
+                        ref={onlineToggleRef}
+                        aria-pressed="false"
+                        aria-label={isOnline ? "Go Offline" : "Go Online"}
                         onClick={toggleOnline}
                         className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all relative overflow-hidden group mb-8 ${isOnline ? 'bg-gradient-to-r from-emerald-600 to-teal-700 shadow-glow-sm' : 'bg-slate-800'}`}
                     >

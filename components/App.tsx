@@ -148,6 +148,8 @@ const App: React.FC = () => {
         return <VyaparSaathiView user={user} />;
       case 'RESTAURANT_MANAGER': // Fine Dining = LuxeOS
         return <LuxeOSView user={user} />;
+      case 'FARMER':
+        return <KisanApp />;
       default:
         return <PassengerView user={user} lang={lang} />;
     }
@@ -234,7 +236,7 @@ const App: React.FC = () => {
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             {user && (
-              <button onClick={handleLogout} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-red-500 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700">
+              <button onClick={handleLogout} aria-label="Logout" className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-red-500 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700">
                 <LogOut size={18} />
               </button>
             )}

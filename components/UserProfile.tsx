@@ -217,7 +217,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
     return (
         <div className="animate-fade-in pb-20 min-h-screen bg-slate-50 dark:bg-black">
             <div className="flex items-center gap-4 mb-6 sticky top-0 bg-slate-50/90 dark:bg-black/90 backdrop-blur-md p-4 z-20 border-b border-slate-200/50 dark:border-slate-800">
-                <button onClick={onBack} className="p-2 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm">
+                <button onClick={onBack} className="p-2 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
                     <ArrowLeft size={20} className="dark:text-white" />
                 </button>
                 <h2 className="text-xl font-bold dark:text-white">Profile & Activity</h2>

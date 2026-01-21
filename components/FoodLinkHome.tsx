@@ -339,12 +339,17 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         );
     }
 
+    // ============== MESS 3D VIEW ==============
+    if (view === 'MESS_3D') {
+        return <Mess3DView onBack={() => setView('HOME')} />;
+    }
+
     // ============== ORDER STATUS VIEW ==============
     if (view === 'ORDER_STATUS' && activeOrder) {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
                 <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
-                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2">
+                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">Order Status</h1>
@@ -433,7 +438,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 animate-[bgDrift_20s_ease-in-out_infinite_alternate] scale-110"></div>
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
 
-                    <button onClick={() => { setView('HOME'); setCart([]); }} className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-colors z-10">
+                    <button onClick={() => { setView('HOME'); setCart([]); }} className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-colors z-10" aria-label="Go Back">
                         <ArrowLeft size={20} />
                     </button>
                     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white z-10">
@@ -512,11 +517,11 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                         <div className="flex flex-col items-center justify-center">
                                             {cartItem ? (
                                                 <div className="flex items-center gap-2 bg-orange-500 text-white rounded-full px-2 py-1">
-                                                    <button onClick={() => updateCartQuantity(item.id, -1)} className="p-1">
+                                                    <button onClick={() => updateCartQuantity(item.id, -1)} className="p-1" aria-label="Decrease Quantity">
                                                         <Minus size={14} />
                                                     </button>
                                                     <span className="font-bold min-w-[20px] text-center">{cartItem.quantity}</span>
-                                                    <button onClick={() => updateCartQuantity(item.id, 1)} className="p-1">
+                                                    <button onClick={() => updateCartQuantity(item.id, 1)} className="p-1" aria-label="Increase Quantity">
                                                         <Plus size={14} />
                                                     </button>
                                                 </div>
@@ -554,7 +559,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
                 <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
-                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2">
+                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">My Orders</h1>
@@ -603,7 +608,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
                 <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
-                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2">
+                    <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">Meal Subscriptions</h1>
@@ -681,7 +686,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                 <span className="text-xs font-bold text-white">{wallet.balance} <span className="text-[8px] opacity-70">G$</span></span>
                             </div>
                         )}
-                        <button onClick={() => setView('MY_ORDERS')} className="p-2 bg-white/20 backdrop-blur rounded-full relative">
+                        <button onClick={() => setView('MY_ORDERS')} className="p-2 bg-white/20 backdrop-blur rounded-full relative" aria-label="My Orders">
                             <ShoppingBag size={20} />
                             {activeOrder && (
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold flex items-center justify-center">!</div>
@@ -699,8 +704,9 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                         onChange={e => setSearchQuery(e.target.value)}
                         placeholder="Search for food, stalls, restaurants..."
                         className="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 shadow-lg outline-none font-medium transition-all group-focus-within:font-bold"
+                        aria-label="Search Food"
                     />
-                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
+                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform" aria-label="Toggle Filters">
                         {/* Waveform for Voice UI hint if filters not active */}
                         <div className="flex items-end gap-0.5 h-3 w-4">
                             <div className="w-0.5 bg-orange-500 animate-[waveform_1s_ease-in-out_infinite]"></div>
@@ -717,7 +723,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                 <div className="bg-white dark:bg-slate-900 mx-4 -mt-4 rounded-xl p-4 shadow-lg border border-slate-100 dark:border-slate-800 mb-4 animate-fade-in">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="font-bold dark:text-white">Filters</h3>
-                        <button onClick={() => setShowFilters(false)}><X size={18} className="text-slate-400" /></button>
+                        <button onClick={() => setShowFilters(false)} aria-label="Close Filters"><X size={18} className="text-slate-400" /></button>
                     </div>
 
                     <div className="space-y-4">
@@ -729,6 +735,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                             <button
                                 onClick={() => setVegOnly(!vegOnly)}
                                 className={`w-12 h-6 rounded-full transition-all ${vegOnly ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                aria-label="Toggle Veg Only"
                             >
                                 <div className={`w-5 h-5 rounded-full bg-white shadow transition-all ${vegOnly ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
                             </button>
@@ -800,6 +807,29 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             </div>
 
             {/* Smart Recommendations */}
+
+            {/* 3D Experience Banner */}
+            <div className="px-4 mb-6">
+                <div
+                    onClick={() => setView('MESS_3D')}
+                    className="w-full h-32 rounded-2xl bg-gradient-to-r from-indigo-900 to-slate-900 relative overflow-hidden cursor-pointer shadow-lg shadow-indigo-500/20 group"
+                >
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80')] opacity-40 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
+                    <div className="absolute top-0 right-0 p-3">
+                        <span className="bg-white/20 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-bold text-white border border-white/20">BETA</span>
+                    </div>
+                    <div className="relative h-full flex flex-col justify-center px-6">
+                        <h3 className="text-2xl font-black text-white italic">MESS•LINK <span className="text-orange-500">3D</span></h3>
+                        <p className="text-slate-300 text-xs max-w-[200px] mt-1">Build your perfect thali in our new immersive experience.</p>
+                        <div className="mt-3 flex items-center gap-2 text-orange-400 text-xs font-bold uppercase tracking-widest group-hover:text-orange-300 transition-colors">
+                            Try Now <ChevronRight size={14} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Smart Recommendations */}
             {mlRecommendations.length > 0 && (
                 <div className="px-4 mb-6">
                     <div className="flex items-center gap-2 mb-3">
@@ -826,6 +856,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                         <button
                                             onClick={() => addToCart(rec)}
                                             className="p-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-500 hover:text-white transition-colors"
+                                            aria-label={`Add ${rec.name} to cart`}
                                         >
                                             <Plus size={14} />
                                         </button>

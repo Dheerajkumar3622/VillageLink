@@ -8,7 +8,7 @@
  * - Revenue analytics
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Bus,
     Users,
@@ -58,6 +58,17 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
     const [crew, setCrew] = useState<CrewMember[]>([]);
     const [compliance, setCompliance] = useState<PermitCompliance[]>([]);
     const [analytics, setAnalytics] = useState<FleetAnalytics | null>(null);
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (chartContainerRef.current) {
+            const bars = chartContainerRef.current.querySelectorAll('.operator-chart-bar');
+            bars.forEach(bar => {
+                const h = bar.getAttribute('data-height');
+                if (h) (bar as HTMLElement).style.setProperty('--height', h);
+            });
+        }
+    }, [analytics, activeTab]);
     const [roster, setRoster] = useState<DigitalRoster | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -142,6 +153,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
                     <button
                         onClick={loadData}
                         className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                        aria-label="Refresh Data"
                     >
                         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
@@ -171,8 +183,8 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${activeTab === tab.id
-                                ? 'bg-emerald-500 text-white'
-                                : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                            ? 'bg-emerald-500 text-white'
+                            : 'text-gray-400 hover:bg-white/10 hover:text-white'
                             }`}
                     >
                         {tab.icon}
@@ -339,6 +351,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
                                     className="bg-white/10 border border-gray-700 rounded-lg px-3 py-2 text-white"
+                                    aria-label="Select Date"
                                 />
                                 <button
                                     onClick={handleGenerateRoster}
@@ -451,14 +464,14 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
                                             <div
                                                 key={idx}
                                                 className={`flex items-center justify-between p-3 rounded-lg ${issue.severity === 'CRITICAL' ? 'bg-red-500/10' :
-                                                        issue.severity === 'WARNING' ? 'bg-yellow-500/10' :
-                                                            'bg-blue-500/10'
+                                                    issue.severity === 'WARNING' ? 'bg-yellow-500/10' :
+                                                        'bg-blue-500/10'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <AlertTriangle className={`w-4 h-4 ${issue.severity === 'CRITICAL' ? 'text-red-400' :
-                                                            issue.severity === 'WARNING' ? 'text-yellow-400' :
-                                                                'text-blue-400'
+                                                        issue.severity === 'WARNING' ? 'text-yellow-400' :
+                                                            'text-blue-400'
                                                         }`} />
                                                     <span className="text-sm">{issue.description}</span>
                                                 </div>
@@ -502,12 +515,12 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ operatorId
                         {/* Revenue Chart Placeholder */}
                         <div className="bg-white/5 rounded-xl p-6">
                             <h3 className="text-lg font-bold mb-4">Revenue Trend (Last 7 Days)</h3>
-                            <div className="h-48 flex items-end justify-between gap-2">
+                            <div className="h-48 flex items-end justify-between gap-2" ref={chartContainerRef}>
                                 {[65, 78, 82, 70, 95, 88, 100].map((height, idx) => (
                                     <div key={idx} className="flex-1 flex flex-col items-center">
                                         <div
-                                            className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all hover:from-emerald-500 hover:to-emerald-300"
-                                            style={{ height: `${height}%` }}
+                                            className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-lg transition-all hover:from-emerald-500 hover:to-emerald-300 operator-chart-bar"
+                                            data-height={`${height}%`}
                                         />
                                         <span className="text-xs text-gray-500 mt-2">
                                             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx]}
@@ -545,12 +558,12 @@ const MetricCard: React.FC<{
 const VehicleCard: React.FC<{ vehicle: FleetVehicle }> = ({ vehicle }) => (
     <div className="bg-white/5 rounded-xl p-4 flex items-center gap-4">
         <div className={`p-3 rounded-xl ${vehicle.status === 'ACTIVE' ? 'bg-emerald-500/20' :
-                vehicle.status === 'MAINTENANCE' ? 'bg-yellow-500/20' :
-                    'bg-gray-500/20'
+            vehicle.status === 'MAINTENANCE' ? 'bg-yellow-500/20' :
+                'bg-gray-500/20'
             }`}>
             <Bus className={`w-8 h-8 ${vehicle.status === 'ACTIVE' ? 'text-emerald-400' :
-                    vehicle.status === 'MAINTENANCE' ? 'text-yellow-400' :
-                        'text-gray-400'
+                vehicle.status === 'MAINTENANCE' ? 'text-yellow-400' :
+                    'text-gray-400'
                 }`} />
         </div>
         <div className="flex-1">
@@ -562,9 +575,9 @@ const VehicleCard: React.FC<{ vehicle: FleetVehicle }> = ({ vehicle }) => (
             <p className="text-xs text-gray-500">{vehicle.todayTrips} trips • {vehicle.todayKm} km</p>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${vehicle.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' :
-                vehicle.status === 'MAINTENANCE' ? 'bg-yellow-500/20 text-yellow-400' :
-                    vehicle.status === 'BREAKDOWN' ? 'bg-red-500/20 text-red-400' :
-                        'bg-gray-500/20 text-gray-400'
+            vehicle.status === 'MAINTENANCE' ? 'bg-yellow-500/20 text-yellow-400' :
+                vehicle.status === 'BREAKDOWN' ? 'bg-red-500/20 text-red-400' :
+                    'bg-gray-500/20 text-gray-400'
             }`}>
             {vehicle.status}
         </span>

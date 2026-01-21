@@ -462,7 +462,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 <div className="mb-8">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Assigned Route</label>
                                     <div className="relative">
-                                        <select value={selectedRouteId} onChange={(e) => setSelectedRouteId(e.target.value)} className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl appearance-none outline-none text-white font-black text-sm tracking-tight">
+                                        <select value={selectedRouteId} onChange={(e) => setSelectedRouteId(e.target.value)} className="w-full p-5 bg-white/5 border border-white/10 rounded-2xl appearance-none outline-none text-white font-black text-sm tracking-tight" aria-label="Select Route">
                                             <option value="" className="bg-slate-950">-- Select Hub Route --</option>
                                             {officialRoutes.map(route => (<option key={route.id} value={route.id} className="bg-slate-950">{route.name} ({route.from} - {route.to})</option>))}
                                         </select>
@@ -638,6 +638,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-xl font-black">₹</span>
                             <input
                                 type="number"
+                                aria-label="Withdraw Amount"
                                 value={withdrawAmount}
                                 onChange={(e) => setWithdrawAmount(e.target.value)}
                                 className="w-full pl-12 p-5 rounded-2xl bg-white/5 border border-white/10 text-white text-2xl font-black outline-none"

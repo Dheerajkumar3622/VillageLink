@@ -237,7 +237,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4">
             <div className="flex items-center gap-3">
                 {onBack && (
-                    <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-lg">
+                    <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-lg" aria-label="Go Back">
                         <ArrowLeft size={24} />
                     </button>
                 )}
@@ -343,7 +343,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
     const renderCreateView = () => (
         <div className="p-4 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-                <button onClick={() => setView('list')} className="p-2 hover:bg-gray-100 rounded-lg">
+                <button onClick={() => setView('list')} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Back to List">
                     <ArrowLeft size={20} />
                 </button>
                 <h2 className="font-semibold text-gray-800">New Shipment</h2>
@@ -358,11 +358,11 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                             key={type.id}
                             onClick={() => setItemType(type.id)}
                             className={`p-3 rounded-xl border-2 transition-all ${itemType === type.id
-                                    ? 'border-orange-500 bg-orange-50'
-                                    : 'border-gray-200 hover:border-orange-300'
+                                ? 'border-orange-500 bg-orange-50'
+                                : 'border-gray-200 hover:border-orange-300'
                                 }`}
                         >
-                            <span className="text-2xl block mb-1">{type.icon}</span>
+                            <span className="text-2xl block mb-1" aria-hidden="true">{type.icon}</span>
                             <span className="text-xs text-gray-600">{type.label.split(' ')[1]}</span>
                         </button>
                     ))}
@@ -379,6 +379,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                         onChange={(e) => setItemName(e.target.value)}
                         placeholder="e.g., Tomatoes, Rice bags, Documents"
                         className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        aria-label="Item Name"
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -390,6 +391,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                             onChange={(e) => setWeightKg(e.target.value)}
                             placeholder="5"
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500"
+                            aria-label="Weight in Kg"
                         />
                     </div>
                     <div className="flex items-end">
@@ -399,6 +401,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                                 checked={isFragile}
                                 onChange={(e) => setIsFragile(e.target.checked)}
                                 className="w-4 h-4 text-orange-500"
+                                aria-label="Is Fragile"
                             />
                             <span className="text-sm">⚠️ Fragile</span>
                         </label>
@@ -428,6 +431,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                         onChange={(e) => setPickupLocation({ ...pickupLocation, name: e.target.value })}
                         placeholder="Where to pick up from?"
                         className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500"
+                        aria-label="Pickup Location"
                     />
                 </div>
                 <div>
@@ -440,6 +444,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                         onChange={(e) => setDropoffLocation({ ...dropoffLocation, name: e.target.value })}
                         placeholder="Where to deliver?"
                         className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500"
+                        aria-label="Dropoff Location"
                     />
                 </div>
             </div>
@@ -455,6 +460,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                             onChange={(e) => setReceiverName(e.target.value)}
                             placeholder="Recipient name"
                             className="w-full p-3 border border-gray-300 rounded-xl"
+                            aria-label="Receiver Name"
                         />
                     </div>
                     <div>
@@ -465,6 +471,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                             onChange={(e) => setReceiverPhone(e.target.value)}
                             placeholder="Phone number"
                             className="w-full p-3 border border-gray-300 rounded-xl"
+                            aria-label="Receiver Phone"
                         />
                     </div>
                 </div>
@@ -490,6 +497,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
                                 value={offeredPrice}
                                 onChange={(e) => setOfferedPrice(e.target.value)}
                                 className="flex-1 p-3 border border-orange-300 rounded-xl text-lg font-bold focus:ring-2 focus:ring-orange-500"
+                                aria-label="Offered Price"
                             />
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
@@ -519,7 +527,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
     const renderMatchesView = () => (
         <div className="p-4 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-                <button onClick={() => { setView('list'); fetchMyCargos(); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                <button onClick={() => { setView('list'); fetchMyCargos(); }} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Back to List">
                     <ArrowLeft size={20} />
                 </button>
                 <h2 className="font-semibold text-gray-800">Available Drivers</h2>
@@ -616,7 +624,7 @@ const CargoShipmentView: React.FC<CargoShipmentViewProps> = ({
         return (
             <div className="p-4 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                    <button onClick={() => { setView('list'); setSelectedCargo(null); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <button onClick={() => { setView('list'); setSelectedCargo(null); }} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Back to List">
                         <ArrowLeft size={20} />
                     </button>
                     <h2 className="font-semibold text-gray-800">Shipment Details</h2>

@@ -23,10 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
           {/* Animated Background Blob - Moves to active tab */}
           <div className="absolute inset-0 px-2 flex items-center" aria-hidden="true">
             <div
-              className="h-12 w-16 bg-gradient-to-tr from-brand-500 to-indigo-400 rounded-3xl shadow-glow-md transition-all duration-500 ease-out morphing-blob opacity-20 dark:opacity-40"
-              style={{
-                transform: `translateX(${navItems.findIndex(i => i.id === activeTab) * 100}%) translateX(10px)`
-              }}
+              className={`h-12 w-16 bg-gradient-to-tr from-brand-500 to-indigo-400 rounded-3xl shadow-glow-md transition-all duration-500 ease-out morphing-blob opacity-20 dark:opacity-40 nav-index-${navItems.findIndex(i => i.id === activeTab)}`}
             />
           </div>
 
@@ -40,8 +37,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
               >
                 <div
                   className={`p-2.5 rounded-full transition-all duration-500 ${isActive
-                      ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/40 -translate-y-4 scale-110 ring-4 ring-white dark:ring-slate-900'
-                      : 'text-slate-400 hover:text-brand-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/40 -translate-y-4 scale-110 ring-4 ring-white dark:ring-slate-900'
+                    : 'text-slate-400 hover:text-brand-500 hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
                     }`}
                 >
                   <item.icon
@@ -53,8 +50,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
 
                 {/* Text Label - Fades in/up */}
                 <span className={`absolute -bottom-1 text-[10px] font-bold transition-all duration-300 ${isActive
-                    ? 'opacity-100 translate-y-0 text-brand-600 dark:text-brand-400 delay-100'
-                    : 'opacity-0 translate-y-2 pointer-events-none'
+                  ? 'opacity-100 translate-y-0 text-brand-600 dark:text-brand-400 delay-100'
+                  : 'opacity-0 translate-y-2 pointer-events-none'
                   }`}>
                   {item.label}
                 </span>

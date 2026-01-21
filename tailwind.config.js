@@ -16,6 +16,7 @@ export default {
                     800: '#0f172a',
                     900: '#020617',
                     950: '#010409',
+                    deep: '#0B0F19', // New: Absolute Depth
                 },
                 // "Electric Trust" - Indigo-based brand for safety & trust
                 brand: {
@@ -31,6 +32,21 @@ export default {
                     900: '#312e81',
                     950: '#1e1b4b',
                     glow: '#818cf8',
+                },
+                // "Nano Banana" Palette (Whisk 3.0)
+                nano: {
+                    green: '#4ade80',  // Growth/Success
+                    neon: '#22c55e',   // High-Vis Actions
+                    glass: 'rgba(34, 197, 94, 0.15)',
+                },
+                banana: {
+                    yellow: '#facc15', // Warning/Energy
+                    gold: '#eab308',   // Premium Highlights
+                    glass: 'rgba(250, 204, 21, 0.15)',
+                },
+                glass: {
+                    indigo: 'rgba(99, 102, 241, 0.1)',
+                    dark: 'rgba(15, 23, 42, 0.6)',
                 },
                 // Accent color for CTA highlights
                 accent: {

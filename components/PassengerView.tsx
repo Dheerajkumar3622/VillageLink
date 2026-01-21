@@ -23,6 +23,7 @@ import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
 import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, ShieldCheck, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Siren, Bike, Replace, Mic, Utensils, MapPin } from 'lucide-react';
+import { SuccessAnimation } from './SuccessAnimation';
 
 interface PassengerViewProps {
     user: User;
@@ -711,7 +712,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <span className="text-lg font-black text-white tracking-tight">₹{wallet?.balance || 0}</span>
                                         </div>
                                     </div>
-                                    <button onClick={triggerSOS} className="w-12 h-12 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center border border-rose-500/30 text-rose-500 shadow-glow-sm transition-all active:scale-95 pulse-heartbeat">
+                                    <button onClick={triggerSOS} aria-label="Trigger SOS" className="w-12 h-12 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center border border-rose-500/30 text-rose-500 shadow-glow-sm transition-all active:scale-95 pulse-heartbeat">
                                         <Siren size={24} />
                                     </button>
                                 </div>
@@ -823,7 +824,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     {(activeTab === 'LOGISTICS' || currentView === 'BOOK_PARCEL') && (
                         <div className="px-4 py-6 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><ArrowLeft size={20} /></button>
+                                <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} aria-label="Go Back" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><ArrowLeft size={20} /></button>
                                 <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
                                     <div className="bg-orange-500 p-1.5 rounded-lg text-white shadow-lg shadow-orange-500/20"><Package size={20} /></div>
                                     CargoLink
@@ -877,6 +878,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                         </div>
                                         <input
                                             type="range"
+                                            aria-label="Logistics Load Weight"
                                             min="1"
                                             max={logisticsItemType === 'HEAVY_LORRY' ? 2000 : 500}
                                             value={logisticsWeight}
@@ -936,7 +938,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     {currentView === 'BOOK_RENTAL' && activeTab === 'HOME' && (
                         <div className="px-4 py-6 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => setCurrentView('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><ArrowLeft size={20} /></button>
+                                <button onClick={() => setCurrentView('DASHBOARD')} aria-label="Go Back" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><ArrowLeft size={20} /></button>
                                 <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><Car className="text-indigo-500" /> Book Charter</h2>
                             </div>
 
@@ -1060,50 +1062,64 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                                     {/* ... (Rest of existing dashboard UI) ... */}
                                     {/* Removed overflow-hidden to allow dropdown to display */}
-                                    <div className="bg-white dark:bg-slate-900 p-6 super-rounded shadow-whisk-float border border-slate-100 dark:border-slate-800 relative animate-fade-in-up">
+                                    <div className="glass-panel p-6 rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] border-t border-white/20 relative animate-slide-up backdrop-blur-xl -mt-6">
+                                        {/* Floating Pull Handle */}
+                                        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
+
                                         <div className="flex flex-col gap-4 mb-6">
                                             <div className="flex justify-between items-center">
-                                                <h3 className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
-                                                    {gramSetuMode ? <Bike className="text-yellow-600" /> : <Bus className="text-brand-600" />}
+                                                <h3 className="text-xl font-black flex items-center gap-2 text-white">
+                                                    {gramSetuMode ? <Bike className="text-yellow-400" /> : <Bus className="text-brand-400" />}
                                                     {gramSetuMode ? 'Village Feeder' : 'Plan Your Journey'}
                                                 </h3>
-                                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                                                    <button onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${!isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Ticket</button>
-                                                    <button onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${isBuyingPass ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Pass</button>
+                                                <div className="flex bg-black/30 p-1 rounded-xl backdrop-blur-md">
+                                                    <button onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${!isBuyingPass ? 'bg-brand-600 shadow-glow-sm text-white' : 'text-slate-400'}`}>Ticket</button>
+                                                    <button onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${isBuyingPass ? 'bg-brand-600 shadow-glow-sm text-white' : 'text-slate-400'}`}>Pass</button>
                                                 </div>
                                             </div>
 
-                                            {/* Whisk 2.0: Trip Type Toggle (Inspired by Image 4) */}
+                                            {/* Whisk 2.0: Trip Type Toggle */}
                                             {!isBuyingPass && (
-                                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit">
-                                                    <button onClick={() => setTripType('ONE_WAY')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>One-Way</button>
-                                                    <button onClick={() => setTripType('ROUND_TRIP')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white dark:bg-slate-700 shadow text-brand-600 dark:text-white' : 'text-slate-500'}`}>Round-Trip</button>
+                                                <div className="flex bg-black/30 p-1 rounded-xl w-fit backdrop-blur-md">
+                                                    <button onClick={() => setTripType('ONE_WAY')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white/10 shadow text-brand-300' : 'text-slate-500'}`}>One-Way</button>
+                                                    <button onClick={() => setTripType('ROUND_TRIP')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white/10 shadow text-brand-300' : 'text-slate-500'}`}>Round-Trip</button>
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="space-y-4 relative z-10">
-                                            <LocationSelector label={gramSetuMode ? "FROM (VILLAGE)" : "FROM"} icon={<div className={`w-2 h-2 rounded-full ${gramSetuMode ? 'bg-yellow-600 ring-4 ring-yellow-100' : 'bg-brand-600 ring-4 ring-brand-100'} dark:ring-opacity-30`}></div>} onSelect={setFromLocation} />
+                                            <LocationSelector
+                                                label={gramSetuMode ? "FROM (VILLAGE)" : "FROM"}
+                                                icon={<div className={`w-3 h-3 rounded-full ${gramSetuMode ? 'bg-yellow-500 shadow-[0_0_10px_#eab308]' : 'bg-brand-500 shadow-[0_0_10px_#6366f1]'}`}></div>}
+                                                onSelect={setFromLocation}
+                                            />
+
                                             {upcomingBuses.length > 0 && fromLocation && (
-                                                <div className="absolute right-4 top-[85px] z-20 flex flex-col items-end">
+                                                <div className="absolute right-4 top-[85px] z-20 flex flex-col items-end pointer-events-none">
                                                     {upcomingBuses.slice(0, 1).map(bus => (
-                                                        <div key={bus.driverId} className="bg-white dark:bg-slate-800 shadow-lg rounded-full p-1 pr-3 flex items-center gap-2 border border-slate-100 dark:border-slate-700 animate-in slide-in-from-right">
-                                                            <div className="bg-emerald-100 text-emerald-600 p-1.5 rounded-full"><Bus size={14} /></div>
-                                                            <div className="text-right"><p className="text-[9px] text-slate-400 font-bold uppercase">Approaching</p><p className="text-xs font-bold text-slate-800 dark:text-white">{(bus.capacity - bus.occupancy)} Seats</p></div>
+                                                        <div key={bus.driverId} className="bg-white/10 backdrop-blur-md shadow-lg rounded-full p-1 pr-3 flex items-center gap-2 border border-white/20 animate-in slide-in-from-right">
+                                                            <div className="bg-emerald-500 text-white p-1.5 rounded-full"><Bus size={14} /></div>
+                                                            <div className="text-right"><p className="text-[9px] text-emerald-300 font-bold uppercase">Approaching</p><p className="text-xs font-bold text-white">{(bus.capacity - bus.occupancy)} Seats</p></div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
-                                            <div className="absolute left-[27px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-300 to-emerald-300 -z-10 opacity-50"></div>
-                                            <LocationSelector label={gramSetuMode ? "TO (HIGHWAY HUB)" : "TO"} icon={<div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100 dark:ring-emerald-900/30"></div>} onSelect={setToLocation} />
+
+                                            <div className="absolute left-[29px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-500/50 to-emerald-500/50 -z-10"></div>
+
+                                            <LocationSelector
+                                                label={gramSetuMode ? "TO (HIGHWAY HUB)" : "TO"}
+                                                icon={<div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>}
+                                                onSelect={setToLocation}
+                                            />
                                         </div>
 
                                         {calculatedPath.length > 0 && (
-                                            <div className={`mt-6 animate-fade-in p-4 rounded-xl ${gramSetuMode ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-slate-50 dark:bg-slate-800/50'}`}>
+                                            <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 ${gramSetuMode ? 'bg-yellow-900/10' : 'bg-brand-900/10'}`}>
                                                 <div className="flex justify-between items-end mb-3">
-                                                    <label className={`text-xs font-bold uppercase tracking-wider ${gramSetuMode ? 'text-yellow-700' : 'text-slate-500'}`}>Route Landmarks ({calculatedPath.length})</label>
+                                                    <label className={`text-xs font-bold uppercase tracking-wider ${gramSetuMode ? 'text-yellow-500' : 'text-brand-300'}`}>Route Landmarks ({calculatedPath.length})</label>
                                                     {tripDistance !== null && (
-                                                        <span className="text-xs font-bold bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-brand-100 dark:border-brand-900">
+                                                        <span className="text-xs font-bold bg-brand-500/20 text-brand-300 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-brand-500/30">
                                                             <Route size={12} /> {tripDistance.toFixed(1)} km
                                                         </span>
                                                     )}
@@ -1111,8 +1127,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                                                     {calculatedPath.map((stop, i) => (
                                                         <div key={i} className="min-w-[60px] flex flex-col items-center gap-2">
-                                                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-bold shadow-sm ${gramSetuMode ? 'bg-yellow-100 border-yellow-200 text-yellow-700' : 'bg-white dark:bg-slate-700 border-slate-200 text-slate-400'}`}>{stop.substring(0, 2).toUpperCase()}</div>
-                                                            <span className="text-[9px] text-slate-500 truncate w-full text-center">{stop}</span>
+                                                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-bold shadow-sm backdrop-blur-md ${gramSetuMode ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' : 'bg-brand-500/10 border-brand-500/30 text-brand-400'}`}>{stop.substring(0, 2).toUpperCase()}</div>
+                                                            <span className="text-[9px] text-slate-400 truncate w-full text-center">{stop}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1121,19 +1137,21 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                                         {/* INTERACTIVE ROUTE MAP */}
                                         {pathDetails.length > 1 && fromLocation && toLocation && (
-                                            <div className="mt-4 animate-fade-in">
+                                            <div className="mt-4 animate-fade-in ring-1 ring-white/10 rounded-2xl overflow-hidden shadow-2xl">
                                                 <RouteMap
                                                     pathCoordinates={pathDetails}
                                                     pickupLocation={{ lat: fromLocation.lat, lng: fromLocation.lng, name: fromLocation.name }}
                                                     dropoffLocation={{ lat: toLocation.lat, lng: toLocation.lng, name: toLocation.name }}
-                                                    height="200px"
+                                                    height="220px"
                                                     showControls={true}
+                                                    theme="dark" // FORCE DARK MODE FOR IMMERSIVE FEEL
+                                                    className="opacity-90 hover:opacity-100 transition-opacity"
                                                 />
                                                 <div className="flex justify-between mt-2 px-1">
                                                     <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                        <span className="w-2 h-2 rounded-full bg-blue-500"></span> Actual Road Route
+                                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Actual Road Route
                                                     </span>
-                                                    <span className="text-[10px] text-slate-400">
+                                                    <span className="text-[10px] text-emerald-400 font-bold">
                                                         ETA: ~{Math.round((tripDistance || 0) / 30 * 60)} min
                                                     </span>
                                                 </div>
@@ -1348,8 +1366,10 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
             </Modal>
 
             {showToast && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl z-[100] animate-in fade-in slide-in-from-top-4 flex items-center gap-3">
-                    <div className="bg-emerald-500 rounded-full p-1"><Check size={14} /></div><span className="font-bold text-sm">Booking Successful!</span>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white dark:bg-slate-900 rounded-[40px] p-2 shadow-2xl scale-125">
+                        <SuccessAnimation message="Booking Confirmed!" subMessage="Have a safe journey!" />
+                    </div>
                 </div>
             )}
         </>

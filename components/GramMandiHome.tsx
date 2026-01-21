@@ -3,7 +3,7 @@
  * Farm to Consumer Platform
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
@@ -13,6 +13,27 @@ import {
     Plus, Search, MapPin, Star, Clock, Phone, ChevronRight, Filter, Leaf,
     TrendingUp, Package, DollarSign, BarChart3, RefreshCw, Eye, Check
 } from 'lucide-react';
+
+const OrganicToggle: React.FC<{ organic: boolean, onChange: (val: boolean) => void }> = ({ organic, onChange }) => {
+    const ref = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (ref.current) {
+            ref.current.setAttribute('aria-checked', organic ? 'true' : 'false');
+        }
+    }, [organic]);
+    return (
+        <button
+            ref={ref}
+            onClick={() => onChange(!organic)}
+            className={`w-12 h-6 rounded-full transition-all ${organic ? 'bg-green-500' : 'bg-slate-300'}`}
+            role="switch"
+            aria-checked="false"
+            aria-label="Toggle organic produce"
+        >
+            <div className={`w-5 h-5 rounded-full bg-white shadow transition-all ${organic ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+        </button>
+    );
+};
 
 interface GramMandiHomeProps {
     user: User;
@@ -203,15 +224,15 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
                 <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 pt-6">
-                    <button onClick={() => setView('FARMER_DASHBOARD')} className="flex items-center gap-2 mb-4">
+                    <button onClick={() => setView('FARMER_DASHBOARD')} className="flex items-center gap-2 mb-4" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">List Your Produce</h1>
                 </div>
                 <div className="p-4 space-y-4">
                     <div className="bg-white dark:bg-slate-900 rounded-xl p-4">
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                        <select value={newListing.category} onChange={e => setNewListing({ ...newListing, category: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1" htmlFor="category-select">Category</label>
+                        <select id="category-select" value={newListing.category} onChange={e => setNewListing({ ...newListing, category: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" aria-label="Select Category">
                             <option value="VEGETABLE">🥬 Vegetable</option>
                             <option value="FRUIT">🍎 Fruit</option>
                             <option value="GRAIN">🌾 Grain</option>
@@ -225,12 +246,12 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-slate-900 rounded-xl p-4">
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
-                            <input type="number" value={newListing.quantity} onChange={e => setNewListing({ ...newListing, quantity: parseFloat(e.target.value) })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" />
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1" htmlFor="quantity-input">Quantity</label>
+                            <input id="quantity-input" type="number" value={newListing.quantity} onChange={e => setNewListing({ ...newListing, quantity: parseFloat(e.target.value) })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" />
                         </div>
                         <div className="bg-white dark:bg-slate-900 rounded-xl p-4">
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Unit</label>
-                            <select value={newListing.unit} onChange={e => setNewListing({ ...newListing, unit: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1" htmlFor="unit-select">Unit</label>
+                            <select id="unit-select" value={newListing.unit} onChange={e => setNewListing({ ...newListing, unit: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" aria-label="Select Unit">
                                 <option value="KG">KG</option>
                                 <option value="QUINTAL">Quintal</option>
                                 <option value="TON">Ton</option>
@@ -241,12 +262,12 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-slate-900 rounded-xl p-4">
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Price per Unit (₹)</label>
-                            <input type="number" value={newListing.pricePerUnit} onChange={e => setNewListing({ ...newListing, pricePerUnit: parseFloat(e.target.value) })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" />
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1" htmlFor="price-input">Price per Unit (₹)</label>
+                            <input id="price-input" type="number" value={newListing.pricePerUnit} onChange={e => setNewListing({ ...newListing, pricePerUnit: parseFloat(e.target.value) })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" />
                         </div>
                         <div className="bg-white dark:bg-slate-900 rounded-xl p-4">
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Grade</label>
-                            <select value={newListing.grade} onChange={e => setNewListing({ ...newListing, grade: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white">
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1" htmlFor="grade-select">Grade</label>
+                            <select id="grade-select" value={newListing.grade} onChange={e => setNewListing({ ...newListing, grade: e.target.value })} className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" aria-label="Select Grade">
                                 <option value="A">Grade A (Premium)</option>
                                 <option value="B">Grade B (Standard)</option>
                                 <option value="C">Grade C (Economy)</option>
@@ -259,9 +280,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                     </div>
                     <div className="bg-white dark:bg-slate-900 rounded-xl p-4 flex items-center justify-between">
                         <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300"><Leaf className="text-green-500" size={18} /> Organic Produce?</span>
-                        <button onClick={() => setNewListing({ ...newListing, organic: !newListing.organic })} className={`w-12 h-6 rounded-full transition-all ${newListing.organic ? 'bg-green-500' : 'bg-slate-300'}`}>
-                            <div className={`w-5 h-5 rounded-full bg-white shadow transition-all ${newListing.organic ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
-                        </button>
+                        <OrganicToggle organic={newListing.organic} onChange={(val) => setNewListing({ ...newListing, organic: val })} />
                     </div>
                     <Button onClick={createListing} className="w-full bg-green-600 hover:bg-green-700" disabled={!newListing.crop || !newListing.quantity || !newListing.pricePerUnit}>
                         <Plus size={18} /> Create Listing
@@ -384,7 +403,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                                     <p className="text-lg font-bold text-green-600">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
                                     {listing.organic && <span className="text-[10px] bg-green-100 text-green-700 px-1 rounded">🌿 Organic</span>}
                                 </div>
-                                <button onClick={() => addToCart(listing)} className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95">
+                                <button onClick={() => addToCart(listing)} className="p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95" aria-label="Add to Cart">
                                     <Plus size={16} />
                                 </button>
                             </div>

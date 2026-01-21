@@ -278,7 +278,7 @@ export const KisanApp: React.FC = () => {
                                 <h1 className="font-black text-white text-xl tracking-tight">{user?.name || 'Kisan'}</h1>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-400 group transition-all">
+                        <button onClick={handleLogout} aria-label="Logout" className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-400 group transition-all">
                             <LogOut size={18} className="group-hover:text-red-400 transition-colors" />
                         </button>
                     </div>
@@ -292,22 +292,22 @@ export const KisanApp: React.FC = () => {
 
                     {/* Stats Grid - Premium 3D Cards */}
                     <div className="grid grid-cols-2 gap-4 mb-8 perspective-1000">
-                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-500/30">
+                        <div onClick={() => setViewState('ORDERS')} className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-500/30 cursor-pointer active:scale-95 transition-transform">
                             <Package className="text-emerald-400 mb-2" size={20} />
                             <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.activeListings}</p>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Listings</p>
                         </div>
-                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-warm-500/30" style={{ transform: 'translateZ(20px)' }}>
+                        <div onClick={() => setViewState('ORDERS')} className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-warm-500/30 cursor-pointer active:scale-95 transition-transform translate-z-20">
                             <Clock className="text-warm-500 mb-2" size={20} />
                             <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.pendingOrders}</p>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pending Orders</p>
                         </div>
-                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-blue-500/30">
+                        <div onClick={() => alert("Detailed Revenue Report Coming Soon!")} className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-blue-500/30 cursor-pointer active:scale-95 transition-transform">
                             <DollarSign className="text-blue-500 mb-2" size={20} />
                             <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">₹{(stats.totalRevenue / 1000).toFixed(0)}K</p>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Revenue</p>
                         </div>
-                        <div className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-400/30" style={{ transform: 'translateZ(-10px)' }}>
+                        <div onClick={() => setViewState('DAIRY')} className="nano-banana-3d glass-3 p-5 rounded-[28px] border-white/5 hover:border-emerald-400/30 cursor-pointer active:scale-95 transition-transform translate-z-n10">
                             <Milk className="text-emerald-400 mb-2" size={20} />
                             <p className="text-3xl font-black text-white tracking-widest leading-none mb-1">{stats.milkSupplied}L</p>
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Milk Logged</p>
@@ -425,7 +425,7 @@ export const KisanApp: React.FC = () => {
                 {/* Header */}
                 <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-emerald-500/20">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                        <button onClick={() => setViewState('DASHBOARD')} aria-label="Back to Dashboard" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
                             <ArrowLeft size={20} />
                         </button>
                         <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">New Produce Listing</h1>
@@ -524,12 +524,29 @@ export const KisanApp: React.FC = () => {
         );
     }
 
-    // Fallback/Placeholder for other views
+    // Fallback/Placeholder for other views (DAIRY, ORDERS)
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-8 text-center uppercase">
-            <h1 className="text-4xl font-black text-emerald-500 mb-4">{viewState}</h1>
-            <p className="text-slate-500 font-bold mb-8">Coming Soon to Real Mode</p>
-            <Button onClick={() => setViewState('DASHBOARD')} className="btn-primary">Back to Dashboard</Button>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative overflow-hidden flex flex-col items-center justify-center">
+            <div className="animated-bg opacity-30"></div>
+
+            <div className="glass-panel p-8 rounded-[32px] text-center max-w-sm mx-4 relative z-10 animate-fade-in-up border-emerald-500/20">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                    <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
+                    {viewState === 'DAIRY' ? <Milk size={40} className="text-emerald-500" /> : <Package size={40} className="text-emerald-500" />}
+                </div>
+
+                <h1 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-wide">
+                    {viewState === 'DAIRY' ? 'Dairy Center' : 'My Orders'}
+                </h1>
+
+                <p className="text-slate-500 font-bold mb-8 leading-relaxed">
+                    This module is under construction in the deployment chamber.
+                </p>
+
+                <Button onClick={() => setViewState('DASHBOARD')} className="bg-emerald-600 hover:bg-emerald-700 w-full shadow-glow-md">
+                    Return to HQ
+                </Button>
+            </div>
         </div>
     );
 };

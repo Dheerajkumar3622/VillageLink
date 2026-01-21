@@ -77,7 +77,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 shrink-0">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-3">
-                        <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                        <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Go Back">
                             <ArrowLeft size={20} className="dark:text-white" />
                         </button>
                         <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
@@ -166,7 +166,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[32px] overflow-hidden animate-in slide-in-from-bottom-10">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
                             <h3 className="text-xl font-bold dark:text-white">Vendor Verification</h3>
-                            <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                            <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors" aria-label="Close Modal">
                                 <XCircle size={20} className="text-slate-400" />
                             </button>
                         </div>
@@ -193,7 +193,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                 </div>
                                                 <span className="text-xs font-medium dark:text-slate-300">{doc.replace('_', ' ')}</span>
                                             </div>
-                                            <button className="text-[10px] font-bold text-indigo-600 hover:underline">View File</button>
+                                            <button className="text-[10px] font-bold text-indigo-600 hover:underline" aria-label={`View ${doc.replace('_', ' ')}`}>View File</button>
                                         </div>
                                     ))}
                                 </div>

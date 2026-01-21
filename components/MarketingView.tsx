@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Shop, Product, ShopCategory } from '../types';
 import { getShops, getAllProducts } from '../services/marketingService';
 import { Shop3DView } from './Shop3DView';
@@ -31,6 +30,8 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ user, onBookDelive
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<ShopCategory | 'ALL'>('ALL');
 
+    const listRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         getShops().then(data => {
             setShops(data);
@@ -43,6 +44,16 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ user, onBookDelive
         const matchesCategory = selectedCategory === 'ALL' || s.category === selectedCategory;
         return matchesSearch && matchesCategory;
     });
+
+    useEffect(() => {
+        if (listRef.current) {
+            const items = listRef.current.querySelectorAll('.animate-fade-in-up');
+            items.forEach(item => {
+                const delay = item.getAttribute('data-delay');
+                if (delay) (item as HTMLElement).style.setProperty('--delay', delay);
+            });
+        }
+    }, [filteredShops]);
 
     const activeCategoryInfo = CATEGORIES.find(c => c.id === selectedCategory) || CATEGORIES[0];
 
@@ -118,13 +129,13 @@ export const MarketingView: React.FC<MarketingViewProps> = ({ user, onBookDelive
 
             <div className="p-4 space-y-6">
                 {/* Shop Grid with Premium Cards */}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4" ref={listRef}>
                     {filteredShops.map((shop, idx) => (
                         <div
                             key={shop.id}
                             onClick={() => setSelectedShop(shop)}
                             className="premium-card p-5 animate-fade-in-up"
-                            style={{ animationDelay: `${idx * 50}ms` }}
+                            data-delay={`${idx * 50}ms`}
                         >
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-4">

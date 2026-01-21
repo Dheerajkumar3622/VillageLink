@@ -153,6 +153,7 @@ export const TicketScanner: React.FC<TicketScannerProps> = ({
                 <button
                     onClick={onClose}
                     className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                    aria-label="Close Scanner"
                 >
                     <X size={24} className="text-white" />
                 </button>
@@ -235,8 +236,8 @@ export const TicketScanner: React.FC<TicketScannerProps> = ({
 
                                 {/* Payment status */}
                                 <div className={`mt-4 p-3 rounded-xl text-center ${result.ticket.paymentMethod === 'CASH'
-                                        ? 'bg-amber-500/20 border border-amber-500/50'
-                                        : 'bg-green-500/20 border border-green-500/50'
+                                    ? 'bg-amber-500/20 border border-amber-500/50'
+                                    : 'bg-green-500/20 border border-green-500/50'
                                     }`}>
                                     <p className={result.ticket.paymentMethod === 'CASH' ? 'text-amber-300' : 'text-green-300'}>
                                         {result.ticket.paymentMethod === 'CASH'

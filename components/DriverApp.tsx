@@ -227,7 +227,7 @@ export const DriverApp: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full">
+                    <button onClick={handleLogout} className="p-2 bg-white/20 rounded-full" aria-label="Logout">
                         <LogOut size={18} />
                     </button>
                 </div>

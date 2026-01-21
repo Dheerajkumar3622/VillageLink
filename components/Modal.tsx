@@ -31,6 +31,7 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500"
+            aria-label="Close Modal"
           >
             <X size={20} />
           </button>

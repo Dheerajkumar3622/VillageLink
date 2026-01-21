@@ -155,7 +155,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ user, lang = 'EN', onLogou
                         <h1 className="text-xl font-bold">{user.name?.split(' ')[0] || 'User'} 👋</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="relative p-2 bg-white/20 rounded-full" onClick={() => setActiveModule('PROFILE')}>
+                        <button className="relative p-2 bg-white/20 rounded-full" onClick={() => setActiveModule('PROFILE')} aria-label="Notifications">
                             <Bell size={20} />
                             {notifications > 0 && (
                                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center font-bold">
@@ -163,7 +163,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({ user, lang = 'EN', onLogou
                                 </span>
                             )}
                         </button>
-                        <button onClick={() => setActiveModule('PROFILE')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">
+                        <button onClick={() => setActiveModule('PROFILE')} className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold" aria-label="User Profile">
                             {user.name?.charAt(0)?.toUpperCase() || 'U'}
                         </button>
                     </div>
@@ -188,8 +188,8 @@ export const UserPanel: React.FC<UserPanelProps> = ({ user, lang = 'EN', onLogou
                         <p className="text-2xl font-bold">₹{walletBalance}</p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-green-500 rounded-lg text-sm font-medium">Add</button>
-                        <button className="px-4 py-2 bg-white/10 rounded-lg text-sm font-medium">
+                        <button className="px-4 py-2 bg-green-500 rounded-lg text-sm font-medium" aria-label="Add Money to Wallet">Add</button>
+                        <button className="px-4 py-2 bg-white/10 rounded-lg text-sm font-medium" aria-label="Scan QR Code">
                             <QrCode size={16} />
                         </button>
                     </div>

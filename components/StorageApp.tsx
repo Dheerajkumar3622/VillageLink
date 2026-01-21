@@ -3,7 +3,7 @@
  * Separate app for cold storage operators to manage facilities and bookings
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../config';
 import { getAuthToken, loginUser, registerUser, logoutUser } from '../services/authService';
 import { Button } from './Button';
@@ -60,6 +60,18 @@ export const StorageApp: React.FC = () => {
         monthlyRevenue: 45000,
         temperature: -18
     });
+
+    const occupancyPercentage = Math.round((stats.usedCapacity / stats.totalCapacity) * 100);
+    const progressRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (progressRef.current) {
+            progressRef.current.style.setProperty('--progress', `${occupancyPercentage}%`);
+            progressRef.current.setAttribute('aria-valuenow', String(stats.usedCapacity));
+            progressRef.current.setAttribute('aria-valuemin', '0');
+            progressRef.current.setAttribute('aria-valuemax', String(stats.totalCapacity));
+        }
+    }, [occupancyPercentage, stats.usedCapacity, stats.totalCapacity]);
 
     useEffect(() => {
         const token = getAuthToken();
@@ -158,7 +170,6 @@ export const StorageApp: React.FC = () => {
         }
     };
 
-    const occupancyPercentage = Math.round((stats.usedCapacity / stats.totalCapacity) * 100);
 
     // ==================== AUTH VIEW ====================
     if (viewState === 'AUTH') {
@@ -178,8 +189,8 @@ export const StorageApp: React.FC = () => {
 
                         {authMode === 'LOGIN' ? (
                             <form onSubmit={handleLogin} className="space-y-4">
-                                <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone / Email" required />
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
+                                <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone / Email" required aria-label="Login ID (Phone or Email)" />
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required aria-label="Password" />
                                 <Button type="submit" fullWidth disabled={loading} className="bg-cyan-600 hover:bg-cyan-700">
                                     {loading ? <Loader2 className="animate-spin" /> : 'Login'}
                                 </Button>
@@ -189,12 +200,12 @@ export const StorageApp: React.FC = () => {
                             </form>
                         ) : (
                             <form onSubmit={handleRegister} className="space-y-4">
-                                <input type="text" value={regFacilityName} onChange={e => setRegFacilityName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Facility Name" required />
-                                <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Owner Name" required />
-                                <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone Number" required />
-                                <input type="number" value={regCapacity} onChange={e => setRegCapacity(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Capacity (Tons)" required />
-                                <input type="text" value={regAddress} onChange={e => setRegAddress(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Full Address" required />
-                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
+                                <input type="text" value={regFacilityName} onChange={e => setRegFacilityName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Facility Name" required aria-label="Facility Name" />
+                                <input type="text" value={regName} onChange={e => setRegName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Owner Name" required aria-label="Owner Name" />
+                                <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone Number" required aria-label="Phone Number" />
+                                <input type="number" value={regCapacity} onChange={e => setRegCapacity(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Capacity (Tons)" required aria-label="Capacity in Tons" />
+                                <input type="text" value={regAddress} onChange={e => setRegAddress(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Full Address" required aria-label="Address" />
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required aria-label="Password" />
                                 <Button type="submit" fullWidth disabled={loading} className="bg-cyan-600 hover:bg-cyan-700">
                                     {loading ? <Loader2 className="animate-spin" /> : 'Register Facility'}
                                 </Button>
@@ -268,7 +279,7 @@ export const StorageApp: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
                         <LogOut size={18} />
                     </button>
                 </div>
@@ -287,8 +298,13 @@ export const StorageApp: React.FC = () => {
                     </div>
                     <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                         <div
-                            className={`h-full rounded-full transition-all duration-1000 ${occupancyPercentage > 85 ? 'bg-red-500 shadow-glow-sm' : occupancyPercentage > 65 ? 'bg-amber-500' : 'bg-cyan-500'}`}
-                            style={{ width: `${occupancyPercentage}%` }}
+                            ref={progressRef}
+                            aria-valuenow="0"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-label="Storage capacity utilization"
+                            role="progressbar"
+                            className={`h-full rounded-full transition-all duration-1000 admin-progress-bar ${occupancyPercentage > 85 ? 'bg-red-500 shadow-glow-sm' : occupancyPercentage > 65 ? 'bg-amber-500' : 'bg-cyan-500'}`}
                         ></div>
                     </div>
                     <div className="flex justify-between mt-3">
@@ -338,7 +354,7 @@ export const StorageApp: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="premium-card p-6 flex items-center justify-between hover:border-cyan-500/50 transition-all cursor-pointer">
+                <div className="premium-card p-6 flex items-center justify-between hover:border-cyan-500/50 transition-all cursor-pointer" role="button" tabIndex={0} aria-label="Download Inventory Report Summary">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400">
                             <BarChart3 size={24} />

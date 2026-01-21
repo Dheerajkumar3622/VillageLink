@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, MenuVote, PrepSheet, WasteEntry } from '../types';
 import { Button } from './Button';
 import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users } from 'lucide-react';
@@ -16,6 +16,17 @@ export const MessManagerView: React.FC<MessManagerViewProps> = ({ user, onBack }
     const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
     const [activeVote, setActiveVote] = useState<MenuVote | null>(null);
     const [prepSheet, setPrepSheet] = useState<PrepSheet | null>(null);
+    const voteListRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (voteListRef.current) {
+            const bars = voteListRef.current.querySelectorAll('.mess-progress-bar');
+            bars.forEach(bar => {
+                const p = bar.getAttribute('data-progress');
+                if (p) (bar as HTMLElement).style.setProperty('--progress', p);
+            });
+        }
+    }, [activeVote, activeTab]);
 
     // State for Waste Logging
     const [wasteDishName, setWasteDishName] = useState('');
@@ -96,24 +107,26 @@ export const MessManagerView: React.FC<MessManagerViewProps> = ({ user, onBack }
     const renderVoting = () => (
         <div className="space-y-4">
             <h3 className="font-bold text-gray-700 text-lg">Tomorrow's Dinner Vote</h3>
-            {activeVote?.options.map(option => (
-                <div key={option.dishId} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
-                    <div className="flex justify-between relative z-10">
-                        <div>
-                            <h4 className="font-bold text-lg">{option.dishName}</h4>
-                            <p className="text-sm text-gray-500">{option.votes} votes</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" ref={voteListRef}>
+                {activeVote?.options.map(option => (
+                    <div key={option.dishId} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
+                        <div className="flex justify-between relative z-10">
+                            <div>
+                                <h4 className="font-bold text-lg">{option.dishName}</h4>
+                                <p className="text-sm text-gray-500">{option.votes} votes</p>
+                            </div>
+                            {(user.role === 'PASSENGER' || user.role === 'MESS_MANAGER') && (
+                                <Button size="sm" onClick={() => handleVote(option.dishId)}>Vote</Button>
+                            )}
                         </div>
-                        {(user.role === 'PASSENGER' || user.role === 'MESS_MANAGER') && (
-                            <Button size="sm" onClick={() => handleVote(option.dishId)}>Vote</Button>
-                        )}
+                        {/* Progress Bar Background */}
+                        <div
+                            className="absolute bottom-0 left-0 top-0 bg-emerald-50 transition-all duration-500 mess-progress-bar"
+                            data-progress={activeVote.totalVotes > 0 ? `${(option.votes / activeVote.totalVotes) * 100}%` : '0%'}
+                        ></div>
                     </div>
-                    {/* Progress Bar Background */}
-                    <div
-                        className="absolute bottom-0 left-0 top-0 bg-emerald-50 transition-all duration-500"
-                        style={{ width: activeVote.totalVotes > 0 ? `${(option.votes / activeVote.totalVotes) * 100}%` : '0%' }}
-                    ></div>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 

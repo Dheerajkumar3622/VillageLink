@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink | 3D Mess Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff6b00;
+            --secondary: #ff9e00;
+            --dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --premium-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--dark);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .header {
+            padding: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-weight: 900;
+            font-size: 1.5rem;
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 3D Shop Selection */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            perspective: 1000px;
+            margin-top: 30px;
+        }
+
+        .shop-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shop-card:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 107, 0, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .shop-card:hover {
+            transform: translateY(-10px) rotateX(10deg);
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(255, 107, 0, 0.2);
+        }
+
+        .shop-card:hover:before {
+            opacity: 1;
+        }
+
+        .shop-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .shop-name {
+            font-weight: 800;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Plate Builder Screen */
+        .plate-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            margin: 40px 0;
+        }
+
+        .thali-base {
+            width: 300px;
+            height: 300px;
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/premium_indian_thali_3d_1768674032614.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform: rotateX(45deg);
+            filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.8));
+            transition: transform 0.5s ease;
+        }
+
+        .item-pricing {
+            display: flex;
+            align-items: center;
+        }
+
+        .price-val {
+            font-weight: 900;
+            color: var(--primary);
+            margin-right: 15px;
+        }
+
+        .plate-dal {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/dal_tadka_bowl_3d_1768674063047.png');
+        }
+
+        .plate-paneer {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/paneer_masala_bowl_3d_1768674081484.png');
+        }
+
+        .plate-rice {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/jeera_rice_3d_v2_1768674138590.png');
+        }
+
+        .thumb-dal {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/dal_tadka_bowl_3d_1768674063047.png');
+        }
+
+        .thumb-paneer {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/paneer_masala_bowl_3d_1768674081484.png');
+        }
+
+        .thumb-rice {
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/jeera_rice_3d_v2_1768674138590.png');
+        }
+
+        .success-msg {
+            margin: 10px 0 30px;
+        }
+
+        .item-on-plate {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0;
+            transform: translateY(-100px) scale(0.5);
+            transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+        }
+
+        .item-on-plate.active {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotateX(45deg);
+        }
+
+        /* Specific positions for items on thali */
+        #pos-dal {
+            top: 60px;
+            left: 160px;
+        }
+
+        #pos-paneer {
+            top: 120px;
+            left: 60px;
+        }
+
+        #pos-rice {
+            top: 180px;
+            left: 180px;
+        }
+
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .menu-item {
+            background: var(--glass);
+            padding: 15px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--glass-border);
+            transition: 0.3s;
+        }
+
+        .menu-item:hover {
+            border-color: rgba(255, 107, 0, 0.5);
+            background: rgba(255, 107, 0, 0.05);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-thumb {
+            width: 45px;
+            height: 45px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            border-radius: 10px;
+        }
+
+        .item-text h4 {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .item-text p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 107, 0, 0.3);
+        }
+
+        .add-btn.added {
+            background: #10b981;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .price-panel {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 410px;
+            background: rgba(15, 23, 42, 0.8);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--premium-shadow);
+        }
+
+        .price-total h2 {
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .price-total p {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+        }
+
+        .order-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 16px;
+            font-weight: 900;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(255, 107, 0, 0.3);
+        }
+
+        /* Success Screen */
+        .success-box {
+            text-align: center;
+            padding-top: 100px;
+        }
+
+        .success-thali {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 30px;
+            background-image: url('C:/Users/DELL/.gemini/antigravity/brain/4a6a6b04-52b1-48ca-b23c-05d9980045b8/premium_indian_thali_3d_1768674032614.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            position: relative;
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .success-thali .item {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background-size: contain;
+        }
+
+        #s-dal {
+            top: 30px;
+            left: 130px;
+        }
+
+        #s-paneer {
+            top: 80px;
+            left: 40px;
+        }
+
+        #s-rice {
+            top: 130px;
+            left: 140px;
+        }
+
+        .glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            filter: blur(50px);
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        /* Utility Classes */
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .bg-glass {
+            background: var(--glass);
+        }
+
+        .premium-tag {
+            background: var(--glass);
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-weight: 800;
+            border: 1px solid var(--glass-border);
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .mt-10 {
+            margin-top: 10px;
+        }
+
+        .text-slate {
+            color: #64748b;
+        }
+
+        .header-title {
+            font-weight: 900;
+            font-size: 2.5rem;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .font-900 {
+            font-weight: 900;
+        }
+
+        .spacer-120 {
+            height: 120px;
+        }
+
+        .success-title {
+            font-weight: 900;
+            font-size: 2rem;
+        }
+
+        .w-full-btn {
+            width: 100%;
+            border-radius: 50px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">MESS•LINK 3D</div>
+            <div class="premium-tag">PREMIUM</div>
+        </div>
+
+        <!-- SCREEN 1: SHOP SELECTION -->
+        <div id="screen-shop" class="screen active">
+            <h1 class="header-title mt-20">Choose your <br><span class="text-primary">Destination</span></h1>
+            <p class="text-slate mt-10">Select where you want to eat today</p>
+
+            <div class="shop-grid">
+                <div class="shop-card" onclick="goMenu('Restaurant')">
+                    <span class="shop-icon">🏢</span>
+                    <span class="shop-name">Restaurant</span>
+                </div>
+                <div class="shop-card" onclick="goMenu('Street Stall')">
+                    <span class="shop-icon">🛖</span>
+                    <span class="shop-name">Street Stall</span>
+                </div>
+                <div class="shop-card" onclick="goMenu('Authentic Dhaba')">
+                    <span class="shop-icon">🚜</span>
+                    <span class="shop-name">Dhaba</span>
+                </div>
+                <div class="shop-card" onclick="goMenu('Daily Mess')">
+                    <span class="shop-icon">🥣</span>
+                    <span class="shop-name">Mess</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: PLATE BUILDER -->
+        <div id="screen-menu" class="screen">
+            <div class="flex-center mb-20">
+                <button onclick="goBack()" class="back-btn">←</button>
+                <h2 id="vendor-title" class="font-900">Restaurant</h2>
+            </div>
+
+            <p class="text-slate mb-20">Design your plate. Drag & drop coming soon!</p>
+
+            <div class="plate-container">
+                <div class="thali-base" id="thali"></div>
+                <!-- Items that appear on plate -->
+                <div id="pos-dal" class="item-on-plate plate-dal"></div>
+                <div id="pos-paneer" class="item-on-plate plate-paneer"></div>
+                <div id="pos-rice" class="item-on-plate plate-rice"></div>
+            </div>
+
+            <div class="menu-list">
+                <div class="menu-item">
+                    <div class="item-info">
+                        <div class="item-thumb thumb-dal"></div>
+                        <div class="item-text">
+                            <h4>Special Dal Tadka</h4>
+                            <p>Smoky tempered lentils</p>
+                        </div>
+                    </div>
+                    <div class="item-pricing">
+                        <span class="price-val">₹120</span>
+                        <button class="add-btn" id="btn-dal" onclick="toggleItem('dal', 120)">ADD</button>
+                    </div>
+                </div>
+
+                <div class="menu-item">
+                    <div class="item-info">
+                        <div class="item-thumb thumb-paneer"></div>
+                        <div class="item-text">
+                            <h4>Paneer Butter Masala</h4>
+                            <p>Rich creamy gravy</p>
+                        </div>
+                    </div>
+                    <div class="item-pricing">
+                        <span class="price-val">₹180</span>
+                        <button class="add-btn" id="btn-paneer" onclick="toggleItem('paneer', 180)">ADD</button>
+                    </div>
+                </div>
+
+                <div class="menu-item">
+                    <div class="item-info">
+                        <div class="item-thumb thumb-rice"></div>
+                        <div class="item-text">
+                            <h4>Basmati Jeera Rice</h4>
+                            <p>Aromatic cumin rice</p>
+                        </div>
+                    </div>
+                    <div class="item-pricing">
+                        <span class="price-val">₹90</span>
+                        <button class="add-btn" id="btn-rice" onclick="toggleItem('rice', 90)">ADD</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spacer-120"></div> <!-- Spacer -->
+
+            <div class="price-panel">
+                <div class="price-total">
+                    <p>Total Amount</p>
+                    <h2 id="total-price">₹0</h2>
+                </div>
+                <button class="order-btn" onclick="placeOrder()">ESTIMATE THALI</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: FINAL 3D VIEW -->
+        <div id="screen-success" class="screen">
+            <div class="success-box">
+                <div class="glow"></div>
+                <div class="success-thali">
+                    <div id="s-dal" class="item plate-dal hidden"></div>
+                    <div id="s-paneer" class="item plate-paneer hidden"></div>
+                    <div id="s-rice" class="item plate-rice hidden"></div>
+                </div>
+                <h1 class="success-title">Order Visualized!</h1>
+                <p class="text-slate success-msg">This is how your aesthetic thali will look.</p>
+                <button class="order-btn w-full-btn" onclick="goHome()">BACK TO START</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let total = 0;
+        let selected = { dal: false, paneer: false, rice: false };
+
+        function goMenu(name) {
+            document.getElementById('vendor-title').innerText = name;
+            switchScreen('screen-menu');
+        }
+
+        function goBack() {
+            switchScreen('screen-shop');
+        }
+
+        function goHome() {
+            total = 0;
+            selected = { dal: false, paneer: false, rice: false };
+            updateUI();
+            switchScreen('screen-shop');
+        }
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function toggleItem(id, price) {
+            selected[id] = !selected[id];
+
+            if (selected[id]) {
+                total += price;
+                document.getElementById('pos-' + id).classList.add('active');
+                document.getElementById('btn-' + id).innerText = 'REMOVE';
+                document.getElementById('btn-' + id).classList.add('added');
+            } else {
+                total -= price;
+                document.getElementById('pos-' + id).classList.remove('active');
+                document.getElementById('btn-' + id).innerText = 'ADD';
+                document.getElementById('btn-' + id).classList.remove('added');
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('total-price').innerText = '₹' + total;
+        }
+
+        function placeOrder() {
+            if (total === 0) {
+                alert('Please add some items to your plate!');
+                return;
+            }
+
+            items.forEach(item => {
+                const el = document.getElementById(`s-${item}`);
+                if (el) el.classList.remove('hidden');
+            });
+
+            // Set final items visibility
+            document.getElementById('s-dal').style.display = selected.dal ? 'block' : 'none';
+            document.getElementById('s-paneer').style.display = selected.paneer ? 'block' : 'none';
+            document.getElementById('s-rice').style.display = selected.rice ? 'block' : 'none';
+
+            switchScreen('screen-success');
+        }
+    </script>
+</body>
+
+</html>

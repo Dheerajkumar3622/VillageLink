@@ -246,11 +246,11 @@ export const VyapariApp: React.FC = () => {
                 {/* Header */}
                 <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-purple-500/20">
                     <div className="flex items-center justify-between">
-                        <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                        <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full" aria-label="Go Back">
                             <ChevronRight className="rotate-180" size={20} />
                         </button>
                         <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">Wholesale Market</h1>
-                        <button className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                        <button className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full" aria-label="Filter">
                             <Filter size={20} />
                         </button>
                     </div>
@@ -340,7 +340,7 @@ export const VyapariApp: React.FC = () => {
                             <h1 className="font-bold text-slate-800 dark:text-white text-lg">{user?.name || 'Vyapari'}</h1>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                    <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
                         <LogOut size={18} />
                     </button>
                 </div>

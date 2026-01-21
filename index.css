@@ -9,6 +9,13 @@
    CUSTOM STYLES & UTILITIES
    ======================================== */
 
+@supports (text-size-adjust: 100%) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+}
+
 /* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
@@ -31,23 +38,54 @@
 /* ========================================
    GLASS PANEL - Premium Glassmorphism
    ======================================== */
+/* ========================================
+   GLASS PANEL - Premium Glassmorphism (Whisk 3.0)
+   ======================================== */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: rgba(15, 23, 42, 0.6);
+  /* Translucent Midnight */
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 40px -15px rgba(99, 102, 241, 0.2);
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  /* Inner Ring */
+}
+
+/* The "Glass Portal" - Specific for Auth Cards */
+.glass-portal {
+  background: rgba(11, 15, 25, 0.7);
+  /* Deep Indigo Glass */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  /* Nano Green Border */
+  box-shadow:
+    0 0 40px -10px rgba(74, 222, 128, 0.15),
+    /* Green Ambient Glow */
+    0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.input-portal {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.input-portal:focus {
+  border-color: #4ade80;
+  /* Nano Green */
+  box-shadow: 0 0 15px rgba(74, 222, 128, 0.2);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* Premium card styling */
@@ -243,10 +281,20 @@ body,
   }
 
   100% {
-    transform: translate(5%, 5%) rotate(3deg);
+    transform: rotateX(20deg) rotateZ(-20deg) skewY(5deg);
   }
 }
 
+.translate-z-20 {
+  transform: translateZ(20px);
+}
+
+.translate-z-n10 {
+  transform: translateZ(-10px);
+}
+
+/* Glassmorphism Utilities
+   ======================================== */
 /* ========================================
    WHISK UTILITIES & ANIMATIONS
    ======================================== */
@@ -357,16 +405,16 @@ body,
 
 .banana-glass {
   background: rgba(251, 191, 36, 0.1);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(251, 191, 36, 0.3);
   box-shadow: 0 8px 32px rgba(251, 191, 36, 0.1);
 }
 
 .banana-glass-bright {
   background: rgba(251, 191, 36, 0.25);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid rgba(251, 191, 36, 0.5);
   box-shadow: 0 8px 32px rgba(251, 191, 36, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.2);
 }
@@ -424,6 +472,7 @@ body,
 
 .glass-3 {
   background: rgba(15, 23, 42, 0.6);
+  -webkit-backdrop-filter: blur(25px);
   backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -491,4 +540,90 @@ body,
   to {
     transform: translate(-5%, -5%);
   }
+}
+
+/* Dynamic Helper Classes */
+.morphing-blob {
+  transform: translateX(calc(var(--index, 0) * 100%));
+}
+
+.nav-index-0 {
+  --index: 0;
+}
+
+.nav-index-1 {
+  --index: 1;
+}
+
+.nav-index-2 {
+  --index: 2;
+}
+
+.nav-index-3 {
+  --index: 3;
+}
+
+.nav-index-4 {
+  --index: 4;
+}
+
+.nav-index-5 {
+  --index: 5;
+}
+
+.admin-progress-bar {
+  width: var(--progress, 0%);
+  transition: width 0.5s ease-out;
+}
+
+.conductor-progress-bar {
+  width: var(--progress, 0%);
+  transition: width 0.5s ease-out;
+}
+
+.highway-progress-60 {
+  width: 60%;
+}
+
+.highway-progress-70 {
+  width: 70%;
+}
+
+.marketing-progress-bar {
+  width: var(--progress, 0%);
+}
+
+.mess-progress-bar {
+  width: var(--progress, 0%);
+}
+
+.operator-chart-bar {
+  height: var(--height, 0%);
+}
+
+.analytics-chart-bar {
+  height: var(--height, 0%);
+}
+
+.analytics-pie-sector {
+  --segment-rotate: 0deg;
+  --segment-angle: 0deg;
+}
+
+.routemap-container {
+  height: var(--map-height, 300px);
+  width: 100%;
+  z-index: 0;
+}
+
+.traffic-clear {
+  background: #22C55E;
+}
+
+.traffic-slow {
+  background: #F59E0B;
+}
+
+.traffic-heavy {
+  background: #EF4444;
 }

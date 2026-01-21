@@ -180,7 +180,7 @@ export const MessApp: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors">
+                        <button onClick={handleLogout} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-red-500 transition-colors" aria-label="Logout">
                             <LogOut size={18} />
                         </button>
                     </div>
