@@ -213,180 +213,217 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
                 </div>
 
                 {/* Step Content */}
-                {step === 'select' && (
-                    <div className="role-grid">
-                        {ROLE_OPTIONS.map(role => (
-                            <button
-                                key={role.id}
-                                className={`role-card ${selectedRoles.includes(role.id) ? 'selected' : ''}`}
-                                onClick={() => toggleRole(role.id)}
-                                style={{
-                                    '--role-color': role.color,
-                                    '--role-color-alpha': (role as any).colorAlpha
-                                } as any}
-                            >
-                                <div className="role-icon">
-                                    {role.icon}
-                                </div>
-                                <div className="role-info">
-                                    <h3>{role.label}</h3>
-                                    <p>{role.description}</p>
-                                </div>
-                                {selectedRoles.includes(role.id) && (
-                                    <div className="check-badge">
-                                        <Check className="w-4 h-4" />
-                                    </div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                const RoleCard: React.FC<{
+    role: any,
+                isSelected: boolean,
+    onClick: () => void
+}> = ({role, isSelected, onClick}) => {
+    const cardRef = React.useRef<HTMLButtonElement>(null);
 
-                {step === 'documents' && (
-                    <div className="documents-section">
-                        <div className="business-info">
-                            <h3>Business Information</h3>
-                            <input
-                                type="text"
-                                placeholder="Business Name (optional)"
-                                value={businessName}
-                                onChange={(e) => setBusinessName(e.target.value)}
-                                className="input-field"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Business Address"
-                                value={businessAddress}
-                                onChange={(e) => setBusinessAddress(e.target.value)}
-                                className="input-field"
-                            />
+    React.useEffect(() => {
+        if (cardRef.current) {
+                        cardRef.current.style.setProperty('--role-color', role.color);
+                    cardRef.current.style.setProperty('--role-color-alpha', role.colorAlpha || (role.color + '22'));
+        }
+    }, [role]);
+
+                    return (
+                    <button
+                        ref={cardRef}
+                        className={`role-card ${isSelected ? 'selected' : ''}`}
+                        onClick={onClick}
+                    >
+                        <div className="role-icon">
+                            {role.icon}
                         </div>
+                        <div className="role-info">
+                            <h3>{role.label}</h3>
+                            <p>{role.description}</p>
+                        </div>
+                        {isSelected && (
+                            <div className="check-badge">
+                                <Check className="w-4 h-4" />
+                            </div>
+                        )}
+                    </button>
+                    );
+};
 
-                        <h3>Required Documents</h3>
-                        <p className="hint">Upload clear images of your documents</p>
-
-                        <div className="doc-list">
-                            {getRequiredDocs().map(doc => (
-                                <div key={doc} className="doc-item">
-                                    <div className="doc-info">
-                                        <span className="doc-name">{doc}</span>
-                                        {documents[doc] && (
-                                            <span className="doc-status">
-                                                <Check className="w-4 h-4 text-green-500" />
-                                                {documents[doc]?.name}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="doc-actions">
-                                        <label className="upload-btn">
-                                            <Upload className="w-4 h-4" />
-                                            Upload
-                                            <input
-                                                type="file"
-                                                accept="image/*,.pdf"
-                                                onChange={(e) => handleFileChange(doc, e.target.files?.[0] || null)}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </label>
-                                        {documents[doc] && (
-                                            <button
-                                                className="remove-btn"
-                                                aria-label="Remove document"
-                                                onClick={() => handleFileChange(doc, null)}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                    // ... inside Step Content ...
+                    {step === 'select' && (
+                        <div className="role-grid">
+                            {ROLE_OPTIONS.map(role => (
+                                <RoleCard
+                                    key={role.id}
+                                    role={role}
+                                    isSelected={selectedRoles.includes(role.id)}
+                                    onClick={() => toggleRole(role.id)}
+                                />
                             ))}
                         </div>
-                    </div>
-                )}
-
-                {step === 'review' && (
-                    <div className="review-section">
-                        <h3>Review Your Application</h3>
-
-                        <div className="review-card">
-                            <h4>Selected Roles</h4>
-                            <div className="selected-roles">
-                                {selectedRoles.map(role => {
-                                    const roleOption = ROLE_OPTIONS.find(r => r.id === role);
-                                    return (
-                                        <span
-                                            key={role}
-                                            className="role-tag"
-                                            style={{ background: roleOption?.color }}
-                                        >
-                                            {roleOption?.label}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="review-card">
-                            <h4>Business Details</h4>
-                            <p>{businessName || 'N/A'}</p>
-                            <p className="address">{businessAddress || 'N/A'}</p>
-                        </div>
-
-                        <div className="review-card">
-                            <h4>Documents Uploaded</h4>
-                            <p>{Object.keys(documents).filter(k => documents[k]).length} / {getRequiredDocs().length} documents</p>
-                        </div>
-
-                        <div className="terms">
-                            <p>By submitting, you agree to our Terms of Service and Partner Agreement.</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Error Message */}
-                {error && (
-                    <div className="error-msg">
-                        {error}
-                    </div>
-                )}
-
-                {/* Actions */}
-                <div className="selector-actions">
-                    {step !== 'select' && (
-                        <Button
-                            variant="secondary"
-                            onClick={() => setStep(step === 'documents' ? 'select' : 'documents')}
-                        >
-                            Back
-                        </Button>
-                    )}
-
-                    {step === 'select' && (
-                        <>
-                            <Button variant="secondary" onClick={onCancel}>
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={() => setStep('documents')}
-                                disabled={selectedRoles.length === 0}
-                            >
-                                Continue <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
-                        </>
                     )}
 
                     {step === 'documents' && (
-                        <Button onClick={() => setStep('review')}>
-                            Continue <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
+                        <div className="documents-section">
+                            <div className="business-info">
+                                <h3>Business Information</h3>
+                                <input
+                                    type="text"
+                                    placeholder="Business Name (optional)"
+                                    value={businessName}
+                                    onChange={(e) => setBusinessName(e.target.value)}
+                                    className="input-field"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Business Address"
+                                    value={businessAddress}
+                                    onChange={(e) => setBusinessAddress(e.target.value)}
+                                    className="input-field"
+                                />
+                            </div>
+
+                            <h3>Required Documents</h3>
+                            <p className="hint">Upload clear images of your documents</p>
+
+                            <div className="doc-list">
+                                {getRequiredDocs().map(doc => (
+                                    <div key={doc} className="doc-item">
+                                        <div className="doc-info">
+                                            <span className="doc-name">{doc}</span>
+                                            {documents[doc] && (
+                                                <span className="doc-status">
+                                                    <Check className="w-4 h-4 text-green-500" />
+                                                    {documents[doc]?.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="doc-actions">
+                                            <label className="upload-btn">
+                                                <Upload className="w-4 h-4" />
+                                                Upload
+                                                <input
+                                                    type="file"
+                                                    accept="image/*,.pdf"
+                                                    onChange={(e) => handleFileChange(doc, e.target.files?.[0] || null)}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                            {documents[doc] && (
+                                                <button
+                                                    className="remove-btn"
+                                                    aria-label="Remove document"
+                                                    onClick={() => handleFileChange(doc, null)}
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {step === 'review' && (
-                        <Button onClick={handleSubmit} disabled={loading}>
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Application'}
-                        </Button>
+                        <div className="review-section">
+                            <h3>Review Your Application</h3>
+
+                            <div className="review-card">
+                                <h4>Selected Roles</h4>
+                                const RoleTag: React.FC<{ label: string, color: string }> = ({label, color}) => {
+    const tagRef = React.useRef<HTMLSpanElement>(null);
+
+    React.useEffect(() => {
+        if (tagRef.current) {
+                                        tagRef.current.style.background = color;
+        }
+    }, [color]);
+
+                                    return (
+                                    <span ref={tagRef} className="role-tag">
+                                        {label}
+                                    </span>
+                                    );
+};
+
+                                    // ... inside review-section ...
+                                    <div className="selected-roles">
+                                        {selectedRoles.map(role => {
+                                            const roleOption = ROLE_OPTIONS.find(r => r.id === role);
+                                            if (!roleOption) return null;
+                                            return (
+                                                <RoleTag
+                                                    key={role}
+                                                    label={roleOption.label}
+                                                    color={roleOption.color}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                            </div>
+
+                            <div className="review-card">
+                                <h4>Business Details</h4>
+                                <p>{businessName || 'N/A'}</p>
+                                <p className="address">{businessAddress || 'N/A'}</p>
+                            </div>
+
+                            <div className="review-card">
+                                <h4>Documents Uploaded</h4>
+                                <p>{Object.keys(documents).filter(k => documents[k]).length} / {getRequiredDocs().length} documents</p>
+                            </div>
+
+                            <div className="terms">
+                                <p>By submitting, you agree to our Terms of Service and Partner Agreement.</p>
+                            </div>
+                        </div>
                     )}
-                </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="error-msg">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="selector-actions">
+                        {step !== 'select' && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => setStep(step === 'documents' ? 'select' : 'documents')}
+                            >
+                                Back
+                            </Button>
+                        )}
+
+                        {step === 'select' && (
+                            <>
+                                <Button variant="secondary" onClick={onCancel}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={() => setStep('documents')}
+                                    disabled={selectedRoles.length === 0}
+                                >
+                                    Continue <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </>
+                        )}
+
+                        {step === 'documents' && (
+                            <Button onClick={() => setStep('review')}>
+                                Continue <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        )}
+
+                        {step === 'review' && (
+                            <Button onClick={handleSubmit} disabled={loading}>
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Application'}
+                            </Button>
+                        )}
+                    </div>
             </div>
 
             <style>{`

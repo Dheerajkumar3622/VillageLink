@@ -11,7 +11,7 @@ interface ShopkeeperViewProps {
     user: User;
 }
 
-export const ShopkeeperView: React.FC<ShopkeeperViewProps> = ({ user }) => {
+const ShopkeeperView: React.FC<ShopkeeperViewProps> = ({ user }) => {
     const [myShop, setMyShop] = useState<Shop | null>(null);
     const [myProducts, setMyProducts] = useState<Product[]>([]);
     const [showAddProduct, setShowAddProduct] = useState(false);
@@ -132,11 +132,13 @@ export const ShopkeeperView: React.FC<ShopkeeperViewProps> = ({ user }) => {
                             </label>
                         </div>
                     </div>
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Item Name</label><input className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.name || ''} onChange={e => setNewProduct({...newProduct, name: e.target.value})} placeholder="e.g. Sona Chawal" /></div>
-                    <div className="flex gap-4"><div className="flex-1"><label className="text-xs font-bold text-slate-500 uppercase">Price (₹)</label><input type="number" className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.price || ''} onChange={e => setNewProduct({...newProduct, price: Number(e.target.value)})} placeholder="0" /></div><div className="w-24"><label className="text-xs font-bold text-slate-500 uppercase">Unit</label><input className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.unit || ''} onChange={e => setNewProduct({...newProduct, unit: e.target.value})} placeholder="kg/pc" /></div></div>
-                    <div><label className="text-xs font-bold text-slate-500 uppercase">Description</label><textarea className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none h-20 text-sm dark:text-white" value={newProduct.description || ''} onChange={e => setNewProduct({...newProduct, description: e.target.value})} placeholder="Item details..." /></div>
+                    <div><label className="text-xs font-bold text-slate-500 uppercase">Item Name</label><input className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.name || ''} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} placeholder="e.g. Sona Chawal" /></div>
+                    <div className="flex gap-4"><div className="flex-1"><label className="text-xs font-bold text-slate-500 uppercase">Price (₹)</label><input type="number" className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.price || ''} onChange={e => setNewProduct({ ...newProduct, price: Number(e.target.value) })} placeholder="0" /></div><div className="w-24"><label className="text-xs font-bold text-slate-500 uppercase">Unit</label><input className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none dark:text-white" value={newProduct.unit || ''} onChange={e => setNewProduct({ ...newProduct, unit: e.target.value })} placeholder="kg/pc" /></div></div>
+                    <div><label className="text-xs font-bold text-slate-500 uppercase">Description</label><textarea className="w-full bg-slate-100 dark:bg-slate-800 p-2 rounded-lg mt-1 outline-none h-20 text-sm dark:text-white" value={newProduct.description || ''} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} placeholder="Item details..." /></div>
                 </div>
             </Modal>
         </div>
     );
 };
+
+export default ShopkeeperView;

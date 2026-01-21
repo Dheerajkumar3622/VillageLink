@@ -11,6 +11,7 @@ import {
     Coffee, MapPin, Clock, Truck,
     CheckCircle, Loader2
 } from 'lucide-react';
+import { FloatingVehicle } from './FloatingVehicle';
 
 interface HighwayHostViewProps {
     user: User;
@@ -67,6 +68,11 @@ export const HighwayHostView: React.FC<HighwayHostViewProps> = ({ user, onBack }
         <div className="space-y-4">
             {/* Highway Mode Header */}
             <div className="bg-slate-800 text-white p-6 rounded-2xl relative overflow-hidden">
+                {/* Floating Vehicle Decorator */}
+                <div className="absolute -top-4 -right-10 opacity-30 pointer-events-none rotate-12">
+                    <FloatingVehicle size="250px" />
+                </div>
+
                 <div className="relative z-10">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <Truck className="text-yellow-400" />

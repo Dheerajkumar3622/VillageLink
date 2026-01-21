@@ -12,7 +12,7 @@ interface MessManagerViewProps {
 
 type Tab = 'DASHBOARD' | 'VOTING' | 'PREP' | 'WASTE';
 
-export const MessManagerView: React.FC<MessManagerViewProps> = ({ user, onBack }) => {
+const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
     const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
     const [activeVote, setActiveVote] = useState<MenuVote | null>(null);
     const [prepSheet, setPrepSheet] = useState<PrepSheet | null>(null);
@@ -240,3 +240,5 @@ export const MessManagerView: React.FC<MessManagerViewProps> = ({ user, onBack }
         </div>
     );
 };
+
+export default MessManagerView;

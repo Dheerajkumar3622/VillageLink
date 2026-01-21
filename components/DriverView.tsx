@@ -657,3 +657,5 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         </div>
     );
 };
+
+export default DriverView;

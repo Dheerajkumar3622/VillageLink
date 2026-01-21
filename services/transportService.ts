@@ -347,20 +347,6 @@ export const toggleDriverCharter = async (userId: string, isAvailable: boolean) 
 
 // --- NEW SAFETY & CROWDSOURCE FEATURES ---
 
-export const sendSOS = async (payload: { userId: string, location: any, audioBlob?: string }) => {
-    try {
-        const res = await fetch(`${SERVER_URL}/api/safety/sos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        return await res.json();
-    } catch (e) {
-        console.error("Failed to send SOS", e);
-        return { success: false };
-    }
-}
-
 export const suggestLocation = async (payload: { name: string, lat: number, lng: number }) => {
     try {
         const res = await fetch(`${SERVER_URL}/api/locations/suggest`, {

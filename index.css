@@ -439,9 +439,43 @@ body,
   animation: float-banana 4s ease-in-out infinite;
 }
 
-/* ========================================
-   WHISK 3.0: AI-AESTHETIC & NANO BANANA
-   ======================================== */
+/* Floating Vehicle Animation (Whisk 3.0) */
+@keyframes float-vehicle {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  75% {
+    transform: translateY(8px) rotate(-1deg);
+  }
+}
+
+.animate-float-vehicle {
+  animation: float-vehicle 6s ease-in-out infinite;
+}
+
+.floating-vehicle-container {
+  pointer-events: none;
+  filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+  mix-blend-mode: lighten;
+}
+
+.vehicle-img {
+  height: auto;
+  display: block;
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 .veo-cinematic-bg {
   position: fixed;
@@ -626,4 +660,309 @@ body,
 
 .traffic-heavy {
   background: #EF4444;
+}
+
+/* ========================================
+   VILLAGELINK VISION 2.0: CYBER-RURAL HUB
+   ======================================== */
+
+:root {
+  --neon-emerald: #10b981;
+  --neon-saffron: #f59e0b;
+  --cyber-indigo: #1e1b4b;
+  --ethereal-glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glow-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+}
+
+.perspective-3000 {
+  perspective: 3000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+/* Holographic Hub Background */
+.vision-bg {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #064e3b 0%, #020617 100%);
+  z-index: -20;
+}
+
+.vision-aurora {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  background: conic-gradient(from 180deg at 50% 50%,
+      transparent 0%,
+      var(--neon-emerald) 25%,
+      transparent 50%,
+      var(--neon-saffron) 75%,
+      transparent 100%);
+  filter: blur(120px);
+  -webkit-backdrop-filter: blur(120px);
+  opacity: 0.15;
+  animation: visionRotate 30s linear infinite;
+}
+
+@keyframes visionRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 3D Orbital System */
+.orbital-hub {
+  height: 240px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 1.5rem 0;
+  perspective: 2000px;
+}
+
+.orbit-belt {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(60deg);
+}
+
+.orbital-node {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: rotateX(-60deg);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.orbital-node:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--neon-emerald);
+  transform: rotateX(-60deg) scale(1.2) translateY(-20px);
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+  z-index: 50;
+}
+
+.node-icon {
+  font-size: 1.75rem;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 0 8px var(--neon-emerald));
+}
+
+.node-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: white;
+  letter-spacing: 0.05em;
+}
+
+/* Holographic Header */
+.vision-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.5);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-shimmer {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--neon-emerald), var(--neon-saffron));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+  animation: logoBreath 4s infinite alternate;
+}
+
+@keyframes logoBreath {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+
+  to {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 40px var(--neon-emerald);
+  }
+}
+
+.user-profile-vision {
+  display: flex;
+  flex-direction: column;
+}
+
+.greet-small {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: var(--neon-emerald);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.user-name-vision {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+/* Logout Portal */
+.logout-portal {
+  margin-top: 2rem;
+  width: 100%;
+  padding: 1.25rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 20px;
+  color: #ef4444;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.logout-portal:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+  transform: translateY(-2px);
+}
+
+/* --- CSS HYGIENE & UTILITIES --- */
+.bg-attach-gallery {
+  background: #3b82f6 !important;
+}
+
+.bg-attach-camera {
+  background: #ec4899 !important;
+}
+
+.bg-attach-location {
+  background: #22c55e !important;
+}
+
+.bg-attach-product {
+  background: #f97316 !important;
+}
+
+.provider-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.provider-nav-item.active {
+  color: #3b82f6;
+}
+
+.orders-view,
+.earnings-view,
+.settings-view {
+  padding: 16px;
+}
+
+.view-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #111827;
+}
+
+.view-empty-text {
+  color: #6b7280;
+}
+
+.badge-round {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 10px;
+  min-width: 14px;
+  text-align: center;
+}
+
+.orbital-node-dynamic {
+  left: 50%;
+  top: 50%;
+  transform: rotate(var(--node-angle)) translateX(110px) rotate(var(--node-angle-neg)) rotateX(-60deg);
+}
+
+/* --- ROLE SELECTOR STYLES --- */
+.role-card.selected {
+  border-color: var(--role-color) !important;
+  background: var(--role-color-alpha) !important;
+}
+
+.role-icon {
+  background: var(--role-color);
+}
+
+.check-badge {
+  background: var(--role-color);
+}
+
+/* --- REELS SECTION STYLES --- */
+.reel-item-dynamic {
+  transform: translateY(var(--reel-offset));
+}
+
+.product-tag-dynamic {
+  left: var(--tag-x) !important;
+  top: var(--tag-y) !important;
+}
+
+/* --- QR SCANNER STYLES --- */
+.result-icon-dynamic {
+  background: var(--qr-color) !important;
 }

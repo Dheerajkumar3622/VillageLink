@@ -8,213 +8,213 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, Beneficiary, ProxyTransaction, VillageManagerStats } from '../types';
 import { API_BASE_URL } from '../config';
 import {
-    Users, Ticket, Package, UtensilsCrossed, Plus, Search,
-    Clock, IndianRupee, CheckCircle, XCircle, Phone,
-    MapPin, User as UserIcon, FileText, RefreshCw, ArrowRight
+  Users, Ticket, Package, UtensilsCrossed, Plus, Search,
+  Clock, IndianRupee, CheckCircle, XCircle, Phone,
+  MapPin, User as UserIcon, FileText, RefreshCw, ArrowRight
 } from 'lucide-react';
 
 interface VillageManagerViewProps {
-    user: User;
+  user: User;
 }
 
 const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('token')}`
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${localStorage.getItem('token')}`
 });
 
-export const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) => {
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'beneficiaries' | 'book' | 'history'>('dashboard');
-    const [stats, setStats] = useState<VillageManagerStats | null>(null);
-    const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
-    const [transactions, setTransactions] = useState<ProxyTransaction[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showAddForm, setShowAddForm] = useState(false);
+const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'beneficiaries' | 'book' | 'history'>('dashboard');
+  const [stats, setStats] = useState<VillageManagerStats | null>(null);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [transactions, setTransactions] = useState<ProxyTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
 
-    // Fetch data
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [statsRes, benefRes, txnRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/village-manager/stats`, { headers: getAuthHeaders() }),
-                fetch(`${API_BASE_URL}/api/village-manager/beneficiaries`, { headers: getAuthHeaders() }),
-                fetch(`${API_BASE_URL}/api/village-manager/transactions?limit=20`, { headers: getAuthHeaders() })
-            ]);
+  // Fetch data
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [statsRes, benefRes, txnRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/village-manager/stats`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/api/village-manager/beneficiaries`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/api/village-manager/transactions?limit=20`, { headers: getAuthHeaders() })
+      ]);
 
-            const statsData = await statsRes.json();
-            const benefData = await benefRes.json();
-            const txnData = await txnRes.json();
+      const statsData = await statsRes.json();
+      const benefData = await benefRes.json();
+      const txnData = await txnRes.json();
 
-            if (statsData.success) setStats(statsData.stats);
-            if (benefData.success) setBeneficiaries(benefData.beneficiaries);
-            if (txnData.success) setTransactions(txnData.transactions);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
-    // Filter beneficiaries by search
-    const filteredBeneficiaries = beneficiaries.filter(b =>
-        b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.village?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.phone?.includes(searchQuery)
-    );
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <RefreshCw className="w-8 h-8 animate-spin text-emerald-600" />
-            </div>
-        );
+      if (statsData.success) setStats(statsData.stats);
+      if (benefData.success) setBeneficiaries(benefData.beneficiaries);
+      if (txnData.success) setTransactions(txnData.transactions);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Filter beneficiaries by search
+  const filteredBeneficiaries = beneficiaries.filter(b =>
+    b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.village?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.phone?.includes(searchQuery)
+  );
+
+  if (loading) {
     return (
-        <div className="village-manager-view">
-            {/* Header */}
-            <div className="vm-header">
-                <div className="vm-header-info">
-                    <h1>ग्राम प्रबंधक</h1>
-                    <p>Village Manager Dashboard</p>
-                </div>
-                <div className="vm-header-badge">
-                    <Users className="w-5 h-5" />
-                    <span>{stats?.activeBeneficiaries || 0} Villagers</span>
-                </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="w-8 h-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="village-manager-view">
+      {/* Header */}
+      <div className="vm-header">
+        <div className="vm-header-info">
+          <h1>ग्राम प्रबंधक</h1>
+          <p>Village Manager Dashboard</p>
+        </div>
+        <div className="vm-header-badge">
+          <Users className="w-5 h-5" />
+          <span>{stats?.activeBeneficiaries || 0} Villagers</span>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="vm-tabs">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: <FileText className="w-4 h-4" /> },
+          { id: 'beneficiaries', label: 'Villagers', icon: <Users className="w-4 h-4" /> },
+          { id: 'book', label: 'Book Service', icon: <Ticket className="w-4 h-4" /> },
+          { id: 'history', label: 'History', icon: <Clock className="w-4 h-4" /> }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            className={`vm-tab ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+          >
+            {tab.icon}
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <div className="vm-dashboard">
+          {/* Stats Grid */}
+          <div className="vm-stats-grid">
+            <div className="vm-stat-card">
+              <Users className="w-6 h-6 text-emerald-600" />
+              <div className="vm-stat-info">
+                <span className="vm-stat-value">{stats?.activeBeneficiaries || 0}</span>
+                <span className="vm-stat-label">Active Villagers</span>
+              </div>
             </div>
-
-            {/* Navigation Tabs */}
-            <div className="vm-tabs">
-                {[
-                    { id: 'dashboard', label: 'Dashboard', icon: <FileText className="w-4 h-4" /> },
-                    { id: 'beneficiaries', label: 'Villagers', icon: <Users className="w-4 h-4" /> },
-                    { id: 'book', label: 'Book Service', icon: <Ticket className="w-4 h-4" /> },
-                    { id: 'history', label: 'History', icon: <Clock className="w-4 h-4" /> }
-                ].map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`vm-tab ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                    >
-                        {tab.icon}
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
+            <div className="vm-stat-card">
+              <Ticket className="w-6 h-6 text-blue-600" />
+              <div className="vm-stat-info">
+                <span className="vm-stat-value">{stats?.todaysTransactions || 0}</span>
+                <span className="vm-stat-label">Today's Bookings</span>
+              </div>
             </div>
+            <div className="vm-stat-card">
+              <IndianRupee className="w-6 h-6 text-amber-600" />
+              <div className="vm-stat-info">
+                <span className="vm-stat-value">₹{stats?.totalRevenue || 0}</span>
+                <span className="vm-stat-label">Total Revenue</span>
+              </div>
+            </div>
+            <div className="vm-stat-card">
+              <Clock className="w-6 h-6 text-purple-600" />
+              <div className="vm-stat-info">
+                <span className="vm-stat-value">{stats?.totalTransactions || 0}</span>
+                <span className="vm-stat-label">All Transactions</span>
+              </div>
+            </div>
+          </div>
 
-            {/* Dashboard Tab */}
-            {activeTab === 'dashboard' && (
-                <div className="vm-dashboard">
-                    {/* Stats Grid */}
-                    <div className="vm-stats-grid">
-                        <div className="vm-stat-card">
-                            <Users className="w-6 h-6 text-emerald-600" />
-                            <div className="vm-stat-info">
-                                <span className="vm-stat-value">{stats?.activeBeneficiaries || 0}</span>
-                                <span className="vm-stat-label">Active Villagers</span>
-                            </div>
-                        </div>
-                        <div className="vm-stat-card">
-                            <Ticket className="w-6 h-6 text-blue-600" />
-                            <div className="vm-stat-info">
-                                <span className="vm-stat-value">{stats?.todaysTransactions || 0}</span>
-                                <span className="vm-stat-label">Today's Bookings</span>
-                            </div>
-                        </div>
-                        <div className="vm-stat-card">
-                            <IndianRupee className="w-6 h-6 text-amber-600" />
-                            <div className="vm-stat-info">
-                                <span className="vm-stat-value">₹{stats?.totalRevenue || 0}</span>
-                                <span className="vm-stat-label">Total Revenue</span>
-                            </div>
-                        </div>
-                        <div className="vm-stat-card">
-                            <Clock className="w-6 h-6 text-purple-600" />
-                            <div className="vm-stat-info">
-                                <span className="vm-stat-value">{stats?.totalTransactions || 0}</span>
-                                <span className="vm-stat-label">All Transactions</span>
-                            </div>
-                        </div>
-                    </div>
+          {/* Quick Actions */}
+          <div className="vm-quick-actions">
+            <h3>Quick Actions</h3>
+            <div className="vm-action-grid">
+              <button className="vm-action-btn" onClick={() => { setShowAddForm(true); setActiveTab('beneficiaries'); }}>
+                <Plus className="w-6 h-6" />
+                <span>Add Villager</span>
+              </button>
+              <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
+                <Ticket className="w-6 h-6" />
+                <span>Book Ticket</span>
+              </button>
+              <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
+                <Package className="w-6 h-6" />
+                <span>Send Parcel</span>
+              </button>
+              <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
+                <UtensilsCrossed className="w-6 h-6" />
+                <span>Book Food</span>
+              </button>
+            </div>
+          </div>
 
-                    {/* Quick Actions */}
-                    <div className="vm-quick-actions">
-                        <h3>Quick Actions</h3>
-                        <div className="vm-action-grid">
-                            <button className="vm-action-btn" onClick={() => { setShowAddForm(true); setActiveTab('beneficiaries'); }}>
-                                <Plus className="w-6 h-6" />
-                                <span>Add Villager</span>
-                            </button>
-                            <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
-                                <Ticket className="w-6 h-6" />
-                                <span>Book Ticket</span>
-                            </button>
-                            <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
-                                <Package className="w-6 h-6" />
-                                <span>Send Parcel</span>
-                            </button>
-                            <button className="vm-action-btn" onClick={() => setActiveTab('book')}>
-                                <UtensilsCrossed className="w-6 h-6" />
-                                <span>Book Food</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Recent Transactions */}
-                    <div className="vm-recent">
-                        <h3>Recent Transactions</h3>
-                        {transactions.slice(0, 5).map(txn => (
-                            <div key={txn.id} className="vm-txn-item">
-                                <div className="vm-txn-icon">
-                                    {txn.transactionType === 'TICKET_BOOKING' && <Ticket className="w-5 h-5" />}
-                                    {txn.transactionType === 'PARCEL_BOOKING' && <Package className="w-5 h-5" />}
-                                    {txn.transactionType === 'MESS_BOOKING' && <UtensilsCrossed className="w-5 h-5" />}
-                                </div>
-                                <div className="vm-txn-info">
-                                    <span className="vm-txn-name">{txn.beneficiaryName}</span>
-                                    <span className="vm-txn-type">{txn.transactionType.replace('_', ' ')}</span>
-                                </div>
-                                <div className="vm-txn-amount">
-                                    <span>₹{txn.amount}</span>
-                                    <span className={`vm-txn-status ${txn.status.toLowerCase()}`}>{txn.status}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+          {/* Recent Transactions */}
+          <div className="vm-recent">
+            <h3>Recent Transactions</h3>
+            {transactions.slice(0, 5).map(txn => (
+              <div key={txn.id} className="vm-txn-item">
+                <div className="vm-txn-icon">
+                  {txn.transactionType === 'TICKET_BOOKING' && <Ticket className="w-5 h-5" />}
+                  {txn.transactionType === 'PARCEL_BOOKING' && <Package className="w-5 h-5" />}
+                  {txn.transactionType === 'MESS_BOOKING' && <UtensilsCrossed className="w-5 h-5" />}
                 </div>
-            )}
+                <div className="vm-txn-info">
+                  <span className="vm-txn-name">{txn.beneficiaryName}</span>
+                  <span className="vm-txn-type">{txn.transactionType.replace('_', ' ')}</span>
+                </div>
+                <div className="vm-txn-amount">
+                  <span>₹{txn.amount}</span>
+                  <span className={`vm-txn-status ${txn.status.toLowerCase()}`}>{txn.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-            {/* Beneficiaries Tab */}
-            {activeTab === 'beneficiaries' && (
-                <BeneficiariesTab
-                    beneficiaries={filteredBeneficiaries}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    showAddForm={showAddForm}
-                    setShowAddForm={setShowAddForm}
-                    onRefresh={fetchData}
-                />
-            )}
+      {/* Beneficiaries Tab */}
+      {activeTab === 'beneficiaries' && (
+        <BeneficiariesTab
+          beneficiaries={filteredBeneficiaries}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          showAddForm={showAddForm}
+          setShowAddForm={setShowAddForm}
+          onRefresh={fetchData}
+        />
+      )}
 
-            {/* Booking Tab */}
-            {activeTab === 'book' && (
-                <BookingTab
-                    beneficiaries={beneficiaries}
-                    onRefresh={fetchData}
-                />
-            )}
+      {/* Booking Tab */}
+      {activeTab === 'book' && (
+        <BookingTab
+          beneficiaries={beneficiaries}
+          onRefresh={fetchData}
+        />
+      )}
 
-            {/* History Tab */}
-            {activeTab === 'history' && (
-                <HistoryTab transactions={transactions} />
-            )}
+      {/* History Tab */}
+      {activeTab === 'history' && (
+        <HistoryTab transactions={transactions} />
+      )}
 
-            <style>{`
+      <style>{`
         .village-manager-view {
           padding-bottom: 80px;
         }
@@ -432,168 +432,168 @@ export const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) 
           color: #cbd5e1;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 // ==================== BENEFICIARIES TAB ====================
 interface BeneficiariesTabProps {
-    beneficiaries: Beneficiary[];
-    searchQuery: string;
-    setSearchQuery: (q: string) => void;
-    showAddForm: boolean;
-    setShowAddForm: (v: boolean) => void;
-    onRefresh: () => void;
+  beneficiaries: Beneficiary[];
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  showAddForm: boolean;
+  setShowAddForm: (v: boolean) => void;
+  onRefresh: () => void;
 }
 
 const BeneficiariesTab: React.FC<BeneficiariesTabProps> = ({
-    beneficiaries, searchQuery, setSearchQuery, showAddForm, setShowAddForm, onRefresh
+  beneficiaries, searchQuery, setSearchQuery, showAddForm, setShowAddForm, onRefresh
 }) => {
-    const [formData, setFormData] = useState({
-        name: '', phone: '', aadharNumber: '', address: '', village: '', panchayat: '', district: ''
-    });
-    const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '', phone: '', aadharNumber: '', address: '', village: '', panchayat: '', district: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formData.name || !formData.village) {
-            alert('Name and Village are required');
-            return;
-        }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.village) {
+      alert('Name and Village are required');
+      return;
+    }
 
-        setSubmitting(true);
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/village-manager/beneficiaries`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify(formData)
-            });
-            const data = await res.json();
-            if (data.success) {
-                setFormData({ name: '', phone: '', aadharNumber: '', address: '', village: '', panchayat: '', district: '' });
-                setShowAddForm(false);
-                onRefresh();
-            } else {
-                alert(data.error || 'Failed to add');
-            }
-        } catch (error) {
-            alert('Error adding beneficiary');
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/village-manager/beneficiaries`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFormData({ name: '', phone: '', aadharNumber: '', address: '', village: '', panchayat: '', district: '' });
+        setShowAddForm(false);
+        onRefresh();
+      } else {
+        alert(data.error || 'Failed to add');
+      }
+    } catch (error) {
+      alert('Error adding beneficiary');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    return (
-        <div className="vm-beneficiaries">
-            {/* Search & Add */}
-            <div className="vm-search-bar">
-                <div className="vm-search-input">
-                    <Search className="w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search villagers..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                <button className="vm-add-btn" onClick={() => setShowAddForm(!showAddForm)}>
-                    <Plus className="w-5 h-5" />
-                </button>
-            </div>
+  return (
+    <div className="vm-beneficiaries">
+      {/* Search & Add */}
+      <div className="vm-search-bar">
+        <div className="vm-search-input">
+          <Search className="w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search villagers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <button className="vm-add-btn" onClick={() => setShowAddForm(!showAddForm)}>
+          <Plus className="w-5 h-5" />
+        </button>
+      </div>
 
-            {/* Add Form */}
-            {showAddForm && (
-                <form className="vm-add-form" onSubmit={handleSubmit}>
-                    <h4>Register New Villager</h4>
-                    <input
-                        type="text"
-                        placeholder="Name *"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        required
-                    />
-                    <input
-                        type="tel"
-                        placeholder="Phone (optional)"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Aadhar Number (optional)"
-                        value={formData.aadharNumber}
-                        onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                    <div className="vm-form-row">
-                        <input
-                            type="text"
-                            placeholder="Village *"
-                            value={formData.village}
-                            onChange={(e) => setFormData({ ...formData, village: e.target.value })}
-                            required
-                        />
-                        <input
-                            type="text"
-                            placeholder="Panchayat"
-                            value={formData.panchayat}
-                            onChange={(e) => setFormData({ ...formData, panchayat: e.target.value })}
-                        />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="District"
-                        value={formData.district}
-                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    />
-                    <div className="vm-form-actions">
-                        <button type="button" onClick={() => setShowAddForm(false)}>Cancel</button>
-                        <button type="submit" className="primary" disabled={submitting}>
-                            {submitting ? 'Saving...' : 'Register Villager'}
-                        </button>
-                    </div>
-                </form>
-            )}
+      {/* Add Form */}
+      {showAddForm && (
+        <form className="vm-add-form" onSubmit={handleSubmit}>
+          <h4>Register New Villager</h4>
+          <input
+            type="text"
+            placeholder="Name *"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Phone (optional)"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+          <input
+            type="text"
+            placeholder="Aadhar Number (optional)"
+            value={formData.aadharNumber}
+            onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value })}
+          />
+          <input
+            type="text"
+            placeholder="Address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          />
+          <div className="vm-form-row">
+            <input
+              type="text"
+              placeholder="Village *"
+              value={formData.village}
+              onChange={(e) => setFormData({ ...formData, village: e.target.value })}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Panchayat"
+              value={formData.panchayat}
+              onChange={(e) => setFormData({ ...formData, panchayat: e.target.value })}
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="District"
+            value={formData.district}
+            onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+          />
+          <div className="vm-form-actions">
+            <button type="button" onClick={() => setShowAddForm(false)}>Cancel</button>
+            <button type="submit" className="primary" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Register Villager'}
+            </button>
+          </div>
+        </form>
+      )}
 
-            {/* List */}
-            <div className="vm-list">
-                {beneficiaries.length === 0 ? (
-                    <div className="vm-empty">
-                        <Users className="w-12 h-12 text-gray-300" />
-                        <p>No villagers registered yet</p>
-                        <button onClick={() => setShowAddForm(true)}>Register First Villager</button>
-                    </div>
-                ) : (
-                    beneficiaries.map(ben => (
-                        <div key={ben.id} className="vm-beneficiary-card">
-                            <div className="vm-ben-avatar">
-                                <UserIcon className="w-6 h-6" />
-                            </div>
-                            <div className="vm-ben-info">
-                                <span className="vm-ben-name">{ben.name}</span>
-                                <span className="vm-ben-village">
-                                    <MapPin className="w-3 h-3" /> {ben.village}
-                                </span>
-                                {ben.phone && (
-                                    <span className="vm-ben-phone">
-                                        <Phone className="w-3 h-3" /> {ben.phone}
-                                    </span>
-                                )}
-                            </div>
-                            <button className="vm-book-for-btn">
-                                Book <ArrowRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))
+      {/* List */}
+      <div className="vm-list">
+        {beneficiaries.length === 0 ? (
+          <div className="vm-empty">
+            <Users className="w-12 h-12 text-gray-300" />
+            <p>No villagers registered yet</p>
+            <button onClick={() => setShowAddForm(true)}>Register First Villager</button>
+          </div>
+        ) : (
+          beneficiaries.map(ben => (
+            <div key={ben.id} className="vm-beneficiary-card">
+              <div className="vm-ben-avatar">
+                <UserIcon className="w-6 h-6" />
+              </div>
+              <div className="vm-ben-info">
+                <span className="vm-ben-name">{ben.name}</span>
+                <span className="vm-ben-village">
+                  <MapPin className="w-3 h-3" /> {ben.village}
+                </span>
+                {ben.phone && (
+                  <span className="vm-ben-phone">
+                    <Phone className="w-3 h-3" /> {ben.phone}
+                  </span>
                 )}
+              </div>
+              <button className="vm-book-for-btn">
+                Book <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
+          ))
+        )}
+      </div>
 
-            <style>{`
+      <style>{`
         .vm-search-bar {
           display: flex;
           gap: 12px;
@@ -766,172 +766,180 @@ const BeneficiariesTab: React.FC<BeneficiariesTabProps> = ({
           color: #f1f5f9;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 // ==================== BOOKING TAB ====================
 interface BookingTabProps {
-    beneficiaries: Beneficiary[];
-    onRefresh: () => void;
+  beneficiaries: Beneficiary[];
+  onRefresh: () => void;
 }
 
 const BookingTab: React.FC<BookingTabProps> = ({ beneficiaries, onRefresh }) => {
-    const [selectedBeneficiary, setSelectedBeneficiary] = useState('');
-    const [bookingType, setBookingType] = useState<'ticket' | 'parcel' | 'food'>('ticket');
-    const [from, setFrom] = useState('');
-    const [to, setTo] = useState('');
-    const [passengerCount, setPassengerCount] = useState(1);
-    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH');
-    const [submitting, setSubmitting] = useState(false);
-    const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [selectedBeneficiary, setSelectedBeneficiary] = useState('');
+  const [bookingType, setBookingType] = useState<'ticket' | 'parcel' | 'food'>('ticket');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
-    const handleBookTicket = async () => {
-        if (!selectedBeneficiary || !from || !to) {
-            alert('Please fill all required fields');
-            return;
-        }
+  const handleBookTicket = async () => {
+    if (!selectedBeneficiary || !from || !to) {
+      alert('Please fill all required fields');
+      return;
+    }
 
-        setSubmitting(true);
-        setResult(null);
+    setSubmitting(true);
+    setResult(null);
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/village-manager/proxy/ticket`, {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                    beneficiaryId: selectedBeneficiary,
-                    from,
-                    to,
-                    passengerCount,
-                    paymentMethod
-                })
-            });
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/village-manager/proxy/ticket`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          beneficiaryId: selectedBeneficiary,
+          from,
+          to,
+          passengerCount,
+          paymentMethod
+        })
+      });
 
-            const data = await res.json();
-            if (data.success) {
-                setResult({ success: true, message: data.message || 'Ticket booked successfully!' });
-                setFrom('');
-                setTo('');
-                setPassengerCount(1);
-                onRefresh();
-            } else {
-                setResult({ success: false, message: data.error || 'Booking failed' });
-            }
-        } catch (error) {
-            setResult({ success: false, message: 'Network error' });
-        } finally {
-            setSubmitting(false);
-        }
-    };
+      const data = await res.json();
+      if (data.success) {
+        setResult({ success: true, message: data.message || 'Ticket booked successfully!' });
+        setFrom('');
+        setTo('');
+        setPassengerCount(1);
+        onRefresh();
+      } else {
+        setResult({ success: false, message: data.error || 'Booking failed' });
+      }
+    } catch (error) {
+      setResult({ success: false, message: 'Network error' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    return (
-        <div className="vm-booking">
-            {/* Beneficiary Selection */}
-            <div className="vm-booking-section">
-                <label>Select Villager</label>
-                <select
-                    value={selectedBeneficiary}
-                    onChange={(e) => setSelectedBeneficiary(e.target.value)}
-                >
-                    <option value="">-- Choose Villager --</option>
-                    {beneficiaries.map(b => (
-                        <option key={b.id} value={b.id}>{b.name} - {b.village}</option>
-                    ))}
-                </select>
+  return (
+    <div className="vm-booking">
+      {/* Beneficiary Selection */}
+      <div className="vm-booking-section">
+        <label htmlFor="villager-select">Select Villager</label>
+        <select
+          id="villager-select"
+          value={selectedBeneficiary}
+          onChange={(e) => setSelectedBeneficiary(e.target.value)}
+        >
+          <option value="">-- Choose Villager --</option>
+          {beneficiaries.map(b => (
+            <option key={b.id} value={b.id}>{b.name} - {b.village}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Service Type */}
+      <div className="vm-booking-types">
+        <button
+          className={bookingType === 'ticket' ? 'active' : ''}
+          onClick={() => setBookingType('ticket')}
+          title="Book a ticket"
+        >
+          <Ticket className="w-5 h-5" />
+          <span>Ticket</span>
+        </button>
+        <button
+          className={bookingType === 'parcel' ? 'active' : ''}
+          onClick={() => setBookingType('parcel')}
+          title="Book a parcel delivery"
+        >
+          <Package className="w-5 h-5" />
+          <span>Parcel</span>
+        </button>
+        <button
+          className={bookingType === 'food' ? 'active' : ''}
+          onClick={() => setBookingType('food')}
+          title="Order food"
+        >
+          <UtensilsCrossed className="w-5 h-5" />
+          <span>Food</span>
+        </button>
+      </div>
+
+      {/* Ticket Booking Form */}
+      {bookingType === 'ticket' && (
+        <div className="vm-ticket-form">
+          <div className="vm-booking-section">
+            <label htmlFor="from-input">From</label>
+            <input
+              id="from-input"
+              type="text"
+              placeholder="Enter origin village/city"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
+          <div className="vm-booking-section">
+            <label htmlFor="to-input">To</label>
+            <input
+              id="to-input"
+              type="text"
+              placeholder="Enter destination"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+          <div className="vm-booking-section">
+            <label>Passengers</label>
+            <div className="vm-counter">
+              <button onClick={() => setPassengerCount(Math.max(1, passengerCount - 1))} title="Decrease passenger count">-</button>
+              <span>{passengerCount}</span>
+              <button onClick={() => setPassengerCount(passengerCount + 1)} title="Increase passenger count">+</button>
             </div>
-
-            {/* Service Type */}
-            <div className="vm-booking-types">
-                <button
-                    className={bookingType === 'ticket' ? 'active' : ''}
-                    onClick={() => setBookingType('ticket')}
-                >
-                    <Ticket className="w-5 h-5" />
-                    <span>Ticket</span>
-                </button>
-                <button
-                    className={bookingType === 'parcel' ? 'active' : ''}
-                    onClick={() => setBookingType('parcel')}
-                >
-                    <Package className="w-5 h-5" />
-                    <span>Parcel</span>
-                </button>
-                <button
-                    className={bookingType === 'food' ? 'active' : ''}
-                    onClick={() => setBookingType('food')}
-                >
-                    <UtensilsCrossed className="w-5 h-5" />
-                    <span>Food</span>
-                </button>
+          </div>
+          <div className="vm-booking-section">
+            <label>Payment Method</label>
+            <div className="vm-payment-options">
+              <button
+                className={paymentMethod === 'CASH' ? 'active' : ''}
+                onClick={() => setPaymentMethod('CASH')}
+                title="Select Cash as payment method"
+              >
+                <IndianRupee className="w-4 h-4" /> Cash
+              </button>
+              <button
+                className={paymentMethod === 'UPI' ? 'active' : ''}
+                onClick={() => setPaymentMethod('UPI')}
+                title="Select UPI as payment method"
+              >
+                <CheckCircle className="w-4 h-4" /> UPI
+              </button>
             </div>
+          </div>
 
-            {/* Ticket Booking Form */}
-            {bookingType === 'ticket' && (
-                <div className="vm-ticket-form">
-                    <div className="vm-booking-section">
-                        <label>From</label>
-                        <input
-                            type="text"
-                            placeholder="Enter origin village/city"
-                            value={from}
-                            onChange={(e) => setFrom(e.target.value)}
-                        />
-                    </div>
-                    <div className="vm-booking-section">
-                        <label>To</label>
-                        <input
-                            type="text"
-                            placeholder="Enter destination"
-                            value={to}
-                            onChange={(e) => setTo(e.target.value)}
-                        />
-                    </div>
-                    <div className="vm-booking-section">
-                        <label>Passengers</label>
-                        <div className="vm-counter">
-                            <button onClick={() => setPassengerCount(Math.max(1, passengerCount - 1))}>-</button>
-                            <span>{passengerCount}</span>
-                            <button onClick={() => setPassengerCount(passengerCount + 1)}>+</button>
-                        </div>
-                    </div>
-                    <div className="vm-booking-section">
-                        <label>Payment Method</label>
-                        <div className="vm-payment-options">
-                            <button
-                                className={paymentMethod === 'CASH' ? 'active' : ''}
-                                onClick={() => setPaymentMethod('CASH')}
-                            >
-                                <IndianRupee className="w-4 h-4" /> Cash
-                            </button>
-                            <button
-                                className={paymentMethod === 'UPI' ? 'active' : ''}
-                                onClick={() => setPaymentMethod('UPI')}
-                            >
-                                <CheckCircle className="w-4 h-4" /> UPI
-                            </button>
-                        </div>
-                    </div>
+          <button
+            className="vm-book-btn"
+            onClick={handleBookTicket}
+            disabled={submitting || !selectedBeneficiary}
+          >
+            {submitting ? 'Booking...' : 'Book Ticket'}
+          </button>
+        </div>
+      )}
 
-                    <button
-                        className="vm-book-btn"
-                        onClick={handleBookTicket}
-                        disabled={submitting || !selectedBeneficiary}
-                    >
-                        {submitting ? 'Booking...' : 'Book Ticket'}
-                    </button>
-                </div>
-            )}
+      {/* Result Message */}
+      {result && (
+        <div className={`vm-result ${result.success ? 'success' : 'error'}`}>
+          {result.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <span>{result.message}</span>
+        </div>
+      )}
 
-            {/* Result Message */}
-            {result && (
-                <div className={`vm-result ${result.success ? 'success' : 'error'}`}>
-                    {result.success ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                    <span>{result.message}</span>
-                </div>
-            )}
-
-            <style>{`
+      <style>{`
         .vm-booking-section {
           margin-bottom: 16px;
         }
@@ -1079,56 +1087,56 @@ const BookingTab: React.FC<BookingTabProps> = ({ beneficiaries, onRefresh }) => 
           color: #e2e8f0;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 // ==================== HISTORY TAB ====================
 interface HistoryTabProps {
-    transactions: ProxyTransaction[];
+  transactions: ProxyTransaction[];
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({ transactions }) => {
-    const formatDate = (ts: number) => {
-        const d = new Date(ts);
-        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
+  const formatDate = (ts: number) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'TICKET_BOOKING': return <Ticket className="w-5 h-5" />;
-            case 'PARCEL_BOOKING': return <Package className="w-5 h-5" />;
-            case 'MESS_BOOKING': return <UtensilsCrossed className="w-5 h-5" />;
-            default: return <FileText className="w-5 h-5" />;
-        }
-    };
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'TICKET_BOOKING': return <Ticket className="w-5 h-5" />;
+      case 'PARCEL_BOOKING': return <Package className="w-5 h-5" />;
+      case 'MESS_BOOKING': return <UtensilsCrossed className="w-5 h-5" />;
+      default: return <FileText className="w-5 h-5" />;
+    }
+  };
 
-    return (
-        <div className="vm-history">
-            {transactions.length === 0 ? (
-                <div className="vm-empty">
-                    <Clock className="w-12 h-12 text-gray-300" />
-                    <p>No transactions yet</p>
-                </div>
-            ) : (
-                transactions.map(txn => (
-                    <div key={txn.id} className="vm-history-item">
-                        <div className="vm-history-icon">{getIcon(txn.transactionType)}</div>
-                        <div className="vm-history-info">
-                            <span className="vm-history-name">{txn.beneficiaryName}</span>
-                            <span className="vm-history-type">
-                                {txn.transactionType.replace(/_/g, ' ')} • {formatDate(txn.timestamp)}
-                            </span>
-                        </div>
-                        <div className="vm-history-right">
-                            <span className="vm-history-amount">₹{txn.amount}</span>
-                            <span className={`vm-history-status ${txn.status.toLowerCase()}`}>{txn.status}</span>
-                        </div>
-                    </div>
-                ))
-            )}
+  return (
+    <div className="vm-history">
+      {transactions.length === 0 ? (
+        <div className="vm-empty">
+          <Clock className="w-12 h-12 text-gray-300" />
+          <p>No transactions yet</p>
+        </div>
+      ) : (
+        transactions.map(txn => (
+          <div key={txn.id} className="vm-history-item">
+            <div className="vm-history-icon">{getIcon(txn.transactionType)}</div>
+            <div className="vm-history-info">
+              <span className="vm-history-name">{txn.beneficiaryName}</span>
+              <span className="vm-history-type">
+                {txn.transactionType.replace(/_/g, ' ')} • {formatDate(txn.timestamp)}
+              </span>
+            </div>
+            <div className="vm-history-right">
+              <span className="vm-history-amount">₹{txn.amount}</span>
+              <span className={`vm-history-status ${txn.status.toLowerCase()}`}>{txn.status}</span>
+            </div>
+          </div>
+        ))
+      )}
 
-            <style>{`
+      <style>{`
         .vm-history-item {
           display: flex;
           align-items: center;
@@ -1200,8 +1208,10 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ transactions }) => {
           color: #f1f5f9;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default VillageManagerView;
+e x p o r t   d e f a u l t   V i l l a g e M a n a g e r V i e w ;  
+ 

@@ -13,11 +13,12 @@ interface UserProfileProps {
     onBack: () => void;
     onShowPayments?: () => void;
     onShowAdmin?: () => void;
+    onLogout?: () => void;
 }
 
 type FilterType = 'ALL' | 'TRIPS' | 'PASSES' | 'PARCELS';
 
-export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPayments, onShowAdmin }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPayments, onShowAdmin, onLogout }) => {
     const [history, setHistory] = useState<any[]>([]);
     const [wallet, setWallet] = useState<Wallet | null>(null);
     const [activeTab, setActiveTab] = useState<'HISTORY' | 'WALLET' | 'REFERRAL'>('HISTORY');
@@ -240,6 +241,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                 <ShieldCheck size={12} /> Admin Panel
                             </button>
                         )}
+                        {onLogout && (
+                            <button onClick={onLogout} className="logout-portal">
+                                SIGN OUT
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -344,4 +350,4 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
             )}
         </div>
     );
-};
+    export default UserProfile;

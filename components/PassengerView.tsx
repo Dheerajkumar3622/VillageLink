@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Ticket, TicketStatus, PaymentMethod, User, LocationData, Pass, SeatConfig, ChurnRiskAnalysis, RentalVehicle, RentalBooking, ParcelBooking, Wallet as WalletType, GeoLocation, CrowdForecast, DynamicFareResult, MandiRate, JobOpportunity, MarketItem, PilgrimagePackage, NewsItem, Shop, Product, LostItem, LeafDiagnosisResult, BusState } from '../types';
 import { RENTAL_FLEET, TRANSLATIONS } from '../constants';
-import { generateTicketId, generatePassId, generateRentalId, generateParcelId, saveTicket, savePass, getStoredTickets, getMyPasses, bookRental, bookParcel, getAllParcels, getActiveBuses, sendSOS } from '../services/transportService';
+import { generateTicketId, generatePassId, generateRentalId, generateParcelId, saveTicket, savePass, getStoredTickets, getMyPasses, bookRental, bookParcel, getAllParcels, getActiveBuses } from '../services/transportService';
 import { calculateDynamicFare, getCrowdForecast, formatCurrency, analyzeChurnRisk, calculateLogisticsCost, getMandiRates, getJobs, getMarketItems, getPackages, verifyGenderBiometrics, diagnoseLeaf, estimateParcelSize, findPoolMatches } from '../services/mlService';
 import { getWallet, mintPassNFT, createEscrow, earnGramCoin, spendGramCoin } from '../services/blockchainService';
 import { signTransaction, updateLastLocation } from '../services/securityService';
@@ -22,8 +22,9 @@ import { RouteMap } from './RouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, ShieldCheck, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Siren, Bike, Replace, Mic, Utensils, MapPin } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, ShieldCheck, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Bike, Replace, Mic, Utensils, MapPin } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
+import { FloatingVehicle } from './FloatingVehicle';
 
 interface PassengerViewProps {
     user: User;
@@ -73,11 +74,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     const [logisticsPoolFound, setLogisticsPoolFound] = useState(false);
     const [voiceGuideActive, setVoiceGuideActive] = useState(false);
 
-    // GRAM-SETU & SOS & SURAKSHA KAVACH
     const [gramSetuMode, setGramSetuMode] = useState(false);
-    const [showSOSModal, setShowSOSModal] = useState(false);
-    const [sosCountdown, setSosCountdown] = useState(5);
-    const [sosSent, setSosSent] = useState(false);
 
     // SURAKSHA KAVACH (AUDIO RECORDING) STATE
     const [isAudioShieldActive, setIsAudioShieldActive] = useState(false);
@@ -383,52 +380,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
         }
     };
 
-    const triggerSOS = () => {
-        setShowSOSModal(true);
-        setSosSent(false);
-        setSosCountdown(5);
-        const timer = setInterval(() => {
-            setSosCountdown(prev => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    handleSendSOS();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    };
-
-    const handleSendSOS = async () => {
-        setSosSent(true);
-        // Create a Blob from the recorded audio chunks
-        let audioBlobString = "";
-        if (audioChunks.length > 0) {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            // Convert blob to base64 for MVP transmission (In real app, use FormData)
-            const reader = new FileReader();
-            reader.readAsDataURL(audioBlob);
-            reader.onloadend = async () => {
-                audioBlobString = reader.result as string;
-
-                // SEND SOS to Server
-                await sendSOS({
-                    userId: user.id,
-                    location: { lat: fromLocation?.lat || 0, lng: fromLocation?.lng || 0 }, // Fallback to last known
-                    audioBlob: audioBlobString
-                });
-            }
-        } else {
-            // Send without audio if not recording
-            await sendSOS({
-                userId: user.id,
-                location: { lat: fromLocation?.lat || 0, lng: fromLocation?.lng || 0 }
-            });
-        }
-
-        console.log("CRITICAL: SOS BROADCAST SENT TO 12 NEARBY VEHICLES & POLICE");
-        alert("SOS SENT! Nearby drivers and government ambulance have been alerted with your location and audio recording.");
-    };
 
     const processBiometricCheck = async () => {
         setVerificationStep('PROCESSING');
@@ -686,7 +637,12 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 {showAR && <ARFinder onClose={() => setShowAR(false)} targetName={calculatedPath[1] || 'Bus Stop'} />}
 
                 {/* WRAPPER FOR SCROLLABLE CONTENT WITH ANIMATION */}
-                <div className="animate-fade-in">
+                <div className="animate-fade-in relative">
+                    {/* Floating Vehicle Background Decorator */}
+                    <div className="absolute -top-10 -right-20 opacity-40 blur-sm pointer-events-none z-0">
+                        <FloatingVehicle size="300px" />
+                    </div>
+
                     {/* ... Header Area ... */}
                     {activeTab === 'HOME' && (
                         <div className="mb-6 px-4">
@@ -712,9 +668,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <span className="text-lg font-black text-white tracking-tight">₹{wallet?.balance || 0}</span>
                                         </div>
                                     </div>
-                                    <button onClick={triggerSOS} aria-label="Trigger SOS" className="w-12 h-12 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center border border-rose-500/30 text-rose-500 shadow-glow-sm transition-all active:scale-95 pulse-heartbeat">
-                                        <Siren size={24} />
-                                    </button>
                                 </div>
                             </div>
 
@@ -1296,38 +1249,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 </div>
             </Modal>
 
-            {/* SOS MODAL */}
-            <Modal
-                isOpen={showSOSModal}
-                onClose={() => setShowSOSModal(false)}
-                onConfirm={handleSendSOS}
-                title="EMERGENCY SOS"
-                confirmLabel={sosSent ? "Alert Sent!" : `Sending in ${sosCountdown}s`}
-                hideFooter={true}
-            >
-                <div className="text-center p-4">
-                    <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-                        <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-25"></div>
-                        <Siren size={48} className="text-red-600 animate-pulse" />
-                    </div>
-                    <h3 className="text-xl font-bold text-red-600 mb-2">Jeevan-Raksha Alert</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-                        Broadcasting your location to all nearby vehicles (Ambulance, Taxi, SUV).
-                        <br /><span className="text-xs text-red-500 font-bold mt-2 block">Audio is being recorded.</span>
-                    </p>
-
-                    {sosSent ? (
-                        <div className="bg-green-100 text-green-800 p-4 rounded-xl font-bold animate-in slide-in-from-bottom-2">
-                            Help is on the way!
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            <Button fullWidth variant="danger" onClick={handleSendSOS}>SEND NOW</Button>
-                            <Button fullWidth variant="secondary" onClick={() => setShowSOSModal(false)}>Cancel</Button>
-                        </div>
-                    )}
-                </div>
-            </Modal>
 
             <Modal isOpen={showDidiVerification} onClose={() => { setShowDidiVerification(false); setVerificationStep('START'); }} onConfirm={() => { }} title="Didi Rath Verification" confirmLabel="" hideFooter={true}>
                 <div className="text-center space-y-6">
@@ -1375,3 +1296,5 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
         </>
     );
 };
+
+export default PassengerView;
