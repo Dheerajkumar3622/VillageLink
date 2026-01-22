@@ -123,11 +123,12 @@ const ProductTag: React.FC<{ tag: any }> = ({ tag }) => {
     );
 };
 
-const ReelsSection: React.FC<ReelsSectionProps> = ({ user }) => {
+const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
     const [reels, setReels] = useState<Reel[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [muted, setMuted] = useState(false);
+    const [paused, setPaused] = useState(false);
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState('');
@@ -533,11 +534,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user }) => {
                     <Plus className="w-6 h-6" />
                 </button>
             )}
-        </div>
-    );
-};
-
-<style>{`
+            <style>{`
         .reels-section {
           position: relative;
           height: calc(100vh - 140px);
@@ -889,8 +886,8 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user }) => {
           box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
         }
       `}</style>
-</div >
-            );
+        </div>
+    );
 };
 
 const formatCount = (count: number): string => {
