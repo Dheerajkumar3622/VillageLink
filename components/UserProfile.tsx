@@ -350,4 +350,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
             )}
         </div>
     );
-    export default UserProfile;
+};
+
+export default UserProfile;
