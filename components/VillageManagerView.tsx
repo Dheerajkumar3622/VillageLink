@@ -171,8 +171,8 @@ const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) => {
             {transactions.slice(0, 5).map(txn => (
               <div key={txn.id} className="vm-txn-item">
                 <div className="vm-txn-icon">
-                  {txn.transactionType === 'TICKET_BOOKING' && <Ticket className="w-5 h-5" />}
-                  {txn.transactionType === 'PARCEL_BOOKING' && <Package className="w-5 h-5" />}
+                  {txn.transactionType === 'TICKET' && <Ticket className="w-5 h-5" />}
+                  {txn.transactionType === 'PARCEL' && <Package className="w-5 h-5" />}
                   {txn.transactionType === 'MESS_BOOKING' && <UtensilsCrossed className="w-5 h-5" />}
                 </div>
                 <div className="vm-txn-info">
@@ -496,7 +496,7 @@ const BeneficiariesTab: React.FC<BeneficiariesTabProps> = ({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button className="vm-add-btn" onClick={() => setShowAddForm(!showAddForm)}>
+        <button className="vm-add-btn" onClick={() => setShowAddForm(!showAddForm)} aria-label="Add Villager" title="Add Villager">
           <Plus className="w-5 h-5" />
         </button>
       </div>
@@ -1104,203 +1104,8 @@ const HistoryTab: React.FC<HistoryTabProps> = ({ transactions }) => {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'TICKET_BOOKING': return <Ticket className="w-5 h-5" />;
-      case 'PARCEL_BOOKING': return <Package className="w-5 h-5" />;
-      case 'MESS_BOOKING': return <UtensilsCrossed className="w-5 h-5" />;
-      default: return <FileText className="w-5 h-5" />;
-    }
-  };
-
-  return (
-    <div className="vm-history">
-      {transactions.length === 0 ? (
-        <div className="vm-empty">
-          <Clock className="w-12 h-12 text-gray-300" />
-          <p>No transactions yet</p>
-        </div>
-      ) : (
-        transactions.map(txn => (
-          <div key={txn.id} className="vm-history-item">
-            <div className="vm-history-icon">{getIcon(txn.transactionType)}</div>
-            <div className="vm-history-info">
-              <span className="vm-history-name">{txn.beneficiaryName}</span>
-              <span className="vm-history-type">
-                {txn.transactionType.replace(/_/g, ' ')} • {formatDate(txn.timestamp)}
-              </span>
-            </div>
-            <div className="vm-history-right">
-              <span className="vm-history-amount">₹{txn.amount}</span>
-              <span className={`vm-history-status ${txn.status.toLowerCase()}`}>{txn.status}</span>
-            </div>
-          </div>
-        ))
-      )}
-
-      <style>{`
-        .vm-history-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          background: white;
-          padding: 14px;
-          border-radius: 12px;
-          margin-bottom: 10px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-        .vm-history-icon {
-          width: 44px;
-          height: 44px;
-          border-radius: 10px;
-          background: #f0fdf4;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #059669;
-        }
-
-        .vm-history-info {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .vm-history-name {
-          font-weight: 600;
-          color: #111827;
-        }
-
-        .vm-history-type {
-          font-size: 0.75rem;
-          color: #6b7280;
-          text-transform: capitalize;
-        }
-
-        .vm-history-right {
-          text-align: right;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .vm-history-amount {
-          font-weight: 600;
-          color: #111827;
-        }
-
-        .vm-history-status {
-          font-size: 0.7rem;
-          padding: 2px 8px;
-          border-radius: 10px;
-          font-weight: 500;
-        }
-
-        .vm-history-status.completed { background: #d1fae5; color: #059669; }
-        .vm-history-status.pending { background: #fef3c7; color: #d97706; }
-        .vm-history-status.cancelled { background: #fee2e2; color: #dc2626; }
-
-        .dark .vm-history-item {
-          background: #1e293b;
-        }
-
-        .dark .vm-history-name,
-          font-size: 1.25rem;
-          font-weight: 600;
-          min-width: 30px;
-          text-align: center;
-        }
-
-        .vm-payment-options {
-          display: flex;
-          gap: 12px;
-        }
-
-        .vm-payment-options button {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 10px;
-          background: white;
-          cursor: pointer;
-        }
-
-        .vm-payment-options button.active {
-          border-color: #059669;
-          background: #ecfdf5;
-          color: #059669;
-        }
-
-        .vm-book-btn {
-          width: 100%;
-          padding: 16px;
-          background: #059669;
-          color: white;
-          border: none;
-          border-radius: 12px;
-          font-size: 1.1rem;
-          font-weight: 600;
-          cursor: pointer;
-          margin-top: 16px;
-        }
-
-        .vm-book-btn:disabled {
-          background: #9ca3af;
-          cursor: not-allowed;
-        }
-
-        .vm-result {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 14px;
-          border-radius: 10px;
-          margin-top: 16px;
-        }
-
-        .vm-result.success {
-          background: #d1fae5;
-          color: #059669;
-        }
-
-        .vm-result.error {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .dark .vm-booking-section label { color: #e2e8f0; }
-        .dark .vm-booking-section select,
-        .dark .vm-booking-section input,
-        .dark .vm-counter,
-        .dark .vm-payment-options button,
-        .dark .vm-booking-types button {
-          background: #1e293b;
-          border-color: #475569;
-          color: #e2e8f0;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-// ==================== HISTORY TAB ====================
-interface HistoryTabProps {
-  transactions: ProxyTransaction[];
-}
-
-const HistoryTab: React.FC<HistoryTabProps> = ({ transactions }) => {
-  const formatDate = (ts: number) => {
-    const d = new Date(ts);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'TICKET_BOOKING': return <Ticket className="w-5 h-5" />;
-      case 'PARCEL_BOOKING': return <Package className="w-5 h-5" />;
+      case 'TICKET': return <Ticket className="w-5 h-5" />;
+      case 'PARCEL': return <Package className="w-5 h-5" />;
       case 'MESS_BOOKING': return <UtensilsCrossed className="w-5 h-5" />;
       default: return <FileText className="w-5 h-5" />;
     }
