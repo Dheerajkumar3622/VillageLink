@@ -8,6 +8,7 @@ export const TEST_USERS = {
   DRIVER: { id: 'DRV-888', name: 'Raju Driver', role: 'DRIVER', password: 'drive', vehicleCapacity: 40, vehicleType: 'BUS', isVerified: true },
   PASSENGER: { id: 'USR-999', name: 'Amit Kumar', role: 'PASSENGER', password: 'pass' },
   SHOPKEEPER: { id: 'SHOP-001', name: 'Gupta Ji', role: 'SHOPKEEPER', password: 'shop', isVerified: true },
+  VILLAGE_MANAGER: { id: 'VM-001', name: 'Sarpanch Sahab', role: 'VILLAGE_MANAGER', password: 'mngr', isVerified: true },
   ADMIN: { id: 'ADMIN-001', name: 'Admin User', role: 'ADMIN', password: 'admin123' }
 };
 
