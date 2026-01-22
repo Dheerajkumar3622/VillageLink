@@ -125,7 +125,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const renderDashboard = () => {
         switch (activeRole) {
             case 'DRIVER':
-                return <DriverView user={user!} />;
+                return <DriverView user={user!} lang="EN" />;
             case 'FARMER':
                 return <KisanApp />;
             case 'VENDOR':
@@ -142,7 +142,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     onBack={() => { }}
                 />;
             default:
-                return <DriverView user={user!} />;
+                return <DriverView user={user!} lang="EN" />;
         }
     };
 

@@ -12,7 +12,12 @@ import { Bell, Loader2 } from 'lucide-react';
 import { BentoCard } from './BentoCard';
 import { ProfilePill } from './ProfilePill';
 import { StatRing } from './StatRing';
-import V5BottomNav, { TabType } from './V5BottomNav';
+import V5BottomNav from './V5BottomNav';
+import FoodLinkHome from './FoodLinkHome';
+import LogisticsApp from './LogisticsApp';
+
+// Extended TabType for User App
+type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile';
 
 // Import Views
 import PassengerView from './PassengerView';
@@ -29,7 +34,7 @@ interface UserAppProps {
 }
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
-    const [activeTab, setActiveTab] = useState<TabType>('home');
+    const [activeTab, setActiveTab] = useState<UserTabType>('home');
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
 
@@ -52,15 +57,8 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     const renderHomeContent = () => (
         <div className="v5-home-content animate-fade-in">
-            {/* Hero Section */}
+            {/* Hero Section - Clean, no fluff */}
             <section className="px-5 pt-4 pb-6">
-                <p className="text-sm text-[var(--text-secondary)] mb-1">
-                    Good Morning, {user?.name || 'User'} 👋
-                </p>
-                <h1 className="text-2xl font-extrabold tracking-tight mb-6">
-                    Your <span className="v5-gradient-text">Rural Command</span><br />Center Awaits
-                </h1>
-
                 {/* Stats Grid */}
                 <div className="grid grid-cols-4 gap-3 mb-6">
                     {[
@@ -90,31 +88,31 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
                 <BentoCard
                     icon="🚌"
                     title="Book Ride"
-                    description="12 buses available now"
+                    description="Plan your journey"
                     colorClass="v5-icon-emerald"
                     badge="Live"
-                    onClick={() => { }}
+                    onClick={() => setActiveTab('rides')}
                 />
                 <BentoCard
                     icon="🌾"
                     title="Gram Mandi"
                     description="Fresh harvest deals"
                     colorClass="v5-icon-warm"
-                    onClick={() => setActiveTab('haat' as TabType)}
+                    onClick={() => setActiveTab('haat')}
                 />
                 <BentoCard
                     icon="🍽️"
                     title="Mess Menu"
-                    description="Today's special ₹60"
+                    description="Order food now"
                     colorClass="v5-icon-hot"
-                    onClick={() => { }}
+                    onClick={() => setActiveTab('food')}
                 />
                 <BentoCard
                     icon="📦"
                     title="Cargo"
-                    description="Track 3 parcels"
+                    description="Send or track parcels"
                     colorClass="v5-icon-cyan"
-                    onClick={() => { }}
+                    onClick={() => setActiveTab('cargo')}
                 />
             </div>
 
@@ -126,9 +124,11 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     const renderContent = () => {
         switch (activeTab) {
             case 'home': return renderHomeContent();
+            case 'rides': return <PassengerView user={user!} lang={lang} />;
             case 'reels': return <ReelsSection user={user!} />;
-            case 'haat' as TabType: return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
-            case 'chat': return <ChatSection user={user!} />;
+            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
+            case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('home')} />;
+            case 'cargo': return <LogisticsApp />;
             case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('home')} />;
             default: return null;
         }
@@ -175,8 +175,8 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
             {/* V5 Bottom Navigation */}
             <V5BottomNav
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
+                activeTab={activeTab as 'home' | 'reels' | 'haat' | 'chat' | 'profile'}
+                onTabChange={(tab) => setActiveTab(tab as UserTabType)}
                 onCenterAction={() => setShowQRScanner(true)}
                 notificationBadge={unreadMessages}
             />

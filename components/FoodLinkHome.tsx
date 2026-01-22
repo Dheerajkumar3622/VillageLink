@@ -339,10 +339,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         );
     }
 
-    // ============== MESS 3D VIEW ==============
-    if (view === 'MESS_3D') {
-        return <Mess3DView onBack={() => setView('HOME')} />;
-    }
+
 
     // ============== ORDER STATUS VIEW ==============
     if (view === 'ORDER_STATUS' && activeOrder) {
@@ -811,7 +808,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             {/* 3D Experience Banner */}
             <div className="px-4 mb-6">
                 <div
-                    onClick={() => setView('MESS_3D')}
+                    onClick={() => alert('3D Mess Experience coming soon!')}
                     className="w-full h-32 rounded-2xl bg-gradient-to-r from-indigo-900 to-slate-900 relative overflow-hidden cursor-pointer shadow-lg shadow-indigo-500/20 group"
                 >
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80')] opacity-40 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"></div>
