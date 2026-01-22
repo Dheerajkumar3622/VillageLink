@@ -8,8 +8,8 @@ import { User } from '../types';
 import { API_BASE_URL } from '../config';
 import { Button } from './Button';
 import {
-    Home, Film, ShoppingBag, MessageCircle, User as UserIcon,
-    QrCode, Bell, Search, Menu, X, Loader2, ArrowLeft
+    Activity, Shield, Menu, MessageSquare, User, Search, MapPin,
+    ArrowRight, Bell, Zap, TrendingUp, Globe
 } from 'lucide-react';
 
 // Import Views
@@ -60,6 +60,7 @@ type TabType = 'home' | 'reels' | 'profile' | 'admin' | 'services' | 'haat' | 'c
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     const [activeTab, setActiveTab] = useState<TabType>('home');
+    const [viewMode, setViewMode] = useState<'hub' | 'detail'>('hub');
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [notifications, setNotifications] = useState(0);
@@ -148,92 +149,118 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     return (
         <div className="user-app min-h-screen">
-            {/* Vision 2.0 Background */}
-            <div className="vision-bg">
+            {/* Vision 2.0        return (*/}
+            <div className={`vision-bg ${activeTab === 'home' ? 'mode-kisan' : ''}`}>
                 <div className="vision-aurora"></div>
-            </div>
 
-            {/* Holographic Header */}
-            <header className="vision-header">
-                <div className="header-inner">
-                    <div className="logo-shimmer">🌿</div>
-                    <div className="user-profile-vision">
-                        <span className="greet-small">SYNC ACTIVE</span>
-                        <h1 className="user-name-vision">{user.name.split(' ')[0]}</h1>
+                {/* 100x HOLO-TICKER HUD */}
+                <div className="vision-ticker">
+                    <div className="ticker-content">
+                        <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • HAAT: NEW SEED SHIPMENT ARRIVED • </span>
+                        <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • HAAT: NEW SEED SHIPMENT ARRIVED • </span>
                     </div>
                 </div>
-                <div className="header-actions flex gap-4">
-                    <button className="icon-btn" title="Search">
-                        <Search className="w-5 h-5 text-emerald-400" />
-                    </button>
-                    <button className="icon-btn relative" title="Notifications">
-                        <Bell className="w-5 h-5 text-emerald-400" />
-                        {notifications > 0 && (
-                            <span className="badge">{notifications}</span>
+
+                <div className="vision-container mobile-narrow">
+                    <header className="vision-header liquid-glass-card">
+                        <div className="logo-section">
+                            <div className="vision-logo pulse-glow">V</div>
+                            <div className="logo-text">
+                                <span className="logo-main">VILLAGELINK</span>
+                                <span className="logo-sub">CYBER-RURAL FRONTIER</span>
+                            </div>
+                        </div>
+
+                        <div className="header-actions">
+                            <div className="hud-metric">
+                                <TrendingUp size={12} className="text-emerald-400" />
+                                <span>₹{user?.balance || '0'}</span>
+                            </div>
+                            <button className="vision-icon-btn" aria-label="Notifications">
+                                <Bell size={18} />
+                                <span className="notification-dot"></span>
+                            </button>
+                            <div className="user-profile-vision group">
+                                <div className="user-avatar-ring">
+                                    <div className="avatar-content">{user?.name?.charAt(0) || 'U'}</div>
+                                    <svg className="ring-svg"><circle cx="20" cy="20" r="18" /></svg>
+                                </div>
+                                <span className="user-name-label">{user?.name || 'User'}</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="orbital-main">
+                        <div className="vision-mode-selector liquid-glass-card">
+                            <div className="hub-status items-center px-4 py-2 flex justify-between">
+                                <span className="text-[10px] font-black text-emerald-400 opacity-60 flex items-center gap-1">
+                                    <Zap size={10} /> SYSTEM NOMINAL
+                                </span>
+                                <span className="text-[10px] font-black text-emerald-400 opacity-60">
+                                    {lang === 'EN' ? 'FRONTIER MODE' : 'सीमावर्ती मोड'}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Main Content */}
+                        <main className="user-app-content">
+                            {renderContent()}
+                        </main>
+
+                        {/* Floating QR Scanner Button */}
+                        <button
+                            className="floating-qr-btn"
+                            onClick={() => setShowQRScanner(true)}
+                            title="Scan QR Code"
+                        >
+                            <QrCode className="w-6 h-6" />
+                        </button>
+
+                        {/* Bottom Navigation */}
+                        <nav className="user-app-nav">
+                            <NavItem
+                                icon={<Home />}
+                                label="Home"
+                                active={activeTab === 'home'}
+                                onClick={() => setActiveTab('home')}
+                            />
+                            <NavItem
+                                icon={<Film />}
+                                label="Reels"
+                                active={activeTab === 'reels'}
+                                onClick={() => setActiveTab('reels')}
+                            />
+                            <NavItem
+                                icon={<ShoppingBag />}
+                                label="Haat"
+                                active={activeTab === 'haat'}
+                                onClick={() => setActiveTab('haat')}
+                            />
+                            <NavItem
+                                icon={<MessageCircle />}
+                                label="Chat"
+                                active={activeTab === 'chat'}
+                                onClick={() => setActiveTab('chat')}
+                                badge={unreadMessages}
+                            />
+                            <NavItem
+                                icon={<UserIcon />}
+                                label="Profile"
+                                active={activeTab === 'profile'}
+                                onClick={() => setActiveTab('profile')}
+                            />
+                        </nav>
+
+                        {/* QR Scanner Modal */}
+                        {showQRScanner && (
+                            <UniversalQRScanner
+                                user={user}
+                                onClose={() => setShowQRScanner(false)}
+                                onResult={handleQRResult}
+                            />
                         )}
-                    </button>
-                </div>
-            </header>
 
-            {/* Main Content */}
-            <main className="user-app-content">
-                {renderContent()}
-            </main>
-
-            {/* Floating QR Scanner Button */}
-            <button
-                className="floating-qr-btn"
-                onClick={() => setShowQRScanner(true)}
-                title="Scan QR Code"
-            >
-                <QrCode className="w-6 h-6" />
-            </button>
-
-            {/* Bottom Navigation */}
-            <nav className="user-app-nav">
-                <NavItem
-                    icon={<Home />}
-                    label="Home"
-                    active={activeTab === 'home'}
-                    onClick={() => setActiveTab('home')}
-                />
-                <NavItem
-                    icon={<Film />}
-                    label="Reels"
-                    active={activeTab === 'reels'}
-                    onClick={() => setActiveTab('reels')}
-                />
-                <NavItem
-                    icon={<ShoppingBag />}
-                    label="Haat"
-                    active={activeTab === 'haat'}
-                    onClick={() => setActiveTab('haat')}
-                />
-                <NavItem
-                    icon={<MessageCircle />}
-                    label="Chat"
-                    active={activeTab === 'chat'}
-                    onClick={() => setActiveTab('chat')}
-                    badge={unreadMessages}
-                />
-                <NavItem
-                    icon={<UserIcon />}
-                    label="Profile"
-                    active={activeTab === 'profile'}
-                    onClick={() => setActiveTab('profile')}
-                />
-            </nav>
-
-            {/* QR Scanner Modal */}
-            {showQRScanner && (
-                <UniversalQRScanner
-                    user={user}
-                    onClose={() => setShowQRScanner(false)}
-                    onResult={handleQRResult}
-                />
-            )}
-
-            <style>{`
+                        <style>{`
         .user-app {
           display: flex;
           flex-direction: column;
@@ -342,21 +369,21 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
           z-index: 100;
         }
       `}</style>
-        </div>
-    );
+                    </div>
+                    );
 };
 
-// Quick Action Card Component
-const QuickActionCard: React.FC<{
+                    // Quick Action Card Component
+                    const QuickActionCard: React.FC<{
     icon: string;
-    label: string;
-    sublabel: string;
+                    label: string;
+                    sublabel: string;
     onClick: () => void;
-}> = ({ icon, label, sublabel, onClick }) => (
-    <button className="quick-action-card" onClick={onClick}>
-        <span className="quick-icon">{icon}</span>
-        <span className="quick-label">{label}</span>
-        <style>{`
+}> = ({icon, label, sublabel, onClick}) => (
+                    <button className="quick-action-card" onClick={onClick}>
+                        <span className="quick-icon">{icon}</span>
+                        <span className="quick-label">{label}</span>
+                        <style>{`
       .quick-action-card {
         display: flex;
         flex-direction: column;
@@ -382,24 +409,24 @@ const QuickActionCard: React.FC<{
         font-weight: 500;
       }
     `}</style>
-    </button>
-);
+                    </button>
+                    );
 
-// Navigation Item Component
-const NavItem: React.FC<{
+                    // Navigation Item Component
+                    const NavItem: React.FC<{
     icon: React.ReactNode;
-    label: string;
-    active: boolean;
+                    label: string;
+                    active: boolean;
     onClick: () => void;
-    badge?: number;
-}> = ({ icon, label, active, onClick, badge }) => (
-    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-        <div className="nav-icon-wrapper">
-            {icon}
-            {badge && badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
-        </div>
-        <span className="nav-label">{label}</span>
-        <style>{`
+                    badge?: number;
+}> = ({icon, label, active, onClick, badge}) => (
+                    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
+                        <div className="nav-icon-wrapper">
+                            {icon}
+                            {badge && badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
+                        </div>
+                        <span className="nav-label">{label}</span>
+                        <style>{`
       .nav-item {
         display: flex;
         flex-direction: column;
@@ -442,7 +469,7 @@ const NavItem: React.FC<{
         font-weight: 500;
       }
     `}</style>
-    </button>
-);
+                    </button>
+                    );
 
-export default UserApp;
+                    export default UserApp;

@@ -666,12 +666,19 @@ body,
    ======================================== */
 
 :root {
-  --neon-emerald: #10b981;
-  --neon-saffron: #f59e0b;
-  --cyber-indigo: #1e1b4b;
-  --ethereal-glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glow-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+  /* 100x CYBER-RURAL FRONTIER: COLOR SYSTEM */
+  --neon-emerald: #00ff88;
+  --electric-saffron: #ffaa00;
+  --cyber-indigo: #6366f1;
+  --obsidian-deep: #020617;
+  --obsidian-glass: rgba(2, 6, 23, 0.7);
+  --liquid-glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glow-emerald: 0 0 20px rgba(0, 255, 136, 0.3);
+  --glow-saffron: 0 0 20px rgba(255, 170, 0, 0.3);
+  --font-hud: 'Outfit', 'Inter Tight', sans-serif;
+  --font-brand: 'VillageDecorative', cursive;
+  /* Assuming custom font */
 }
 
 .perspective-3000 {
