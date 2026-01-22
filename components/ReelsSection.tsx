@@ -453,115 +453,89 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user }) => {
                 ))}
             </div>
 
-            <button
-                className={`action-btn ${currentReel?.isSaved ? 'saved' : ''}`}
-                aria-label="Save reel"
-                onClick={(e) => { e.stopPropagation(); handleSave(); }}
-            >
-                <Bookmark className={`w-7 h-7 ${currentReel?.isSaved ? 'fill-white' : ''}`} />
-            </button>
-
-            {currentReel?.productTags.length > 0 && (
+            {/* Controls */}
+            <div className="reel-controls">
                 <button
-                    className="action-btn"
-                    aria-label="View product tags"
-                    onClick={(e) => { e.stopPropagation(); setShowProductTags(!showProductTags); }}
+                    className="control-btn"
+                    aria-label={muted ? "Unmute" : "Mute"}
+                    onClick={() => setMuted(!muted)}
                 >
-                    <ShoppingBag className="w-7 h-7" />
+                    {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                 </button>
+
+                <button
+                    className="control-btn"
+                    aria-label={paused ? "Play" : "Pause"}
+                    onClick={() => setPaused(!paused)}
+                >
+                    {paused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+                </button>
+            </div>
+
+            {/* Navigation Arrows */}
+            <div className="nav-arrows">
+                <button
+                    className={`nav-arrow ${currentIndex === 0 ? 'disabled' : ''}`}
+                    aria-label="Previous reel"
+                    onClick={() => handleScroll('up')}
+                >
+                    <ChevronUp className="w-6 h-6" />
+                </button>
+                <button
+                    className={`nav-arrow ${currentIndex === reels.length - 1 ? 'disabled' : ''}`}
+                    aria-label="Next reel"
+                    onClick={() => handleScroll('down')}
+                >
+                    <ChevronDown className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Comments Sheet */}
+            {showComments && (
+                <div className="comments-sheet">
+                    <div className="comments-header">
+                        <h3>Comments ({currentReel?.commentCount || 0})</h3>
+                        <button aria-label="Close comments" onClick={() => setShowComments(false)}>
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <div className="comments-list">
+                        {comments.map(comment => (
+                            <div key={comment.id} className="comment-item">
+                                <div className="comment-avatar">{comment.userName.charAt(0)}</div>
+                                <div className="comment-content">
+                                    <span className="comment-user">{comment.userName}</span>
+                                    <p className="comment-text">{comment.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="comment-input">
+                        <input
+                            type="text"
+                            placeholder="Add a comment..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && postComment()}
+                        />
+                        <button aria-label="Post comment" onClick={postComment}>
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
             )}
 
-            <button className="action-btn" aria-label="More options">
-                <MoreVertical className="w-6 h-6" />
-            </button>
+            {/* Create Reel Button (for creators) */}
+            {isCreator && (
+                <button className="create-reel-btn" aria-label="Create new reel">
+                    <Plus className="w-6 h-6" />
+                </button>
+            )}
         </div>
     );
 };
-
-{/* Controls */ }
-< div className="reel-controls" >
-    <button
-        className="control-btn"
-        aria-label={muted ? "Unmute" : "Mute"}
-        onClick={() => setMuted(!muted)}
-    >
-        {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-    </button>
-
-    <button
-        className="control-btn"
-        aria-label={paused ? "Play" : "Pause"}
-        onClick={() => setPaused(!paused)}
-    >
-        {paused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-    </button>
-</div >
-
-{/* Navigation Arrows */ }
-< div className="nav-arrows" >
-    <button
-        className={`nav-arrow ${currentIndex === 0 ? 'disabled' : ''}`}
-        aria-label="Previous reel"
-        onClick={() => handleScroll('up')}
-    >
-        <ChevronUp className="w-6 h-6" />
-    </button>
-    <button
-        className={`nav-arrow ${currentIndex === reels.length - 1 ? 'disabled' : ''}`}
-        aria-label="Next reel"
-        onClick={() => handleScroll('down')}
-    >
-        <ChevronDown className="w-6 h-6" />
-    </button>
-</div >
-
-{/* Comments Sheet */ }
-{
-    showComments && (
-        <div className="comments-sheet">
-            <div className="comments-header">
-                <h3>Comments ({currentReel?.commentCount || 0})</h3>
-                <button aria-label="Close comments" onClick={() => setShowComments(false)}>
-                    <X className="w-6 h-6" />
-                </button>
-            </div>
-
-            <div className="comments-list">
-                {comments.map(comment => (
-                    <div key={comment.id} className="comment-item">
-                        <div className="comment-avatar">{comment.userName.charAt(0)}</div>
-                        <div className="comment-content">
-                            <span className="comment-user">{comment.userName}</span>
-                            <p className="comment-text">{comment.text}</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="comment-input">
-                <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && postComment()}
-                />
-                <button aria-label="Post comment" onClick={postComment}>
-                    <Send className="w-5 h-5" />
-                </button>
-            </div>
-        </div>
-    )
-}
-
-{/* Create Reel Button (for creators) */ }
-{
-    isCreator && (
-        <button className="create-reel-btn" aria-label="Create new reel">
-            <Plus className="w-6 h-6" />
-        </button>
-    )
-}
 
 <style>{`
         .reels-section {
@@ -915,7 +889,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user }) => {
           box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
         }
       `}</style>
-            </div >
+</div >
             );
 };
 
@@ -925,9 +899,5 @@ const formatCount = (count: number): string => {
     return count.toString();
 };
 
+
 export default ReelsSection;
-e x p o r t   d e f a u l t   R e e l s S e c t i o n ; 
- 
- e x p o r t   d e f a u l t   R e e l s S e c t i o n ; 
- 
- 

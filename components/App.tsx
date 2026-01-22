@@ -17,16 +17,15 @@ import { Moon, Sun, LogOut, Languages } from 'lucide-react';
 const PassengerView = lazy(() => import('./PassengerView').then(m => ({ default: m.PassengerView })));
 const DriverView = lazy(() => import('./DriverView').then(m => ({ default: m.DriverView })));
 const AdminView = lazy(() => import('./AdminView').then(m => ({ default: m.AdminView })));
-const ShopkeeperView = lazy(() => import('./ShopkeeperView').then(m => ({ default: m.ShopkeeperView })));
-const MessManagerView = lazy(() => import('./MessManagerView').then(m => ({ default: m.MessManagerView })));
-const VendorView = lazy(() => import('./VendorView').then(m => ({ default: m.VendorView })));
+const ShopkeeperView = lazy(() => import('./ShopkeeperView'));
+const MessManagerView = lazy(() => import('./MessManagerView'));
+const VendorView = lazy(() => import('./VendorView'));
 const VyaparSaathiView = lazy(() => import('./VyaparSaathiView').then(m => ({ default: m.VyaparSaathiView })));
 const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.LuxeOSView })));
 const VillageManagerView = lazy(() => import('./VillageManagerView').then(m => ({ default: m.VillageManagerView })));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
 
 // Provider Apps - Separate entry points
-const KisanApp = lazy(() => import('./KisanApp').then(m => ({ default: m.KisanApp })));
 const DriverApp = lazy(() => import('./DriverApp').then(m => ({ default: m.DriverApp })));
 const VyapariApp = lazy(() => import('./VyapariApp').then(m => ({ default: m.VyapariApp })));
 const MessApp = lazy(() => import('./MessApp').then(m => ({ default: m.MessApp })));
@@ -40,7 +39,7 @@ const UserApp = lazy(() => import('./UserApp'));
 const ProviderApp = lazy(() => import('./ProviderApp'));
 
 // Check if accessing a dedicated provider app URL
-type AppMode = 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USS_USER' | 'USS_PROVIDER' | 'USER';
+type AppMode = 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USS_USER' | 'USS_PROVIDER' | 'VILLAGE_MANAGER' | 'USER';
 const getAppMode = (): AppMode => {
   const path = window.location.pathname.toLowerCase();
   // USS v3.0 unified app routes
@@ -54,6 +53,7 @@ const getAppMode = (): AppMode => {
   if (path.startsWith('/storage')) return 'STORAGE';
   if (path.startsWith('/logistics')) return 'LOGISTICS';
   if (path.startsWith('/cargo')) return 'CARGO';
+  if (path.startsWith('/villagemanager')) return 'VILLAGE_MANAGER';
   return 'USER'; // Default to role-based view
 };
 
@@ -208,6 +208,13 @@ const App: React.FC = () => {
     return (
       <Suspense fallback={<ViewSkeleton />}>
         <LogisticsApp />
+      </Suspense>
+    );
+  }
+  if (appMode === 'VILLAGE_MANAGER') {
+    return (
+      <Suspense fallback={<ViewSkeleton />}>
+        <VillageManagerView user={user || { id: 'guest', name: 'Guest', role: 'VILLAGE_MANAGER' } as any} />
       </Suspense>
     );
   }

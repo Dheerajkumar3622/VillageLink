@@ -17,7 +17,7 @@ if (!process.env.JWT_SECRET) {
 // Validation Schemas
 const registerSchema = z.object({
   name: z.string().min(2),
-  role: z.enum(['PASSENGER', 'DRIVER', 'SHOPKEEPER', 'MESS_MANAGER']),
+  role: z.enum(['PASSENGER', 'DRIVER', 'SHOPKEEPER', 'MESS_MANAGER', 'VILLAGE_MANAGER']),
   password: z.string().min(6),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().min(10).optional().or(z.literal('')),

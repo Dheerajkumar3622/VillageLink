@@ -64,7 +64,7 @@ const ShopkeeperView: React.FC<ShopkeeperViewProps> = ({ user }) => {
                     <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center font-bold text-lg"><Store size={20} /></div>
                     <div><h2 className="text-base font-bold leading-none">My Dukan</h2><p className="text-xs text-slate-400 mt-1">{user.name}</p></div>
                 </div>
-                <button onClick={handleLogout} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors"><LogOut size={18} /></button>
+                <button onClick={handleLogout} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors" title="Logout" aria-label="Logout"><LogOut size={18} /></button>
             </div>
 
             <div className="p-4 space-y-6">
