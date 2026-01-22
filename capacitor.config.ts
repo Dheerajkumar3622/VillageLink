@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // LOCAL DEV MODE - switch back to Render URL for production:
-    // url: 'https://villagelink-jh20.onrender.com',
-    url: 'http://10.0.2.2:3000', // 10.0.2.2 is localhost from Android emulator
+    url: 'https://villagelink-jh20.onrender.com',
+    //url: 'http://10.0.2.2:3000', // 10.0.2.2 is localhost from Android emulator
     cleartext: true,
     androidScheme: 'http'
   }

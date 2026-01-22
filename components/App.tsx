@@ -230,11 +230,13 @@ const App: React.FC = () => {
   }
 
   // USS v3.0 - Unified Consumer App
-  if (appMode === 'USS_USER') {
+  if (appMode === 'USS_USER' || (user && user.role === 'PASSENGER')) {
     return (
-      <Suspense fallback={<ViewSkeleton />}>
-        <UserApp user={user} onLogout={handleLogout} />
-      </Suspense>
+      <div className="min-h-screen bg-obsidian-deep">
+        <Suspense fallback={<ViewSkeleton />}>
+          <UserApp user={user} onLogout={handleLogout} lang={lang} />
+        </Suspense>
+      </div>
     );
   }
 
