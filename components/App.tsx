@@ -147,7 +147,7 @@ const App: React.FC = () => {
       case 'ADMIN':
         return <AdminView user={user} />;
       case 'PASSENGER':
-        return <PassengerView user={user} lang={lang} />;
+        return <UserApp user={user} onLogout={handleLogout} lang={lang} />;
       case 'DRIVER':
         return <DriverView user={user} lang={lang} />;
       case 'SHOPKEEPER':
@@ -163,7 +163,7 @@ const App: React.FC = () => {
       case 'VILLAGE_MANAGER':
         return <VillageManagerView user={user} />;
       default:
-        return <PassengerView user={user} lang={lang} />;
+        return <UserApp user={user} onLogout={handleLogout} lang={lang} />;
     }
   };
 

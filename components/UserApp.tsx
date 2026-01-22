@@ -53,11 +53,12 @@ const OrbitalNode: React.FC<OrbitalNodeProps> = ({ icon, label, angle, onClick }
 interface UserAppProps {
     user: any;
     onLogout: () => void;
+    lang?: 'EN' | 'HI';
 }
 
 type TabType = 'home' | 'reels' | 'profile' | 'admin' | 'services' | 'haat' | 'chat';
 
-const UserApp: React.FC<UserAppProps> = ({ user, onLogout }) => {
+const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     const [activeTab, setActiveTab] = useState<TabType>('home');
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
@@ -120,7 +121,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout }) => {
                         </div>
 
                         {/* Main Content - PassengerView */}
-                        <PassengerView user={user!} lang="EN" />
+                        <PassengerView user={user!} lang={lang} />
                     </div>
                 );
             case 'reels':
