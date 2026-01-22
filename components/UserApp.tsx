@@ -149,7 +149,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     return (
         <div className="user-app min-h-screen">
-            <div className={`vision-bg ${activeTab === 'home' ? 'mode-kisan' : ''}`}>
+            <div className={`vision-bg mode-${activeTab}`}>
                 <div className="vision-aurora"></div>
 
                 {/* 100x HOLO-TICKER HUD */}
@@ -216,7 +216,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
                         </button>
 
                         {/* Bottom Navigation */}
-                        <nav className="user-app-nav">
+                        <nav className="user-app-nav liquid-glass-card">
                             <NavItem
                                 icon={<Home />}
                                 label="Home"
@@ -387,25 +387,33 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 12px 4px;
-        background: #f9fafb;
-        border: none;
-        border-radius: 12px;
+        padding: 16px 8px;
+        background: var(--obsidian-glass);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
       .quick-action-card:hover {
-        background: #f3f4f6;
-        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-5px) scale(1.05);
+        border-color: var(--neon-emerald);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-emerald);
       }
       .quick-icon {
-        font-size: 1.5rem;
-        margin-bottom: 4px;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.4));
       }
       .quick-label {
-        font-size: 0.75rem;
-        color: #374151;
-        font-weight: 500;
+        font-size: 10px;
+        color: white;
+        font-weight: 900;
+        font-family: var(--font-hud);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.8;
       }
     `}</style>
                     </button>
@@ -431,18 +439,23 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
         flex-direction: column;
         align-items: center;
         gap: 2px;
-        padding: 6px 12px;
+        padding: 8px 16px;
         background: none;
         border: none;
         cursor: pointer;
-        color: #9ca3af;
-        transition: color 0.2s;
+        color: rgba(255,255,255,0.4);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-family: var(--font-hud);
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
       .nav-item.active {
-        color: #22c55e;
+        color: var(--neon-emerald);
+        text-shadow: 0 0 10px var(--glow-emerald);
       }
       .nav-item:hover {
-        color: #16a34a;
+        color: white;
+        transform: translateY(-2px);
       }
       .nav-icon-wrapper {
         position: relative;
