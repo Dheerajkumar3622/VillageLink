@@ -22,7 +22,8 @@ const MessManagerView = lazy(() => import('./MessManagerView'));
 const VendorView = lazy(() => import('./VendorView'));
 const VyaparSaathiView = lazy(() => import('./VyaparSaathiView').then(m => ({ default: m.VyaparSaathiView })));
 const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.LuxeOSView })));
-const VillageManagerView = lazy(() => import('./VillageManagerView').then(m => ({ default: m.VillageManagerView })));
+const VillageManagerView = lazy(() => import('./VillageManagerView'));
+const KisanApp = lazy(() => import('./KisanApp'));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
 
 // Provider Apps - Separate entry points
