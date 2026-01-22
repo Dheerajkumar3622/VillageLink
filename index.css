@@ -44,7 +44,6 @@
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
   -webkit-backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -705,6 +704,7 @@ body,
       transparent 100%);
   filter: blur(120px);
   -webkit-backdrop-filter: blur(120px);
+  backdrop-filter: blur(120px);
   opacity: 0.15;
   animation: visionRotate 30s linear infinite;
 }
@@ -744,6 +744,7 @@ body,
   height: 80px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(15px);
   backdrop-filter: blur(15px);
   border-radius: 24px;
   display: flex;
@@ -785,6 +786,7 @@ body,
   justify-content: space-between;
   align-items: center;
   background: rgba(2, 6, 23, 0.5);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;

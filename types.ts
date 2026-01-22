@@ -266,6 +266,46 @@ export interface SecurityContext {
 }
 
 export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN' | 'SHOPKEEPER' | 'MESS_MANAGER' | 'FOOD_VENDOR' | 'RESTAURANT_MANAGER' | 'FARMER' | 'VENDOR' | 'STORAGE_OPERATOR' | 'LOGISTICS_PARTNER' | 'VILLAGE_MANAGER' | null;
+
+export interface VillageManagerProfile {
+  id: string;
+  userId: string;
+  village: string;
+  panchayat: string;
+  block: string;
+  status: 'PENDING' | 'VERIFIED' | 'SUSPENDED';
+  aadhaarNumber?: string;
+  stats: {
+    totalTransactions: number;
+    totalBeneficiaries: number;
+    earningsToDate: number;
+  };
+}
+
+export interface Beneficiary {
+  id: string;
+  managerId: string;
+  name: string;
+  phone?: string;
+  village: string;
+  hasSmartphone: boolean;
+  aadhaarNumber?: string;
+  relationship?: string;
+}
+
+export interface ProxyTransaction {
+  id: string;
+  managerId: string;
+  beneficiaryId: string;
+  beneficiaryName: string;
+  transactionType: 'TICKET' | 'PRODUCT_SALE' | 'PARCEL' | 'MESS_BOOKING';
+  amount: number;
+  commission: number;
+  relatedEntityId: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
+  paymentMethod: 'CASH' | 'UPI' | 'WALLET';
+  timestamp: number;
+}
 export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 
