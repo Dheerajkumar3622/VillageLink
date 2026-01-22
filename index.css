@@ -681,6 +681,88 @@ body,
   /* Assuming custom font */
 }
 
+/* 100x LIQUID GLASS ENGINE */
+.liquid-glass-card {
+  background: var(--obsidian-glass);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-glass-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent);
+  transform: skewX(-25deg);
+  transition: 0.5s;
+}
+
+.liquid-glass-card:hover::before {
+  left: 150%;
+}
+
+/* HUD TICKER */
+.vision-ticker {
+  background: linear-gradient(to right, transparent, var(--obsidian-deep), transparent);
+  border-top: 1px solid var(--neon-emerald);
+  border-bottom: 1px solid var(--neon-emerald);
+  height: 28px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-family: var(--font-hud);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--neon-emerald);
+  z-index: 100;
+  position: relative;
+}
+
+.ticker-content {
+  display: flex;
+  white-space: nowrap;
+  animation: tickerMove 30s linear infinite;
+}
+
+@keyframes tickerMove {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* PATH-AURORAS */
+.vision-bg.mode-ride {
+  --neon-emerald: #0088ff;
+}
+
+.vision-bg.mode-haat {
+  --neon-emerald: #ffaa00;
+}
+
+.vision-bg.mode-mess {
+  --neon-emerald: #ff4400;
+}
+
+.vision-bg.mode-kisan {
+  --neon-emerald: #00ff88;
+}
+
 .perspective-3000 {
   perspective: 3000px;
 }

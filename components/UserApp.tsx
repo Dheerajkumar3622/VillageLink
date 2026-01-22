@@ -149,7 +149,6 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     return (
         <div className="user-app min-h-screen">
-            {/* Vision 2.0        return (*/}
             <div className={`vision-bg ${activeTab === 'home' ? 'mode-kisan' : ''}`}>
                 <div className="vision-aurora"></div>
 
