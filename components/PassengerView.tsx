@@ -14,7 +14,6 @@ import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
 import { PaymentGatewayModal } from './PaymentGatewayModal';
 import { ARFinder } from './ARFinder';
-import { BottomNav } from './BottomNav';
 import { UserProfile } from './UserProfile';
 import { MarketingView } from './MarketingView';
 import { FoodLinkHome } from './FoodLinkHome';
@@ -636,70 +635,17 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
             <div className="max-w-md mx-auto pb-32 relative min-h-screen font-sans">
                 {showAR && <ARFinder onClose={() => setShowAR(false)} targetName={calculatedPath[1] || 'Bus Stop'} />}
 
-                {/* WRAPPER FOR SCROLLABLE CONTENT WITH ANIMATION */}
+                {/* WRAPPER FOR SCROLLABLE CONTENT WITH V5 ANIMATION */}
                 <div className="animate-fade-in relative">
                     {/* Floating Vehicle Background Decorator */}
-                    <div className="absolute -top-10 -right-20 opacity-40 blur-sm pointer-events-none z-0">
+                    <div className="absolute -top-10 -right-20 opacity-20 blur-sm pointer-events-none z-0">
                         <FloatingVehicle size="300px" />
                     </div>
 
-                    {/* ... Header Area ... */}
+                    {/* V5 HOME TAB CONTENT - Duplicate elements removed (handled by parent UserApp) */}
                     {activeTab === 'HOME' && (
                         <div className="mb-6 px-4">
-                            {/* Whisk 3.0: High-fidelity Top Bar */}
-                            <div className="flex justify-between items-center mb-8 glass-3 p-5 rounded-[40px] shadow-whisk-float border-white/5 animate-fade-in-up">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-brand-500 p-0.5 shadow-glow-sm">
-                                        <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center overflow-hidden">
-                                            <UserIcon size={22} className="text-slate-500" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none mb-1">{t('welcome')}</p>
-                                        <h2 className="text-xl font-black text-white tracking-tight leading-none">{user.name.split(' ')[0]}</h2>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Balance</p>
-                                        <div className="flex items-center gap-1.5 justify-end">
-                                            <Gem size={16} className="text-emerald-400" />
-                                            <span className="text-lg font-black text-white tracking-tight">₹{wallet?.balance || 0}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Gemini Flow: Mode Selection Cards */}
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                {[
-                                    { id: 'TRANSPORT', title: 'Smart Ride', sub: 'Book Bus or Rickshaw', icon: Bus, color: 'from-indigo-500 to-indigo-700' },
-                                    { id: 'MARKET', title: 'Village Haat', sub: 'Buy Agro & Hardware', icon: Store, color: 'from-orange-500 to-rose-500' },
-                                    { id: 'FOOD', title: 'Smart Mess', sub: 'Wholesome Rural Meals', icon: Utensils, color: 'from-emerald-500 to-teal-500' },
-                                    { id: 'LOGISTICS', title: 'Quick Parcel', sub: 'Send Items Anywhere', icon: Package, color: 'from-blue-500 to-indigo-500' }
-                                ].map((mode) => (
-                                    <button
-                                        key={mode.id}
-                                        onClick={() => {
-                                            if (mode.id === 'LOGISTICS') handleTabChange('LOGISTICS');
-                                            else {
-                                                setAppMode(mode.id as any);
-                                                speak(`${mode.title} Active`);
-                                            }
-                                        }}
-                                        className="gemini-morph-card p-6 flex flex-col gap-4 text-left group"
-                                    >
-                                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mode.color} flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
-                                            <mode.icon size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-black text-white tracking-tight group-hover:text-brand-400 transition-colors uppercase tracking-[0.05em]">{mode.title}</h3>
-                                            <p className="text-[10px] font-bold text-slate-500 leading-tight mt-1">{mode.sub}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
+                            {/* Mode-specific content will be shown below based on appMode */}
                         </div>
                     )}
 
@@ -1179,7 +1125,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 </div>
             </div>
 
-            <BottomNav activeTab={activeTab as any} onTabChange={(t) => handleTabChange(t)} />
+            {/* Bottom Navigation removed - handled by parent UserApp via V5BottomNav */}
 
             <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)} onConfirm={handleReviewConfirm} title="Confirm Booking" confirmLabel={paymentMethod ? `Pay ${formatCurrency(isBuyingPass ? passPrice : (fareDetails?.totalFare || 0) * passengerCount)}` : "Select Payment"}>
                 <div className="space-y-4">

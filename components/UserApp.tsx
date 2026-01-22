@@ -1,20 +1,21 @@
 /**
  * UserApp - Consumer App Entry Point
- * USS v3.0 - The Cyber-Rural Frontier
+ * VillageLink Ultimate V5 - Premium Rural Tech Experience
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User as UserType } from '../types';
 import { API_BASE_URL } from '../config';
-import {
-    Home, Film, ShoppingBag, MessageCircle, User as UserIcon,
-    QrCode, Bell, Search, Menu, X, Loader2, ArrowLeft,
-    TrendingUp, Zap, MapPin, ArrowRight, Shield, Activity
-} from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
+
+// Import V5 Shared Components
+import { BentoCard } from './BentoCard';
+import { ProfilePill } from './ProfilePill';
+import { StatRing } from './StatRing';
+import V5BottomNav, { TabType } from './V5BottomNav';
 
 // Import Views
 import PassengerView from './PassengerView';
-import FoodLinkHome from './FoodLinkHome';
 import GramMandiHome from './GramMandiHome';
 import ReelsSection from './ReelsSection';
 import ChatSection from './ChatSection';
@@ -26,51 +27,6 @@ interface UserAppProps {
     onLogout: () => void;
     lang?: 'EN' | 'HI';
 }
-
-type TabType = 'home' | 'reels' | 'haat' | 'chat' | 'profile';
-
-// ========================================
-// SUB-COMPONENTS
-// ========================================
-
-const OrbitalNode: React.FC<{
-    icon: string;
-    label: string;
-    angle: number;
-    onClick: () => void;
-}> = ({ icon, label, angle, onClick }) => {
-    const nodeRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (nodeRef.current) {
-            nodeRef.current.style.setProperty('--node-angle', `${angle}deg`);
-            nodeRef.current.style.setProperty('--node-angle-neg', `-${angle}deg`);
-        }
-    }, [angle]);
-
-    return (
-        <div ref={nodeRef} className="orbital-node orbital-node-dynamic" onClick={onClick}>
-            <span className="node-icon-3d">{icon}</span>
-            <span className="node-label">{label}</span>
-        </div>
-    );
-};
-
-const NavItem: React.FC<{
-    icon: React.ReactNode;
-    label: string;
-    active: boolean;
-    onClick: () => void;
-    badge?: number;
-}> = ({ icon, label, active, onClick, badge }) => (
-    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-        <div className="nav-icon-wrapper">
-            {icon}
-            {badge && badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
-        </div>
-        <span className="nav-label">{label}</span>
-    </button>
-);
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -94,34 +50,84 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
         }
     };
 
+    const renderHomeContent = () => (
+        <div className="v5-home-content animate-fade-in">
+            {/* Hero Section */}
+            <section className="px-5 pt-4 pb-6">
+                <p className="text-sm text-[var(--text-secondary)] mb-1">
+                    Good Morning, {user?.name || 'User'} 👋
+                </p>
+                <h1 className="text-2xl font-extrabold tracking-tight mb-6">
+                    Your <span className="v5-gradient-text">Rural Command</span><br />Center Awaits
+                </h1>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                    {[
+                        { value: '12', label: 'Buses', color: 'var(--accent-primary)' },
+                        { value: '847', label: 'Parcels', color: 'var(--accent-secondary)' },
+                        { value: '156', label: 'Meals', color: 'var(--accent-tertiary)' },
+                        { value: '₹2.4L', label: 'Mandi', color: 'var(--accent-warm)' }
+                    ].map((stat, i) => (
+                        <div key={i} className="v5-stat-ring">
+                            <span className="text-lg font-extrabold font-mono">{stat.value}</span>
+                            <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wide">{stat.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* Quick Actions Bento Grid */}
+            <div className="v5-section-header">
+                <h2 className="v5-section-title">
+                    <span className="w-7 h-7 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-sm">⚡</span>
+                    Quick Actions
+                </h2>
+                <span className="v5-section-action">View All →</span>
+            </div>
+
+            <div className="v5-bento-grid mb-6">
+                <BentoCard
+                    icon="🚌"
+                    title="Book Ride"
+                    description="12 buses available now"
+                    colorClass="v5-icon-emerald"
+                    badge="Live"
+                    onClick={() => { }}
+                />
+                <BentoCard
+                    icon="🌾"
+                    title="Gram Mandi"
+                    description="Fresh harvest deals"
+                    colorClass="v5-icon-warm"
+                    onClick={() => setActiveTab('haat' as TabType)}
+                />
+                <BentoCard
+                    icon="🍽️"
+                    title="Mess Menu"
+                    description="Today's special ₹60"
+                    colorClass="v5-icon-hot"
+                    onClick={() => { }}
+                />
+                <BentoCard
+                    icon="📦"
+                    title="Cargo"
+                    description="Track 3 parcels"
+                    colorClass="v5-icon-cyan"
+                    onClick={() => { }}
+                />
+            </div>
+
+            {/* Passenger View Content */}
+            <PassengerView user={user!} lang={lang} />
+        </div>
+    );
+
     const renderContent = () => {
         switch (activeTab) {
-            case 'home':
-                return (
-                    <div className="user-app-home animate-fade-in">
-                        <div className="orbital-hub">
-                            <div className="orbit-belt">
-                                {[
-                                    { icon: '🚌', label: 'Ride', angle: 0 },
-                                    { icon: '🍽️', label: 'Mess', angle: 90 },
-                                    { icon: '🛒', label: 'Haat', angle: 180 },
-                                    { icon: '📦', label: 'Cargo', angle: 270 }
-                                ].map((node, i) => (
-                                    <OrbitalNode
-                                        key={i}
-                                        icon={node.icon}
-                                        label={node.label}
-                                        angle={node.angle}
-                                        onClick={() => node.label === 'Haat' ? setActiveTab('haat') : null}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                        <PassengerView user={user!} lang={lang} />
-                    </div>
-                );
+            case 'home': return renderHomeContent();
             case 'reels': return <ReelsSection user={user!} />;
-            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
+            case 'haat' as TabType: return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
             case 'chat': return <ChatSection user={user!} />;
             case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('home')} />;
             default: return null;
@@ -130,100 +136,73 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     if (!user) {
         return (
-            <div className="user-app-loading">
-                <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-                <p className="font-hud uppercase tracking-widest text-xs opacity-50">Syncing Frontier...</p>
+            <div className="v5-loading-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
+                <p className="text-xs uppercase tracking-widest text-[var(--text-muted)]">Loading VillageLink...</p>
             </div>
         );
     }
 
     return (
-        <div className="user-app-frontier min-h-screen overflow-x-hidden">
-            {/* 100x DYNAMIC BACKGROUND ENGINE */}
-            <div className={`vision-bg mode-${activeTab}`}>
-                <div className="vision-aurora"></div>
-            </div>
+        <div className="v5-app-shell">
+            {/* Mesh Background */}
+            <div className="v5-mesh-bg fixed inset-0 z-0"></div>
 
-            {/* HOLO-TICKER HUD */}
-            <div className="vision-ticker">
-                <div className="ticker-content">
-                    <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • </span>
-                    <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • </span>
+            {/* V5 Header */}
+            <header className="v5-header">
+                <div className="flex items-center gap-3">
+                    <div className="v5-brand-mark">V</div>
+                    <div className="flex flex-col">
+                        <span className="text-base font-extrabold tracking-tight">Village<span className="v5-gradient-text">Link</span></span>
+                    </div>
                 </div>
-            </div>
-
-            <div className="vision-container max-w-md mx-auto relative z-10">
-                {/* UNIFIED GLASS HUD HEADER */}
-                <header className="vision-header liquid-glass-card mx-4 mt-4 rounded-2xl flex justify-between items-center p-4">
-                    <div className="logo-section flex items-center gap-3">
-                        <div className="vision-logo pulse-glow w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center font-black text-xl">V</div>
-                        <div className="logo-text flex flex-col">
-                            <span className="text-sm font-black tracking-tighter leading-tight">VILLAGELINK</span>
-                            <span className="text-[8px] font-bold text-emerald-400 opacity-60 tracking-[0.2em]">FRONTIER v3.0</span>
-                        </div>
-                    </div>
-
-                    <div className="header-actions flex items-center gap-4">
-                        <div className="hud-metric flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full border border-white/10">
-                            <TrendingUp size={10} className="text-emerald-400" />
-                            <span className="text-[10px] font-black uppercase tracking-tight">₹{user?.balance || '244'}</span>
-                        </div>
-                        <button className="relative text-white/60 hover:text-emerald-400 transition-colors" aria-label="Notifications">
-                            <Bell size={18} />
-                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
-                        </button>
-                        <div className="user-profile-frontier flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full border-2 border-emerald-500/30 p-0.5">
-                                <div className="w-full h-full bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-bold">
-                                    {user?.name?.charAt(0) || 'D'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <div className="hud-sub-status mx-5 mt-2 flex justify-between items-center px-1">
-                    <div className="flex items-center gap-1.5">
-                        <Zap size={10} className="text-emerald-400 animate-pulse" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/50">System Nominal</span>
-                    </div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{lang === 'EN' ? 'Frontier Mode' : 'सीमावर्ती मोड'}</span>
+                <div className="flex items-center gap-3">
+                    <ProfilePill
+                        name={user?.name || 'User'}
+                        balance={user?.balance || 2440}
+                    />
+                    <button className="relative w-10 h-10 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl flex items-center justify-center hover:border-[var(--border-glow)] transition-colors" aria-label="Notifications">
+                        <Bell size={18} className="opacity-70" />
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center border-2 border-[var(--bg-deep)]">3</span>
+                    </button>
                 </div>
+            </header>
 
-                {/* MAIN CINEMATIC CONTENT */}
-                <main className="user-app-content py-6 px-4">
-                    {renderContent()}
-                </main>
+            {/* Scrollable Content */}
+            <main className="v5-scroll-view v5-main-content pb-24">
+                {renderContent()}
+            </main>
 
-                {/* LIQUID GLASS NAV */}
-                <nav className="user-app-nav-frontier liquid-glass-card fixed bottom-4 left-4 right-4 h-16 rounded-2xl flex justify-around items-center px-2 z-50">
-                    <NavItem icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-                    <NavItem icon={<Film size={20} />} label="Reels" active={activeTab === 'reels'} onClick={() => setActiveTab('reels')} />
-                    <NavItem icon={<ShoppingBag size={20} />} label="Haat" active={activeTab === 'haat'} onClick={() => setActiveTab('haat')} />
-                    <NavItem icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} badge={unreadMessages} />
-                    <NavItem icon={<UserIcon size={20} />} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-                </nav>
+            {/* V5 Bottom Navigation */}
+            <V5BottomNav
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                onCenterAction={() => setShowQRScanner(true)}
+                notificationBadge={unreadMessages}
+            />
 
-                {/* FLOATING ACTION SCANNER */}
-                <button className="frontier-scan-btn fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-emerald-400 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-2xl z-40 hover:scale-110 active:scale-95 transition-transform" onClick={() => setShowQRScanner(true)}>
-                    <QrCode size={24} />
-                </button>
-            </div>
-
-            {/* MODALS */}
+            {/* QR Scanner Modal */}
             {showQRScanner && (
-                <UniversalQRScanner user={user} onClose={() => setShowQRScanner(false)} onResult={(r) => setShowQRScanner(false)} />
+                <UniversalQRScanner user={user} onClose={() => setShowQRScanner(false)} onResult={() => setShowQRScanner(false)} />
             )}
 
             <style>{`
-                .user-app-frontier { font-family: var(--font-hud); color: white; -webkit-font-smoothing: antialiased; }
-                .vision-container { min-height: 100vh; display: flex; flex-direction: column; }
-                .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                
-                .user-app-loading {
-                    height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-                    background: var(--obsidian-deep); gap: 1rem; color: white;
+                .v5-loading-screen {
+                    height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    background: var(--bg-deep);
+                    gap: 1rem;
+                    color: var(--text-primary);
+                }
+                .animate-fade-in {
+                    animation: v5FadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                @keyframes v5FadeIn {
+                    from { opacity: 0; transform: translateY(15px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
         </div>

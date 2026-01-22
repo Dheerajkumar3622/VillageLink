@@ -9,7 +9,7 @@ import { API_BASE_URL } from '../config';
 import {
     Heart, MessageCircle, Share2, Bookmark, MoreVertical,
     Volume2, VolumeX, Play, Pause, Music2, MapPin, ShoppingBag,
-    ChevronUp, ChevronDown, Loader2, Plus, X, Send
+    ChevronUp, ChevronDown, Loader2, Plus, X, Send, Info
 } from 'lucide-react';
 
 interface ReelsSectionProps {
@@ -442,13 +442,6 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
                                 <Share2 className="w-7 h-7" />
                                 <span>{formatCount(reel.shareCount)}</span>
                             </button>
-
-                            <button
-                                className="action-btn"
-                                onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                            >
-                                {muted ? <Info className="w-7 h-7" /> : <Music2 className="w-7 h-7" />}
-                            </button>
                         </div>
                     </ReelItem>
                 ))}
@@ -538,7 +531,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         .reels-section {
           position: relative;
           height: calc(100vh - 140px);
-          background: black;
+          background: var(--bg-void);
           overflow: hidden;
         }
 
@@ -548,7 +541,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
           align-items: center;
           justify-content: center;
           height: 100%;
-          color: #9ca3af;
+          color: var(--text-muted);
           gap: 12px;
         }
 
@@ -591,8 +584,10 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
           align-items: center;
           gap: 6px;
           padding: 8px 12px;
-          background: rgba(0,0,0,0.8);
-          border: none;
+          background: var(--bg-glass);
+          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+          border: 1px solid var(--border-subtle);
           border-radius: 20px;
           color: white;
           font-size: 0.875rem;
@@ -600,7 +595,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         }
 
         .product-tag .price {
-          color: #22c55e;
+          color: var(--accent-primary);
           font-weight: 600;
         }
 
@@ -624,7 +619,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #f59e0b, #ef4444);
+          background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-hot));
           display: flex;
           align-items: center;
           justify-content: center;

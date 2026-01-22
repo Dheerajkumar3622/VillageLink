@@ -428,93 +428,105 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
         );
     }
 
-    // ==================== HOME VIEW ====================
+    // ==================== HOME VIEW (V5 DESIGN) ====================
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-            {/* Header - Veo Cinematic Background */}
-            <div className="relative overflow-hidden p-4 pt-6 pb-8 rounded-b-3xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 animate-[bgDrift_25s_ease-in-out_infinite_alternate] scale-110"></div>
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
+        <div className="min-h-screen bg-[var(--bg-deep)] pb-20">
+            {/* V5 Mesh Background */}
+            <div className="v5-mesh-bg fixed inset-0 z-0"></div>
 
-                <div className="relative z-10">
-                    {onBack && (
-                        <button onClick={onBack} className="flex items-center gap-2 mb-4 text-white hover:text-green-100 transition-colors">
-                            <ArrowLeft size={20} /> Back
-                        </button>
-                    )}
-                    <h1 className="text-2xl font-bold text-white drop-shadow-md">🌾 GramMandi</h1>
-                    <p className="text-green-50 font-medium opacity-90">Farm to Kitchen Marketplace</p>
-                </div>
+            {/* Header - V5 Premium */}
+            <div className="relative z-10 p-4 pt-6 pb-8">
+                {onBack && (
+                    <button onClick={onBack} className="flex items-center gap-2 mb-4 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
+                        <ArrowLeft size={20} /> Back
+                    </button>
+                )}
+                <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">🌾 <span className="v5-gradient-text">GramMandi</span></h1>
+                <p className="text-[var(--text-muted)] font-medium">Farm to Kitchen Marketplace</p>
             </div>
 
-            {/* Quick Stats */}
-            <div className="flex gap-3 px-4 -mt-4 overflow-x-auto pb-2">
-                <div className="min-w-[140px] bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Wheat className="text-amber-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">{listings.length}</p>
-                    <p className="text-xs text-slate-500">Products Listed</p>
-                </div>
-                <div className="min-w-[140px] bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <Users className="text-blue-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">50+</p>
-                    <p className="text-xs text-slate-500">Active Farmers</p>
-                </div>
-                <div className="min-w-[140px] bg-white dark:bg-slate-900 rounded-xl p-4 shadow-lg">
-                    <TrendingUp className="text-green-500 mb-2" size={24} />
-                    <p className="text-2xl font-bold dark:text-white">70%+</p>
-                    <p className="text-xs text-slate-500">Farmer Earnings</p>
-                </div>
+            {/* V5 Quick Stats */}
+            <div className="flex gap-3 px-4 -mt-2 overflow-x-auto pb-4 relative z-10">
+                {[
+                    { icon: <Wheat className="text-[var(--accent-warm)]" size={24} />, value: listings.length.toString(), label: 'Products' },
+                    { icon: <Users className="text-[var(--accent-secondary)]" size={24} />, value: '50+', label: 'Farmers' },
+                    { icon: <TrendingUp className="text-[var(--accent-primary)]" size={24} />, value: '70%+', label: 'Earnings' }
+                ].map((stat, i) => (
+                    <div key={i} className="min-w-[120px] v5-card p-4 rounded-2xl">
+                        {stat.icon}
+                        <p className="text-xl font-extrabold text-[var(--text-primary)] mt-2">{stat.value}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{stat.label}</p>
+                    </div>
+                ))}
             </div>
 
-            {/* Role Selection */}
-            <div className="p-4">
-                <h2 className="font-bold dark:text-white mb-3">I am a...</h2>
+            {/* V5 Role Selection Bento Grid */}
+            <div className="p-4 relative z-10">
+                <h2 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-xs">👤</span>
+                    I am a...
+                </h2>
                 <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setView('FARMER_DASHBOARD')} className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-xl p-4 text-left">
-                        <Wheat className="mb-2" size={28} />
-                        <h3 className="font-bold">Farmer</h3>
-                        <p className="text-xs text-green-100">Sell crops, dairy, produce</p>
+                    <button onClick={() => setView('FARMER_DASHBOARD')} className="v5-bento-card p-4 text-left group">
+                        <div className="w-10 h-10 v5-icon-emerald rounded-xl flex items-center justify-center text-white mb-3">
+                            <Wheat size={22} />
+                        </div>
+                        <h3 className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">Farmer</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Sell crops, dairy, produce</p>
                     </button>
-                    <button onClick={() => setView('CONSUMER_SHOP')} className="bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-xl p-4 text-left">
-                        <ShoppingCart className="mb-2" size={28} />
-                        <h3 className="font-bold">Consumer</h3>
-                        <p className="text-xs text-orange-100">Buy fresh from farms</p>
+                    <button onClick={() => setView('CONSUMER_SHOP')} className="v5-bento-card p-4 text-left group">
+                        <div className="w-10 h-10 v5-icon-warm rounded-xl flex items-center justify-center text-white mb-3">
+                            <ShoppingCart size={22} />
+                        </div>
+                        <h3 className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-warm)] transition-colors">Consumer</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Buy fresh from farms</p>
                     </button>
-                    <button className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl p-4 text-left">
-                        <Package className="mb-2" size={28} />
-                        <h3 className="font-bold">Vendor</h3>
-                        <p className="text-xs text-blue-100">Wholesale buying</p>
+                    <button className="v5-bento-card p-4 text-left group">
+                        <div className="w-10 h-10 v5-icon-cyan rounded-xl flex items-center justify-center text-white mb-3">
+                            <Package size={22} />
+                        </div>
+                        <h3 className="font-bold text-[var(--text-primary)]">Vendor</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Wholesale buying</p>
                     </button>
-                    <button className="bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-xl p-4 text-left">
-                        <Warehouse className="mb-2" size={28} />
-                        <h3 className="font-bold">Cold Storage</h3>
-                        <p className="text-xs text-purple-100">Rent storage space</p>
+                    <button className="v5-bento-card p-4 text-left group">
+                        <div className="w-10 h-10 v5-icon-purple rounded-xl flex items-center justify-center text-white mb-3">
+                            <Warehouse size={22} />
+                        </div>
+                        <h3 className="font-bold text-[var(--text-primary)]">Cold Storage</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Rent storage space</p>
                     </button>
                 </div>
             </div>
 
-            {/* Featured Produce */}
-            <div className="px-4">
-                <div className="flex justify-between items-center mb-3">
-                    <h2 className="font-bold dark:text-white">🔥 Fresh Today</h2>
-                    <button onClick={() => setView('CONSUMER_SHOP')} className="text-green-600 text-sm font-medium">View All</button>
+            {/* V5 Featured Produce */}
+            <div className="px-4 relative z-10">
+                <div className="v5-section-header px-0 mb-3">
+                    <h2 className="v5-section-title text-base">
+                        <span className="w-6 h-6 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-xs">🔥</span>
+                        Fresh Today
+                    </h2>
+                    <button onClick={() => setView('CONSUMER_SHOP')} className="v5-section-action">View All →</button>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div className="flex gap-3 overflow-x-auto pb-4">
                     {listings.slice(0, 4).map(listing => (
-                        <div key={listing.id} className="min-w-[160px] bg-white dark:bg-slate-900 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                        <div key={listing.id} className="min-w-[150px] v5-product-card p-4">
                             <div className="text-3xl mb-2">{getCropEmoji(listing.category, listing.crop)}</div>
-                            <h3 className="font-bold text-sm dark:text-white">{listing.crop}</h3>
-                            <p className="text-xs text-slate-500">{listing.location.village}</p>
-                            <p className="text-green-600 font-bold mt-1">₹{listing.pricePerUnit}/{listing.unit}</p>
+                            <h3 className="font-bold text-sm text-[var(--text-primary)]">{listing.crop}</h3>
+                            <p className="text-xs text-[var(--text-muted)]">{listing.location.village}</p>
+                            <p className="text-[var(--accent-warm)] font-bold mt-2 font-mono">₹{listing.pricePerUnit}<span className="text-xs text-[var(--text-muted)]">/{listing.unit}</span></p>
+                            {listing.organic && <span className="text-[9px] bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] px-1.5 py-0.5 rounded mt-1 inline-block">🌿 Organic</span>}
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* How It Works */}
-            <div className="px-4 mt-6">
-                <h2 className="font-bold dark:text-white mb-3">How GramMandi Works</h2>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 space-y-3">
+            {/* V5 How It Works */}
+            <div className="px-4 mt-4 relative z-10">
+                <h2 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-xs">📋</span>
+                    How It Works
+                </h2>
+                <div className="v5-card rounded-2xl p-4 space-y-3">
                     {[
                         { icon: '👨‍🌾', title: 'Farmer Lists', desc: 'Post your harvest with price' },
                         { icon: '🛒', title: 'Buyer Orders', desc: 'Consumers/vendors place orders' },
@@ -522,26 +534,26 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                         { icon: '💰', title: 'Farmer Earns', desc: '70-80% of sale price' }
                     ].map((step, idx) => (
                         <div key={idx} className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-lg">{step.icon}</div>
+                            <div className="w-10 h-10 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center text-lg">{step.icon}</div>
                             <div>
-                                <h3 className="font-medium dark:text-white text-sm">{step.title}</h3>
-                                <p className="text-xs text-slate-500">{step.desc}</p>
+                                <h3 className="font-medium text-[var(--text-primary)] text-sm">{step.title}</h3>
+                                <p className="text-xs text-[var(--text-muted)]">{step.desc}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Mandi Khabar */}
+            {/* V5 Mandi Khabar */}
             {news.length > 0 && (
-                <div className="px-4 mt-6">
-                    <h2 className="font-bold dark:text-white mb-3">Mandi Khabar</h2>
+                <div className="px-4 mt-6 relative z-10">
+                    <h2 className="font-bold text-[var(--text-primary)] mb-3">📰 Mandi Khabar</h2>
                     <div className="flex gap-3 overflow-x-auto pb-4">
                         {news.map((item, idx) => (
-                            <div key={idx} className="min-w-[280px] bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
-                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase">Update</span>
-                                <h4 className="font-bold text-sm dark:text-white mt-2 line-clamp-1">{item.title}</h4>
-                                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.summary}</p>
+                            <div key={idx} className="min-w-[260px] v5-card rounded-2xl p-4">
+                                <span className="v5-live-badge inline-flex mb-2">Update</span>
+                                <h4 className="font-bold text-sm text-[var(--text-primary)] line-clamp-1">{item.title}</h4>
+                                <p className="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">{item.summary}</p>
                             </div>
                         ))}
                     </div>
