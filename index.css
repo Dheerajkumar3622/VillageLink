@@ -679,6 +679,8 @@ body,
   --font-hud: 'Outfit', 'Inter Tight', sans-serif;
   --font-brand: 'VillageDecorative', cursive;
   /* Assuming custom font */
+  --van-primary: #f8fafc;
+  --van-accent: #00ff88;
 }
 
 /* 100x LIQUID GLASS ENGINE */

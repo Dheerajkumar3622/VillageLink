@@ -230,13 +230,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
       {/* Animated Background (Veo Placeholder) */}
       <div className="animated-bg"></div>
 
-      {/* Hero 3D Image - Floating out of the card */}
-      <div className="relative z-20 flex justify-center -mb-12 pointer-events-none">
-        <img
-          src="/assets/hero-bus-icon.png"
-          alt="VillageLink Transport"
-          className="w-40 h-40 object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] animate-float-banana"
-        />
+      {/* Hero 3D Concept - Code Generated Cyber-Van */}
+      <div className="relative z-20 flex justify-center -mb-20 pointer-events-none">
+        <div className="cyber-van-v3 animate-float-banana">
+          <div className="van-body">
+            <div className="van-window"></div>
+            <div className="van-glow"></div>
+          </div>
+          <div className="van-shadow"></div>
+        </div>
       </div>
 
       <div className="glass-portal rounded-[32px] p-8 pt-16 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
