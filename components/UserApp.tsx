@@ -1,15 +1,15 @@
 /**
  * UserApp - Consumer App Entry Point
- * USS v3.0 - Single app for all consumers
+ * USS v3.0 - The Cyber-Rural Frontier
  */
 
-import React, { useState, useEffect } from 'react';
-import { User } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { User as UserType } from '../types';
 import { API_BASE_URL } from '../config';
-import { Button } from './Button';
 import {
-    Activity, Shield, Menu, MessageSquare, User, Search, MapPin,
-    ArrowRight, Bell, Zap, TrendingUp, Globe
+    Home, Film, ShoppingBag, MessageCircle, User as UserIcon,
+    QrCode, Bell, Search, Menu, X, Loader2, ArrowLeft,
+    TrendingUp, Zap, MapPin, ArrowRight, Shield, Activity
 } from 'lucide-react';
 
 // Import Views
@@ -21,17 +21,27 @@ import ChatSection from './ChatSection';
 import UniversalQRScanner from './UniversalQRScanner';
 import UserProfile from './UserProfile';
 
-interface OrbitalNodeProps {
+interface UserAppProps {
+    user: UserType | any;
+    onLogout: () => void;
+    lang?: 'EN' | 'HI';
+}
+
+type TabType = 'home' | 'reels' | 'haat' | 'chat' | 'profile';
+
+// ========================================
+// SUB-COMPONENTS
+// ========================================
+
+const OrbitalNode: React.FC<{
     icon: string;
     label: string;
     angle: number;
     onClick: () => void;
-}
+}> = ({ icon, label, angle, onClick }) => {
+    const nodeRef = useRef<HTMLDivElement>(null);
 
-const OrbitalNode: React.FC<OrbitalNodeProps> = ({ icon, label, angle, onClick }) => {
-    const nodeRef = React.useRef<HTMLDivElement>(null);
-
-    React.useEffect(() => {
+    useEffect(() => {
         if (nodeRef.current) {
             nodeRef.current.style.setProperty('--node-angle', `${angle}deg`);
             nodeRef.current.style.setProperty('--node-angle-neg', `-${angle}deg`);
@@ -39,37 +49,36 @@ const OrbitalNode: React.FC<OrbitalNodeProps> = ({ icon, label, angle, onClick }
     }, [angle]);
 
     return (
-        <div
-            ref={nodeRef}
-            className="orbital-node orbital-node-dynamic"
-            onClick={onClick}
-        >
-            <span className="node-icon">{icon}</span>
+        <div ref={nodeRef} className="orbital-node orbital-node-dynamic" onClick={onClick}>
+            <span className="node-icon-3d">{icon}</span>
             <span className="node-label">{label}</span>
         </div>
     );
 };
 
-interface UserAppProps {
-    user: any;
-    onLogout: () => void;
-    lang?: 'EN' | 'HI';
-}
-
-type TabType = 'home' | 'reels' | 'profile' | 'admin' | 'services' | 'haat' | 'chat';
+const NavItem: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    active: boolean;
+    onClick: () => void;
+    badge?: number;
+}> = ({ icon, label, active, onClick, badge }) => (
+    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
+        <div className="nav-icon-wrapper">
+            {icon}
+            {badge && badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
+        </div>
+        <span className="nav-label">{label}</span>
+    </button>
+);
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     const [activeTab, setActiveTab] = useState<TabType>('home');
-    const [viewMode, setViewMode] = useState<'hub' | 'detail'>('hub');
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
-    const [notifications, setNotifications] = useState(0);
 
-    // Fetch unread message count
     useEffect(() => {
-        if (user) {
-            fetchUnreadCount();
-        }
+        if (user) fetchUnreadCount();
     }, [user]);
 
     const fetchUnreadCount = async () => {
@@ -79,20 +88,9 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
-            if (data.success) {
-                setUnreadMessages(data.unreadCount);
-            }
+            if (data.success) setUnreadMessages(data.unreadCount);
         } catch (error) {
             console.error('Fetch unread error:', error);
-        }
-    };
-
-    const handleQRResult = (result: any) => {
-        setShowQRScanner(false);
-        // Navigate based on QR type
-        if (result.navigateTo) {
-            // Handle navigation
-            console.log('Navigate to:', result.navigateTo);
         }
     };
 
@@ -100,8 +98,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
         switch (activeTab) {
             case 'home':
                 return (
-                    <div className="user-app-home">
-                        {/* 3D Orbital Hub - Vision 2.0 */}
+                    <div className="user-app-home animate-fade-in">
                         <div className="orbital-hub">
                             <div className="orbit-belt">
                                 {[
@@ -115,373 +112,122 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
                                         icon={node.icon}
                                         label={node.label}
                                         angle={node.angle}
-                                        onClick={() => node.label === 'Ride' ? null : setActiveTab('haat')}
+                                        onClick={() => node.label === 'Haat' ? setActiveTab('haat') : null}
                                     />
                                 ))}
                             </div>
                         </div>
-
-                        {/* Main Content - PassengerView */}
                         <PassengerView user={user!} lang={lang} />
                     </div>
                 );
-            case 'reels':
-                return <ReelsSection user={user!} />;
-            case 'haat':
-                return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
-            case 'chat':
-                return <ChatSection user={user!} />;
-            case 'profile':
-                return <UserProfile user={user!} onBack={() => setActiveTab('home')} />;
-            default:
-                return null;
+            case 'reels': return <ReelsSection user={user!} />;
+            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
+            case 'chat': return <ChatSection user={user!} />;
+            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('home')} />;
+            default: return null;
         }
     };
 
     if (!user) {
         return (
             <div className="user-app-loading">
-                <Loader2 className="w-8 h-8 animate-spin text-green-500" />
-                <p>Loading...</p>
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+                <p className="font-hud uppercase tracking-widest text-xs opacity-50">Syncing Frontier...</p>
             </div>
         );
     }
 
     return (
-        <div className="user-app min-h-screen">
+        <div className="user-app-frontier min-h-screen overflow-x-hidden">
+            {/* 100x DYNAMIC BACKGROUND ENGINE */}
             <div className={`vision-bg mode-${activeTab}`}>
                 <div className="vision-aurora"></div>
+            </div>
 
-                {/* 100x HOLO-TICKER HUD */}
-                <div className="vision-ticker">
-                    <div className="ticker-content">
-                        <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • HAAT: NEW SEED SHIPMENT ARRIVED • </span>
-                        <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • HAAT: NEW SEED SHIPMENT ARRIVED • </span>
+            {/* HOLO-TICKER HUD */}
+            <div className="vision-ticker">
+                <div className="ticker-content">
+                    <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • </span>
+                    <span>• SYNC STATUS: OPTIMAL • VILLAGE PULSE: ACTIVE • WEATHER: SUNNY 28°C • HAAT UPDATE: TOMATO PRICES UP 5% • RIDE ALERT: 3 BUSES ON ROUTE 4 • MESS: DINNER SPECIALS POSTED • </span>
+                </div>
+            </div>
+
+            <div className="vision-container max-w-md mx-auto relative z-10">
+                {/* UNIFIED GLASS HUD HEADER */}
+                <header className="vision-header liquid-glass-card mx-4 mt-4 rounded-2xl flex justify-between items-center p-4">
+                    <div className="logo-section flex items-center gap-3">
+                        <div className="vision-logo pulse-glow w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center font-black text-xl">V</div>
+                        <div className="logo-text flex flex-col">
+                            <span className="text-sm font-black tracking-tighter leading-tight">VILLAGELINK</span>
+                            <span className="text-[8px] font-bold text-emerald-400 opacity-60 tracking-[0.2em]">FRONTIER v3.0</span>
+                        </div>
                     </div>
+
+                    <div className="header-actions flex items-center gap-4">
+                        <div className="hud-metric flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                            <TrendingUp size={10} className="text-emerald-400" />
+                            <span className="text-[10px] font-black uppercase tracking-tight">₹{user?.balance || '244'}</span>
+                        </div>
+                        <button className="relative text-white/60 hover:text-emerald-400 transition-colors" aria-label="Notifications">
+                            <Bell size={18} />
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
+                        </button>
+                        <div className="user-profile-frontier flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full border-2 border-emerald-500/30 p-0.5">
+                                <div className="w-full h-full bg-emerald-500 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                    {user?.name?.charAt(0) || 'D'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="hud-sub-status mx-5 mt-2 flex justify-between items-center px-1">
+                    <div className="flex items-center gap-1.5">
+                        <Zap size={10} className="text-emerald-400 animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400/50">System Nominal</span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{lang === 'EN' ? 'Frontier Mode' : 'सीमावर्ती मोड'}</span>
                 </div>
 
-                <div className="vision-container mobile-narrow">
-                    <header className="vision-header liquid-glass-card">
-                        <div className="logo-section">
-                            <div className="vision-logo pulse-glow">V</div>
-                            <div className="logo-text">
-                                <span className="logo-main">VILLAGELINK</span>
-                                <span className="logo-sub">CYBER-RURAL FRONTIER</span>
-                            </div>
-                        </div>
+                {/* MAIN CINEMATIC CONTENT */}
+                <main className="user-app-content py-6 px-4">
+                    {renderContent()}
+                </main>
 
-                        <div className="header-actions">
-                            <div className="hud-metric">
-                                <TrendingUp size={12} className="text-emerald-400" />
-                                <span>₹{user?.balance || '0'}</span>
-                            </div>
-                            <button className="vision-icon-btn" aria-label="Notifications">
-                                <Bell size={18} />
-                                <span className="notification-dot"></span>
-                            </button>
-                            <div className="user-profile-vision group">
-                                <div className="user-avatar-ring">
-                                    <div className="avatar-content">{user?.name?.charAt(0) || 'U'}</div>
-                                    <svg className="ring-svg"><circle cx="20" cy="20" r="18" /></svg>
-                                </div>
-                                <span className="user-name-label">{user?.name || 'User'}</span>
-                            </div>
-                        </div>
-                    </header>
+                {/* LIQUID GLASS NAV */}
+                <nav className="user-app-nav-frontier liquid-glass-card fixed bottom-4 left-4 right-4 h-16 rounded-2xl flex justify-around items-center px-2 z-50">
+                    <NavItem icon={<Home size={20} />} label="Home" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+                    <NavItem icon={<Film size={20} />} label="Reels" active={activeTab === 'reels'} onClick={() => setActiveTab('reels')} />
+                    <NavItem icon={<ShoppingBag size={20} />} label="Haat" active={activeTab === 'haat'} onClick={() => setActiveTab('haat')} />
+                    <NavItem icon={<MessageCircle size={20} />} label="Chat" active={activeTab === 'chat'} onClick={() => setActiveTab('chat')} badge={unreadMessages} />
+                    <NavItem icon={<UserIcon size={20} />} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+                </nav>
 
-                    <div className="orbital-main">
-                        <div className="vision-mode-selector liquid-glass-card">
-                            <div className="hub-status items-center px-4 py-2 flex justify-between">
-                                <span className="text-[10px] font-black text-emerald-400 opacity-60 flex items-center gap-1">
-                                    <Zap size={10} /> SYSTEM NOMINAL
-                                </span>
-                                <span className="text-[10px] font-black text-emerald-400 opacity-60">
-                                    {lang === 'EN' ? 'FRONTIER MODE' : 'सीमावर्ती मोड'}
-                                </span>
-                            </div>
-                        </div>
+                {/* FLOATING ACTION SCANNER */}
+                <button className="frontier-scan-btn fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-emerald-400 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-2xl z-40 hover:scale-110 active:scale-95 transition-transform" onClick={() => setShowQRScanner(true)}>
+                    <QrCode size={24} />
+                </button>
+            </div>
 
-                        {/* Main Content */}
-                        <main className="user-app-content">
-                            {renderContent()}
-                        </main>
+            {/* MODALS */}
+            {showQRScanner && (
+                <UniversalQRScanner user={user} onClose={() => setShowQRScanner(false)} onResult={(r) => setShowQRScanner(false)} />
+            )}
 
-                        {/* Floating QR Scanner Button */}
-                        <button
-                            className="floating-qr-btn"
-                            onClick={() => setShowQRScanner(true)}
-                            title="Scan QR Code"
-                        >
-                            <QrCode className="w-6 h-6" />
-                        </button>
-
-                        {/* Bottom Navigation */}
-                        <nav className="user-app-nav liquid-glass-card">
-                            <NavItem
-                                icon={<Home />}
-                                label="Home"
-                                active={activeTab === 'home'}
-                                onClick={() => setActiveTab('home')}
-                            />
-                            <NavItem
-                                icon={<Film />}
-                                label="Reels"
-                                active={activeTab === 'reels'}
-                                onClick={() => setActiveTab('reels')}
-                            />
-                            <NavItem
-                                icon={<ShoppingBag />}
-                                label="Haat"
-                                active={activeTab === 'haat'}
-                                onClick={() => setActiveTab('haat')}
-                            />
-                            <NavItem
-                                icon={<MessageCircle />}
-                                label="Chat"
-                                active={activeTab === 'chat'}
-                                onClick={() => setActiveTab('chat')}
-                                badge={unreadMessages}
-                            />
-                            <NavItem
-                                icon={<UserIcon />}
-                                label="Profile"
-                                active={activeTab === 'profile'}
-                                onClick={() => setActiveTab('profile')}
-                            />
-                        </nav>
-
-                        {/* QR Scanner Modal */}
-                        {showQRScanner && (
-                            <UniversalQRScanner
-                                user={user}
-                                onClose={() => setShowQRScanner(false)}
-                                onResult={handleQRResult}
-                            />
-                        )}
-
-                        <style>{`
-        .user-app {
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-          background: var(--bg-primary, #f5f7fa);
-        }
-
-        .user-app-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 16px;
-          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-          color: white;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .app-title {
-          font-size: 1.25rem;
-          font-weight: 700;
-        }
-
-        .header-right {
-          display: flex;
-          gap: 8px;
-        }
-
-        .icon-btn {
-          background: rgba(255,255,255,0.2);
-          border: none;
-          border-radius: 8px;
-          padding: 8px;
-          color: white;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .icon-btn:hover {
-          background: rgba(255,255,255,0.3);
-        }
-
-        .icon-btn .badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: #ef4444;
-          color: white;
-          font-size: 10px;
-          padding: 2px 5px;
-          border-radius: 10px;
-          min-width: 16px;
-          text-align: center;
-        }
-
-        .user-app-content {
-          flex: 1;
-          overflow-y: auto;
-          padding-bottom: 80px;
-        }
-
-        .quick-actions-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 8px;
-          padding: 12px;
-          background: white;
-          margin-bottom: 8px;
-        }
-
-        .floating-qr-btn {
-          position: fixed;
-          bottom: 90px;
-          right: 16px;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-          color: white;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-          cursor: pointer;
-          z-index: 50;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .floating-qr-btn:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
-        }
-
-        .user-app-nav {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: space-around;
-          background: white;
-          border-top: 1px solid #e5e7eb;
-          padding: 8px 0 env(safe-area-inset-bottom, 8px);
-          z-index: 100;
-        }
-      `}</style>
-                    </div>
-                    );
+            <style>{`
+                .user-app-frontier { font-family: var(--font-hud); color: white; -webkit-font-smoothing: antialiased; }
+                .vision-container { min-height: 100vh; display: flex; flex-direction: column; }
+                .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                
+                .user-app-loading {
+                    height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    background: var(--obsidian-deep); gap: 1rem; color: white;
+                }
+            `}</style>
+        </div>
+    );
 };
 
-                    // Quick Action Card Component
-                    const QuickActionCard: React.FC<{
-    icon: string;
-                    label: string;
-                    sublabel: string;
-    onClick: () => void;
-}> = ({icon, label, sublabel, onClick}) => (
-                    <button className="quick-action-card" onClick={onClick}>
-                        <span className="quick-icon">{icon}</span>
-                        <span className="quick-label">{label}</span>
-                        <style>{`
-      .quick-action-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 16px 8px;
-        background: var(--obsidian-glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      }
-      .quick-action-card:hover {
-        background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-5px) scale(1.05);
-        border-color: var(--neon-emerald);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px var(--glow-emerald);
-      }
-      .quick-icon {
-        font-size: 1.8rem;
-        margin-bottom: 8px;
-        filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.4));
-      }
-      .quick-label {
-        font-size: 10px;
-        color: white;
-        font-weight: 900;
-        font-family: var(--font-hud);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        opacity: 0.8;
-      }
-    `}</style>
-                    </button>
-                    );
-
-                    // Navigation Item Component
-                    const NavItem: React.FC<{
-    icon: React.ReactNode;
-                    label: string;
-                    active: boolean;
-    onClick: () => void;
-                    badge?: number;
-}> = ({icon, label, active, onClick, badge}) => (
-                    <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-                        <div className="nav-icon-wrapper">
-                            {icon}
-                            {badge && badge > 0 && <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>}
-                        </div>
-                        <span className="nav-label">{label}</span>
-                        <style>{`
-      .nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        padding: 8px 16px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: rgba(255,255,255,0.4);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        font-family: var(--font-hud);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      .nav-item.active {
-        color: var(--neon-emerald);
-        text-shadow: 0 0 10px var(--glow-emerald);
-      }
-      .nav-item:hover {
-        color: white;
-        transform: translateY(-2px);
-      }
-      .nav-icon-wrapper {
-        position: relative;
-      }
-      .nav-icon-wrapper svg {
-        width: 24px;
-        height: 24px;
-      }
-      .nav-badge {
-        position: absolute;
-        top: -6px;
-        right: -10px;
-        background: #ef4444;
-        color: white;
-        font-size: 10px;
-        padding: 1px 4px;
-        border-radius: 10px;
-        min-width: 14px;
-        text-align: center;
-      }
-      .nav-label {
-        font-size: 0.65rem;
-        font-weight: 500;
-      }
-    `}</style>
-                    </button>
-                    );
-
-                    export default UserApp;
+export default UserApp;
