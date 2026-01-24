@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Ultimate | Ride Booking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --bg-dark: #0f172a;
+            --surface: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .phone-mockup {
+            width: 380px;
+            height: 800px;
+            background: #000;
+            border-radius: 40px;
+            border: 8px solid #334155;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .phone-screen {
+            height: 100%;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Map Section */
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #1e293b;
+            overflow: hidden;
+        }
+
+        .map-bg {
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 50% 50%, #334155 1px, transparent 1px);
+            background-size: 20px 20px;
+            position: relative;
+        }
+
+        .route-line {
+            position: absolute;
+            top: 50%;
+            left: 20%;
+            width: 60%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, transparent 100%);
+            border-radius: 2px;
+            transform: rotate(-15deg);
+        }
+
+        .marker {
+            position: absolute;
+            font-size: 24px;
+            filter: drop-shadow(0 0 10px var(--primary));
+            animation: pulse 2s infinite;
+        }
+
+        .marker-end {
+            top: 40%;
+            left: 75%;
+        }
+
+        .marker-start {
+            top: 60%;
+            left: 15%;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Ride Content */
+        .ride-content {
+            background: rgba(15, 23, 42, 0.8);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            border-radius: 30px 30px 0 0;
+            padding: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .ride-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .ai-badge {
+            background: linear-gradient(45deg, #8b5cf6, #3b82f6);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Ride Options */
+        .ride-options {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            /* scrollbar-width: none; */
+        }
+
+        .ride-option {
+            min-width: 100px;
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ride-option.active {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateY(-4px);
+        }
+
+        .ride-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .ride-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .ride-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            margin-top: 4px;
+        }
+
+        /* Ride Selection Details */
+        .ride-details {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        .detail-label {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .match-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 40px 24px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .sos-btn {
+            background: var(--danger);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* AI Suggestion Banner */
+        .ai-suggestion {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid #8b5cf6;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ai-suggestion-text {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .ai-suggestion-text span {
+            font-weight: 700;
+            color: #a78bfa;
+        }
+
+        /* Demo Note */
+        .demo-info {
+            position: absolute;
+            top: 20px;
+            left: -350px;
+            width: 320px;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .demo-info b {
+            color: white;
+        }
+
+        .icon-20 {
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="demo-info">
+        <b>VillageLink Ultimate Ride</b><br><br>
+        This demo showcases the 100x evolved ride booking experience:<br><br>
+        1. 🤖 <b>AI Commute Matching</b>: Suggests the best ride based on your usual routine.<br>
+        2. 🗺️ <b>Drone-view Map</b>: Animated route visualization.<br>
+        3. ⚡ <b>Village SOS</b>: Instant emergency button for safety.<br>
+        4. 🚌 <b>Multi-Vehicle</b>: Everything from E-rickshaws to Village Buses.<br><br>
+        <i>Note: This is an aesthetic HTML simulation.</i>
+    </div>
+
+    <div class="phone-mockup">
+        <div class="phone-screen">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="back-btn">⬅️</div>
+                <div class="ride-title">Book a Ride</div>
+                <div class="sos-btn">SOS</div>
+            </div>
+
+            <!-- Map Area -->
+            <div class="map-container">
+                <div class="map-bg">
+                    <div class="route-line"></div>
+                    <div class="marker marker-start">📍</div>
+                    <div class="marker marker-end">🏁</div>
+                </div>
+            </div>
+
+            <!-- Ride UI -->
+            <div class="ride-content">
+                <div class="ai-suggestion">
+                    <span class="icon-20">🤖</span>
+                    <div class="ai-suggestion-text">
+                        <span>Sahayak AI:</span> It's 10:00 AM. Your usual commute pulse detected. E-Rickshaw available
+                        in <span>3 mins</span>.
+                    </div>
+                </div>
+
+                <div class="ride-header">
+                    <div class="ride-title">Select Vehicle</div>
+                    <div class="ai-badge">AI Route Match</div>
+                </div>
+
+                <div class="ride-options">
+                    <div class="ride-option active">
+                        <span class="ride-icon">🛺</span>
+                        <div class="ride-name">E-Rickshaw</div>
+                        <div class="ride-price">₹12.00</div>
+                    </div>
+                    <div class="ride-option">
+                        <span class="ride-icon">🚌</span>
+                        <div class="ride-name">Village Bus</div>
+                        <div class="ride-price">₹5.00</div>
+                    </div>
+                    <div class="ride-option">
+                        <span class="ride-icon">🛵</span>
+                        <div class="ride-name">Moto Taxi</div>
+                        <div class="ride-price">₹15.00</div>
+                    </div>
+                    <div class="ride-option">
+                        <span class="ride-icon">🛒</span>
+                        <div class="ride-name">Cargo Cart</div>
+                        <div class="ride-price">₹8.00</div>
+                    </div>
+                </div>
+
+                <div class="ride-details">
+                    <div class="detail-row">
+                        <div class="detail-label">Distance / ETA</div>
+                        <div class="detail-value">2.4 km • 8 min</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Route Match</div>
+                        <div class="match-badge">98% Efficient</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Driver Rating</div>
+                        <div class="detail-value">⭐ 4.9 (Local Legend)</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-secondary">Schedule</button>
+                    <button class="btn btn-danger">Safety Plan</button>
+                    <button class="btn btn-primary">Confirm Ultimate Ride</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

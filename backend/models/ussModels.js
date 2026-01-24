@@ -200,9 +200,16 @@ const supplyListingSchema = new mongoose.Schema({
     reservedQuantity: { type: Number, default: 0 },
     soldQuantity: { type: Number, default: 0 },
 
-    // Engagement
-    viewCount: { type: Number, default: 0 },
-    inquiryCount: { type: Number, default: 0 },
+    // 100x Ultimate: Trust Chain Visualization
+    trustChain: {
+        harvestDate: Date,
+        sourceFarm: String,
+        farmLocation: { lat: Number, lng: Number },
+        temperatureLogs: [{ temp: Number, timestamp: Date }],
+        qualityBadge: { type: String, enum: ['CERTIFIED', 'ORGANIC', 'PREMIUM'], default: 'CERTIFIED' },
+        farmerPhoto: String,
+        blockchainVerificationId: String
+    },
 
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

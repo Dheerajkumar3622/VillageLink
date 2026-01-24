@@ -14,7 +14,10 @@ router.get('/wallet', authenticate, async (req, res) => {
         res.json({
             balance: user.walletBalance || 0,
             nfts: [], // For future NFT passes
-            address: user.did || '0x' + Math.random().toString(16).slice(2, 42)
+            address: user.did || '0x' + Math.random().toString(16).slice(2, 42),
+            heroPoints: user.heroPoints || 0,
+            heroLevel: user.heroLevel || 1,
+            dailyStreak: user.dailyStreak || 0
         });
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -42,14 +45,32 @@ router.post('/register-roles', authenticate, async (req, res) => {
         if (primaryRole === 'LOGISTICS') mappedRole = 'LOGISTICS_PARTNER';
 
         user.role = mappedRole;
-        user.isVerified = false; // Require admin approval for provider roles
+        user.isVerified = false;
 
-        // Store business info if provided
-        if (roles[0].businessName) user.name = roles[0].businessName; // Or store elsewhere
+        // 100x: Multi-role support for Provider App
+        if (!user.providerRoles) user.providerRoles = [];
+        const roleExists = user.providerRoles.find(r => r.roleType === mappedRole);
+
+        if (!roleExists) {
+            user.providerRoles.push({
+                roleType: mappedRole,
+                status: 'PENDING',
+                businessName: roles[0].businessName || user.name,
+                businessAddress: roles[0].businessAddress || user.address,
+                registeredAt: Date.now()
+            });
+        }
+
+        user.activeRole = mappedRole;
 
         await user.save();
 
-        res.json({ success: true, message: "Role registration submitted for approval", role: mappedRole });
+        res.json({
+            success: true,
+            message: "Role registration submitted for approval",
+            role: mappedRole,
+            providerRoles: user.providerRoles
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

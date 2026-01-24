@@ -28,7 +28,12 @@ const userSchema = new mongoose.Schema({
   connectionType: { type: String, enum: ['APP', 'SMS', 'USSD', 'IVR'], default: 'APP' },
   smsSessionState: { type: String },
   lastCommandTimestamp: { type: Number },
-  preferredLanguage: { type: String, enum: ['EN', 'HI', 'LOCAL'], default: 'HI' }
+  preferredLanguage: { type: String, enum: ['EN', 'HI', 'LOCAL'], default: 'HI' },
+  // 100x Ultimate Features
+  heroPoints: { type: Number, default: 0 },
+  heroLevel: { type: String, enum: ['NOVICE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'LEGEND'], default: 'NOVICE' },
+  dailyStreak: { type: Number, default: 0 },
+  lastActivityDate: String
 });
 
 // Hash password before saving
@@ -266,7 +271,17 @@ export const Product = mongoose.model('Product', new mongoose.Schema({
   unit: String,
   image: String,
   available: Boolean,
-  description: String
+  description: String,
+  // 100x Ultimate: Trust Chain Visualization
+  trustChain: {
+    harvestDate: Date,
+    sourceFarm: String,
+    farmLocation: { lat: Number, lng: Number },
+    temperatureLogs: [{ temp: Number, timestamp: Date }],
+    qualityBadge: { type: String, enum: ['CERTIFIED', 'ORGANIC', 'PREMIUM'], default: 'CERTIFIED' },
+    farmerPhoto: String,
+    blockchainVerificationId: String
+  }
 }));
 
 export const ActivityLog = mongoose.model('ActivityLog', new mongoose.Schema({
@@ -1680,7 +1695,7 @@ proxyTransactionSchema.index({ beneficiaryId: 1 });
 export const ProxyTransaction = mongoose.model('ProxyTransaction', proxyTransactionSchema);
 
 // Default export for CJS compatibility (required for Render deployment)
-export default {
+const Models = {
   User,
   Location,
   Transaction,
@@ -1731,8 +1746,40 @@ export default {
   GuestProfile,
   MultimodalJourney,
   CargoRequest,
-  CargoCapacity,
+  CargoCapacity: cargoCapacitySchema,
   CargoMatch,
   Beneficiary,
-  ProxyTransaction
+  ProxyTransaction,
+  // 100x Ultimate Models
+  AISahayakSession: new mongoose.Schema({
+    sessionId: { type: String, unique: true },
+    userId: String,
+    context: { type: String, default: 'GENERAL' },
+    history: [{
+      role: { type: String, enum: ['user', 'model'] },
+      text: String,
+      timestamp: { type: Date, default: Date.now }
+    }],
+    lastInteracted: { type: Date, default: Date.now }
+  }),
+  VillageCircle: new mongoose.Schema({
+    id: { type: String, unique: true },
+    name: String,
+    adminId: String,
+    members: [{
+      userId: String,
+      joinedAt: { type: Date, default: Date.now },
+      totalContributions: { type: Number, default: 0 }
+    }],
+    activeOrders: [String],
+    savingsTotal: { type: Number, default: 0 },
+    badge: String,
+    createdAt: { type: Date, default: Date.now }
+  })
 };
+
+// Export individual models for AISahayak and VillageCircle
+export const AISahayakSession = mongoose.model('AISahayakSession', Models.AISahayakSession);
+export const VillageCircle = mongoose.model('VillageCircle', Models.VillageCircle);
+
+export default Models;

@@ -77,6 +77,9 @@ export const findBestDriver = async (pickupLat, pickupLng, vehicleType = null, m
                 const distanceScore = Math.max(0, 100 - distance * 20); // Closer = higher
                 const verifiedBonus = user.isVerified ? 20 : 0;
 
+                // 100x: Hero Bonus (Prioritize high-performing drivers)
+                const heroBonus = Math.min(30, (user.heroLevel || 1) * 2);
+
                 return {
                     driverId: driverLoc.driverId,
                     driverName: user.name,
@@ -88,8 +91,9 @@ export const findBestDriver = async (pickupLat, pickupLng, vehicleType = null, m
                     vehicleType: driverLoc.vehicleType,
                     heading: driverLoc.heading,
                     speed: driverLoc.speed,
-                    score: distanceScore + verifiedBonus,
-                    isVerified: user.isVerified
+                    score: distanceScore + verifiedBonus + heroBonus,
+                    isVerified: user.isVerified,
+                    heroLevel: user.heroLevel || 1
                 };
             })
         );

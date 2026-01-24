@@ -1,0 +1,556 @@
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        background: #020617;
+        min-height: 100vh;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .phone-frame {
+        width: 380px;
+        height: 800px;
+        background: #0f172a;
+        border-radius: 40px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        border: 8px solid #1e293b;
+        position: relative;
+        /* scrollbar-width is redundant with webkit-scrollbar below */
+    }
+
+    .phone-frame::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Ultimate Header */
+    .header {
+        background: linear-gradient(135deg, #10b981 0%, #064e3b 100%);
+        padding: 40px 24px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: white;
+        color: #10b981;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 20px;
+    }
+
+    .logo-text {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .streak-badge {
+        background: rgba(255, 255, 255, 0.2);
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    /* AI Sahayak Floating Bubble */
+    .ai-sahayak {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 30px;
+        box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        animation: pulse-ai 2s infinite;
+    }
+
+    @keyframes pulse-ai {
+        0% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 15px rgba(139, 92, 246, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+    }
+
+    .ai-bubble {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        width: 200px;
+        background: #1e293b;
+        color: white;
+        padding: 12px;
+        border-radius: 16px 16px 0 16px;
+        font-size: 12px;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
+    }
+
+    .ai-sahayak:hover .ai-bubble {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Fresh Today UI */
+    .fresh-section {
+        padding: 24px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .section-title h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: #10b981;
+    }
+
+    .section-subtitle {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+
+    .scarcity-alert {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-size: 11px;
+        color: #fca5a5;
+        font-weight: 600;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Grid */
+    .fresh-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .item-card {
+        background: #1e293b;
+        border-radius: 24px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .item-card:hover {
+        transform: translateY(-8px);
+        border-color: #10b981;
+    }
+
+    .item-image {
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 50px;
+        margin-bottom: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 16px;
+    }
+
+    .item-name {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .item-origin {
+        font-size: 10px;
+        color: #64748b;
+        margin-bottom: 12px;
+    }
+
+    .item-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .item-price {
+        font-size: 16px;
+        font-weight: 800;
+        color: #10b981;
+    }
+
+    .add-pill {
+        background: #10b981;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: #f59e0b;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    .badge-red {
+        background: #ef4444;
+    }
+
+    .badge-blue {
+        background: #3b82f6;
+    }
+
+    .avatar-red {
+        background: #ef4444;
+    }
+
+    .avatar-blue {
+        background: #3b82f6;
+    }
+
+    .avatar-gold {
+        background: #f59e0b;
+    }
+
+    .text-icon {
+        font-size: 20px;
+    }
+
+    .v-spacer {
+        height: 100px;
+    }
+
+    /* Recipe Combo */
+    .combo-box {
+        margin-top: 32px;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 24px;
+        padding: 20px;
+    }
+
+    .combo-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .combo-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #f59e0b;
+    }
+
+    .combo-body {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .combo-icon {
+        font-size: 40px;
+    }
+
+    .combo-info {
+        flex: 1;
+    }
+
+    .combo-name {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .combo-desc {
+        font-size: 10px;
+        color: #94a3b8;
+    }
+
+    .combo-price-box {
+        text-align: right;
+    }
+
+    .old-price {
+        font-size: 12px;
+        color: #64748b;
+        text-decoration: line-through;
+    }
+
+    .new-price {
+        font-size: 18px;
+        font-weight: 800;
+        color: #10b981;
+    }
+
+    /* Social Hub */
+    .social-hub {
+        margin-top: 32px;
+        padding-bottom: 40px;
+    }
+
+    .social-card {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 16px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatars {
+        display: flex;
+    }
+
+    .avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid #0f172a;
+        margin-left: -8px;
+    }
+
+    .social-msg {
+        font-size: 12px;
+        color: #cbd5e1;
+    }
+
+    .social-msg b {
+        color: #10b981;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 80px;
+        background: rgba(15, 23, 42, 0.9);
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: #64748b;
+        font-size: 10px;
+    }
+
+    .nav-item.active {
+        color: #10b981;
+    }
+
+    .nav-ico {
+        font-size: 24px;
+    }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="phone-frame">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">VillageLink</div>
+            </div>
+            <div class="streak-badge">🔥 7 Day Streak</div>
+        </div>
+
+        <div class="ai-sahayak">
+            🤖
+            <div class="ai-bubble">
+                <b>Gram Sahayak:</b> Ramu, your favorite <b>Milk</b> is fresh from the farm! Only 12 liters left. 🌿
+            </div>
+        </div>
+
+        <div class="fresh-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <h1>Fresh Today</h1>
+                    <div class="section-subtitle">Harvested this morning at 5:00 AM</div>
+                </div>
+            </div>
+
+            <div class="scarcity-alert">
+                <span>⚡</span>
+                <span>Fastest moving items: Tomatoes & Green Chilli. Order now!</span>
+            </div>
+
+            <div class="fresh-grid">
+                <div class="item-card">
+                    <div class="badge">FRESH</div>
+                    <div class="item-image">🥛</div>
+                    <div class="item-name">Pure Buffalo Milk</div>
+                    <div class="item-origin">Nasirganj Hub</div>
+                    <div class="item-footer">
+                        <div class="item-price">₹50/L</div>
+                        <div class="add-pill">+</div>
+                    </div>
+                </div>
+
+                <div class="item-card">
+                    <div class="badge badge-red">DEMAND</div>
+                    <div class="item-image">🍅</div>
+                    <div class="item-name">Organic Tomatoes</div>
+                    <div class="item-origin">Dehri Village</div>
+                    <div class="item-footer">
+                        <div class="item-price">₹35/kg</div>
+                        <div class="add-pill">+</div>
+                    </div>
+                </div>
+
+                <div class="item-card">
+                    <div class="badge badge-blue">NEW</div>
+                    <div class="item-image">🌽</div>
+                    <div class="item-name">Baby Corn</div>
+                    <div class="item-origin">Local Mandi</div>
+                    <div class="item-footer">
+                        <div class="item-price">₹40/pc</div>
+                        <div class="add-pill">+</div>
+                    </div>
+                </div>
+
+                <div class="item-card">
+                    <div class="badge">FRESH</div>
+                    <div class="item-image">🥕</div>
+                    <div class="item-name">Red Carrots</div>
+                    <div class="item-origin">Rohtas Farm</div>
+                    <div class="item-footer">
+                        <div class="item-price">₹28/kg</div>
+                        <div class="add-pill">+</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="combo-box">
+                <div class="combo-header">
+                    <span class="text-icon">🎁</span>
+                    <span class="combo-title">Top Recipe Kit</span>
+                </div>
+                <div class="combo-body">
+                    <div class="combo-icon">🥘</div>
+                    <div class="combo-info">
+                        <div class="combo-name">Aalu Gobhi Kit</div>
+                        <div class="combo-desc">Potato, Gobhi, Chilli, Ginger</div>
+                    </div>
+                    <div class="combo-price-box">
+                        <div class="old-price">₹95</div>
+                        <div class="new-price">₹75</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="social-hub">
+                <div class="social-card">
+                    <div class="avatars">
+                        <div class="avatar avatar-red"></div>
+                        <div class="avatar avatar-blue"></div>
+                        <div class="avatar avatar-gold"></div>
+                    </div>
+                    <div class="social-msg"><b>+14 neighbors</b> pre-booked Milk for tomorrow.</div>
+                </div>
+            </div>
+
+            <div class="v-spacer"></div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item">
+                <div class="nav-ico">🏠</div>Home
+            </div>
+            <div class="nav-item active">
+                <div class="nav-ico">🌿</div>Fresh
+            </div>
+            <div class="nav-item">
+                <div class="nav-ico">🚌</div>Rides
+            </div>
+            <div class="nav-item">
+                <div class="nav-ico">📦</div>Track
+            </div>
+            <div class="nav-item">
+                <div class="nav-ico">👤</div>Me
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

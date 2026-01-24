@@ -14,6 +14,7 @@ import {
 
 interface ChatSectionProps {
     user: User;
+    isAIAssistant?: boolean;
 }
 
 interface Conversation {
@@ -44,7 +45,7 @@ interface Message {
     reactions: { userId: string; emoji: string }[];
 }
 
-const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
+const ChatSection: React.FC<ChatSectionProps> = ({ user, isAIAssistant = false }) => {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -59,8 +60,25 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        fetchConversations();
-    }, []);
+        if (isAIAssistant) {
+            // Initialize with welcome message
+            setMessages([
+                {
+                    id: 'AI-INIT',
+                    senderId: 'AI',
+                    senderName: 'Gram Sahayak',
+                    type: 'TEXT',
+                    content: `Namaste ${user.name}! I am your Gram Sahayak. How can I help you today?`,
+                    status: 'READ',
+                    timestamp: new Date(),
+                    reactions: []
+                }
+            ]);
+            setLoading(false);
+        } else {
+            fetchConversations();
+        }
+    }, [isAIAssistant]);
 
     useEffect(() => {
         scrollToBottom();
@@ -215,13 +233,17 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/api/chat/conversation/${activeConversation.id}/message`, {
+            const endpoint = isAIAssistant
+                ? `${API_BASE_URL}/api/ai/chat`
+                : `${API_BASE_URL}/api/chat/conversation/${activeConversation?.id}/message`;
+
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
+                body: JSON.stringify(isAIAssistant ? { prompt: newMessage } : {
                     type: 'TEXT',
                     content: newMessage
                 })
@@ -229,10 +251,24 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
 
             const data = await res.json();
             if (data.success) {
-                // Update with server message
-                setMessages(msgs => msgs.map(m =>
-                    m.id === tempMessage.id ? { ...data.message, status: 'SENT' } : m
-                ));
+                if (isAIAssistant) {
+                    const aiMessage: Message = {
+                        id: `AI-${Date.now()}`,
+                        senderId: 'AI',
+                        senderName: 'Gram Sahayak',
+                        type: 'TEXT',
+                        content: data.response,
+                        status: 'READ',
+                        timestamp: new Date(),
+                        reactions: []
+                    };
+                    setMessages(msgs => [...msgs, aiMessage]);
+                } else {
+                    // Update with server message
+                    setMessages(msgs => msgs.map(m =>
+                        m.id === tempMessage.id ? { ...data.message, status: 'SENT' } : m
+                    ));
+                }
             }
         } catch (error) {
             console.error('Send message error:', error);
@@ -272,7 +308,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
     });
 
     // Conversation List View
-    if (!activeConversation) {
+    if (!activeConversation && !isAIAssistant) {
         return (
             <div className="chat-section">
                 {/* Header */}
@@ -341,15 +377,17 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user }) => {
     }
 
     // Chat View
-    const otherUser = getOtherParticipant(activeConversation);
+    const otherUser = isAIAssistant ? { name: 'Gram Sahayak' } : getOtherParticipant(activeConversation!);
 
     return (
-        <div className="chat-section">
+        <div className={`chat-section ${isAIAssistant ? 'ai-mode' : ''}`}>
             {/* Chat Header */}
-            <div className="chat-header active-chat">
-                <button className="back-btn" aria-label="Go back" onClick={() => setActiveConversation(null)}>
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
+            <div className={`chat-header active-chat ${isAIAssistant ? 'ai-header' : ''}`}>
+                {!isAIAssistant && (
+                    <button className="back-btn" aria-label="Go back" onClick={() => setActiveConversation(null)}>
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                )}
                 <div className="avatar">
                     {otherUser?.name.charAt(0)}
                 </div>

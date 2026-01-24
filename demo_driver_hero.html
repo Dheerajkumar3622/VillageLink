@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Pro | Driver Hero</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --success: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: #020617;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .phone-mockup {
+            width: 380px;
+            height: 800px;
+            background: #000;
+            border-radius: 40px;
+            border: 8px solid #334155;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .phone-screen {
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            /* scrollbar-width: none; */
+            /* Modern Firefox */
+        }
+
+        /* Hero Header */
+        .hero-header {
+            padding: 40px 24px 24px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .driver-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            background: linear-gradient(45deg, var(--primary), #3b82f6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .driver-info h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 20px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* Heatmap Section */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 24px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .heatmap-container {
+            margin: 0 24px 24px;
+            height: 180px;
+            background: #1e293b;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .heatmap-overlay {
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+            animation: pulse 3s infinite;
+        }
+
+        .pickup-marker {
+            position: absolute;
+            background: var(--success);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        /* List Sections */
+        .pickup-list {
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .pickup-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pickup-info h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .pickup-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .pickup-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(15, 23, 42, 0.8);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--primary-light);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .text-live {
+            font-size: 10px;
+            color: var(--primary-light);
+        }
+
+        .marker-1 {
+            top: 30%;
+            left: 40%;
+        }
+
+        .marker-2 {
+            top: 50%;
+            left: 70%;
+        }
+
+        .marker-3 {
+            top: 20%;
+            left: 20%;
+        }
+
+        .location-text {
+            position: absolute;
+            top: 70%;
+            left: 24%;
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .location-pin {
+            position: absolute;
+            top: 65%;
+            left: 24%;
+            font-size: 14px;
+        }
+
+        .v-spacer {
+            height: 100px;
+        }
+
+        /* Gamification Bar */
+        .progress-container {
+            padding: 0 24px;
+            margin-bottom: 24px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            width: 75%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #3b82f6);
+        }
+
+        /* Demo Note */
+        .demo-info {
+            position: absolute;
+            top: 20px;
+            right: -350px;
+            width: 320px;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+            z-index: 100;
+        }
+
+        .demo-info b {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="demo-info">
+        <b>VillageLink Pro | Driver Hero</b><br><br>
+        100x Enhanced Provider Dashboard:<br><br>
+        1. 🏆 <b>Hero Gamification</b>: Level up from "Rookie" to "Village Legend".<br>
+        2. 🗺️ <b>Demand Heatmap</b>: Live visual showing where most pickups are waiting.<br>
+        3. 💰 <b>Instant Payouts</b>: Real-time earnings visualization.<br>
+        4. 🚀 <b>Smart Queue</b>: Pickups sorted by route efficiency.<br><br>
+        <i>Note: This is an aesthetic HTML simulation.</i>
+    </div>
+
+    <div class="phone-mockup">
+        <div class="phone-screen">
+            <!-- Header -->
+            <div class="hero-header">
+                <div class="profile-row">
+                    <div class="driver-avatar">👨🏻‍✈️</div>
+                    <div class="driver-info">
+                        <h2>Namaste, Rahul!</h2>
+                        <div class="hero-badge">Village Legend • Lvl 42</div>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="flex-between">
+                        <span>Level Progress</span>
+                        <span>1,200 / 1,500 XP</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Today's Income</div>
+                        <div class="stat-value">₹450.50</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Rating</div>
+                        <div class="stat-value">⭐ 4.98</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap -->
+            <div class="section-title">
+                Demand Heatmap
+                <span class="text-live">Update: Live</span>
+            </div>
+            <div class="heatmap-container">
+                <div class="heatmap-overlay"></div>
+                <!-- Some random pickup markers -->
+                <div class="pickup-marker marker-1"></div>
+                <div class="pickup-marker marker-2"></div>
+                <div class="pickup-marker marker-3"></div>
+                <div class="location-text">Your
+                    Location</div>
+                <div class="location-pin">📍</div>
+            </div>
+
+            <!-- Available Pickups -->
+            <div class="section-title">Available Pickups</div>
+            <div class="pickup-list">
+                <div class="pickup-card">
+                    <div class="pickup-info">
+                        <h4>Mandi → Market</h4>
+                        <p>📦 5 Quintals Wheat • 2.1km</p>
+                    </div>
+                    <button class="pickup-action">Accept</button>
+                </div>
+                <div class="pickup-card">
+                    <div class="pickup-info">
+                        <h4>Farmer Ram's Hub</h4>
+                        <p>🥬 Fresh Today Batch • 0.8km</p>
+                    </div>
+                    <button class="pickup-action">Accept</button>
+                </div>
+                <div class="pickup-card">
+                    <div class="pickup-info">
+                        <h4>Mess Alpha Corner</h4>
+                        <p>🍱 15 Lunch Packs • 3.2km</p>
+                    </div>
+                    <button class="pickup-action">Accept</button>
+                </div>
+            </div>
+
+            <div class="v-spacer"></div>
+
+            <!-- Bottom Nav -->
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">Home</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Map</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-label">Wallet</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Profile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

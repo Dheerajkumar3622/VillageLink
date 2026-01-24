@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Pro | Mess Master</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --primary-dark: #d97706;
+            --success: #10b981;
+            --accent: #8b5cf6;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: #020617;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .phone-mockup {
+            width: 380px;
+            height: 800px;
+            background: #000;
+            border-radius: 40px;
+            border: 8px solid #334155;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .phone-screen {
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            /* scrollbar-width: none; */
+            /* Modern Firefox */
+        }
+
+        /* Master Header */
+        .master-header {
+            padding: 40px 24px 24px;
+            background: linear-gradient(135deg, #451a03 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .shop-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .shop-info h2 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Live Kitchen Hub */
+        .hub-section {
+            padding: 0 24px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-insight {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .ai-insight-text {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .ai-insight-text span {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* Order Cards */
+        .order-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .order-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .order-id {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .order-timer {
+            font-size: 12px;
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .order-items {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .order-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-ready {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-prep {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Subscription Master */
+        .sub-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .sub-stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .sub-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .sub-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(15, 23, 42, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .shop-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .text-icon {
+            font-size: 20px;
+        }
+
+        .flash-text {
+            font-size: 10px;
+            color: var(--danger);
+        }
+
+        .v-spacer {
+            height: 100px;
+        }
+
+        /* Demo Note */
+        .demo-info {
+            position: absolute;
+            top: 20px;
+            left: -350px;
+            width: 320px;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.6;
+            z-index: 100;
+        }
+
+        .demo-info b {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="demo-info">
+        <b>VillageLink Pro | Mess Master</b><br><br>
+        Ultimate Food Provider Experience:<br><br>
+        1. 🥘 <b>Live Kitchen Hub</b>: Real-time order flow with countdown timers.<br>
+        2. 🔮 <b>AI Menu Prediction</b>: Predicts tomorrow's bestsellers to avoid waste.<br>
+        3. 📅 <b>Subscription Master</b>: Manage lunch/dinner subscribers at a glance.<br>
+        4. 📈 <b>Daily Tally</b>: Automated earnings tracker.<br><br>
+        <i>Note: This is an aesthetic HTML simulation.</i>
+    </div>
+
+    <div class="phone-mockup">
+        <div class="phone-screen">
+            <!-- Header -->
+            <div class="master-header">
+                <div class="shop-row">
+                    <div class="shop-info">
+                        <h2>Sita's Desi Mess</h2>
+                        <p class="shop-subtitle">Local Delicacies • Main Road</p>
+                    </div>
+                    <div class="status-badge">Online</div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active">Orders</div>
+                    <div class="tab">Menu</div>
+                    <div class="tab">Subscribers</div>
+                </div>
+
+                <div class="sub-stats">
+                    <div class="sub-stat-card">
+                        <span class="sub-stat-value">124</span>
+                        <span class="sub-stat-label">Active Subs</span>
+                    </div>
+                    <div class="sub-stat-card">
+                        <span class="sub-stat-value">₹2.4k</span>
+                        <span class="sub-stat-label">Today</span>
+                    </div>
+                    <div class="sub-stat-card">
+                        <span class="sub-stat-value">4.9</span>
+                        <span class="sub-stat-label">Rating</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hub Section -->
+            <div class="hub-section">
+                <div class="ai-insight">
+                    <span class="text-icon">🔮</span>
+                    <div class="ai-insight-text">
+                        <span>Prediction:</span> Tomorrow is a local festival. Demand for <span>Kadahi Paneer</span>
+                        will increase by <span>40%</span>.
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    Live Orders (4)
+                    <span class="flash-text">Priority Flash</span>
+                </div>
+
+                <div class="order-grid">
+                    <div class="order-card">
+                        <div class="order-header">
+                            <span class="order-id">#VL-8821</span>
+                            <span class="order-timer">05:42 left</span>
+                        </div>
+                        <div class="order-items">
+                            Full Thali x 2 • Plain Roti x 4
+                        </div>
+                        <div class="order-actions">
+                            <button class="order-btn btn-prep">Preparing</button>
+                            <button class="order-btn btn-ready">Food Ready</button>
+                        </div>
+                    </div>
+
+                    <div class="order-card">
+                        <div class="order-header">
+                            <span class="order-id">#VL-8825</span>
+                            <span class="order-timer">12:10 left</span>
+                        </div>
+                        <div class="order-items">
+                            Special Combo (Aalu Gobhi Kit) x 1
+                        </div>
+                        <div class="order-actions">
+                            <button class="order-btn btn-prep">Preparing</button>
+                            <button class="order-btn btn-ready">Food Ready</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="v-spacer"></div>
+
+            <!-- Bottom Nav -->
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">🍲</span>
+                    <span class="nav-label">Menu</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Subscribers</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

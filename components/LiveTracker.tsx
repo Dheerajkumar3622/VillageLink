@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { subscribeToUpdates, getActiveBuses } from '../services/transportService';
-import { MapPin, Users, Bus, Clock, Map as MapIcon, Hourglass, AlertCircle } from 'lucide-react';
+import { MapPin, Users, Bus, Clock, Map as MapIcon, Hourglass, AlertCircle, Wifi } from 'lucide-react';
 import { BusState } from '../types';
 import './LiveTracker.css';
 
@@ -236,13 +236,19 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
 
             {showHeader && (
                 <div className="bg-brand-600 p-4 text-white flex justify-between items-center shadow-md z-20 relative">
-                    <div>
+                    <div className="flex-1">
                         <h3 className="text-lg font-bold flex items-center gap-2">
                             12802 - Bihar Rajya Transport
                         </h3>
-                        <p className="text-xs opacity-80 flex items-center gap-1">
-                            <Clock size={10} /> Updated few seconds ago
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <p className="text-[9px] opacity-80 flex items-center gap-1 font-black uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded">
+                                <Clock size={10} /> Live
+                            </p>
+                            <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-300">
+                                <Wifi size={10} /> Satellite Sync
+                                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_5px_theme('colors.emerald.400')]"></span>
+                            </div>
+                        </div>
                     </div>
                     <div className="flex gap-2">
                         <button className="p-2 bg-white/20 rounded-full hover:bg-white/30" aria-label="View Map"><MapIcon size={18} /></button>

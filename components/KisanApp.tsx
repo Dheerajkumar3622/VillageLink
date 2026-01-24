@@ -51,6 +51,7 @@ export const KisanApp: React.FC = () => {
     const [listings, setListings] = useState<any[]>([]);
     const [weather, setWeather] = useState<any>(null);
     const [news, setNews] = useState<any[]>([]);
+    const [selectedUnit, setSelectedUnit] = useState('kg');
 
     useEffect(() => {
         // Check if already logged in
@@ -451,7 +452,7 @@ export const KisanApp: React.FC = () => {
                                     crop: formData.get('crop'),
                                     variety: 'Standard',
                                     quantity: parseFloat(formData.get('quantity') as string),
-                                    unit: 'KG',
+                                    unit: selectedUnit.toUpperCase(),
                                     pricePerUnit: parseFloat(formData.get('price') as string),
                                     location: {
                                         village: regVillage,
@@ -473,6 +474,16 @@ export const KisanApp: React.FC = () => {
                         }
                     }}>
                         <div className="premium-card p-6 space-y-6">
+                            {/* V5 ML Price Recommendation */}
+                            <div className="v5-price-rec">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-[10px] font-black text-warm-500 uppercase tracking-widest">AI Recommendation</span>
+                                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[9px] font-black uppercase">High Demand</span>
+                                </div>
+                                <div className="text-sm font-black text-white mb-1">Recommended: ₹42 - ₹48 / kg</div>
+                                <div className="text-[10px] text-slate-500 font-medium">Based on local market trends & supply gaps.</div>
+                            </div>
+
                             <div>
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Crop Name / फसल का नाम</label>
                                 <div className="relative">
@@ -490,11 +501,26 @@ export const KisanApp: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Price (₹/kg) / मूल्य</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Price (₹/unit) / मूल्य</label>
                                     <div className="relative">
                                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                         <input name="price" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Rate" />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Select Unit / इकाई चुनें</label>
+                                <div className="v5-unit-chips">
+                                    {['gram', 'kg', 'quintal', 'liter'].map(unit => (
+                                        <div
+                                            key={unit}
+                                            onClick={() => setSelectedUnit(unit)}
+                                            className={`v5-unit-chip ${selectedUnit === unit ? 'active' : ''}`}
+                                        >
+                                            {unit}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

@@ -9,12 +9,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/socket.io': {
-        target: 'https://villagelink-jh20.onrender.com',
+        target: 'http://localhost:3001',
         ws: true,
         changeOrigin: true
       },
       '/api': {
-        target: 'https://villagelink-jh20.onrender.com',
+        target: 'http://localhost:3001',
         changeOrigin: true
       }
     }

@@ -81,7 +81,7 @@ router.post('/listing', Auth.authenticate, async (req, res) => {
             productType, productName, variety, grade,
             quantity, unit, pricePerUnit, minOrderQuantity,
             location, harvestDate, expiryDate, organic,
-            certifications, photos, deliveryOptions
+            certifications, photos, deliveryOptions, trustChain
         } = req.body;
 
         const listing = new SupplyListing({
@@ -108,14 +108,8 @@ router.post('/listing', Auth.authenticate, async (req, res) => {
                 { type: 'PICKUP', available: true, additionalCost: 0 },
                 { type: 'TRANSPORT_LINK', available: true, additionalCost: 0 }
             ],
+            trustChain: trustChain || {},
             status: 'ACTIVE',
-            createdAt: Date.now()
-        });
-
-        await listing.save();
-
-        res.json({
-            success: true,
             listing,
             message: 'Product listed successfully'
         });

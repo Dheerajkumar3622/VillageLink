@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, MenuVote, PrepSheet, WasteEntry } from '../types';
 import { Button } from './Button';
-import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users } from 'lucide-react';
+import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users, Sparkles, TrendingUp, AlertTriangle, Monitor } from 'lucide-react';
 import { getMenuVotes, submitVote, getPrepSheet, logWaste, getMockVote, getMockPrepSheet } from '../services/messMateService';
+import { API_BASE_URL } from '../config';
 
 interface MessManagerViewProps {
     user: User;
@@ -16,6 +17,9 @@ const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
     const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
     const [activeVote, setActiveVote] = useState<MenuVote | null>(null);
     const [prepSheet, setPrepSheet] = useState<PrepSheet | null>(null);
+    const [kitchenHub, setKitchenHub] = useState<any>(null);
+    const [predictiveMenu, setPredictiveMenu] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
     const voteListRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -36,7 +40,35 @@ const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
         // Initial Load - Mock Data for Demo
         setActiveVote(getMockVote());
         setPrepSheet(getMockPrepSheet());
+        fetchKitchenHub();
+        fetchPredictiveMenu();
     }, []);
+
+    const InventoryBar: React.FC<{ level: number; color: string }> = ({ level, color }) => {
+        const ref = React.useRef<HTMLDivElement>(null);
+        React.useEffect(() => {
+            if (ref.current) ref.current.style.setProperty('--inv-level', `${level}%`);
+        }, [level]);
+        return <div ref={ref} className={`v5-inventory-bar-fill ${color}`}></div>;
+    };
+
+    const fetchKitchenHub = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/food/kitchen-hub`);
+            const data = await res.json();
+            if (data.success) setKitchenHub(data.hub);
+        } catch (e) { console.error("Kitchen Hub error", e); }
+    };
+
+    const fetchPredictiveMenu = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/food/predictive-menu`);
+            const data = await res.json();
+            if (data.success) setPredictiveMenu(data.suggestion);
+        } catch (e) { console.error("Predictive Menu error", e); }
+        setLoading(false);
+    };
 
     const handleVote = async (optionId: string) => {
         if (activeVote) {
@@ -64,6 +96,127 @@ const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
                         <span className="block text-2xl font-bold">12%</span>
                         <span className="text-xs opacity-75">Waste Reduced</span>
                     </div>
+                </div>
+            </div>
+
+            {/* Kitchen Hub Overlay */}
+            {kitchenHub && (
+                <div className="glass-3 p-6 rounded-[32px] border-white/5 shadow-yhisk-float animate-fade-in mb-6 bg-slate-900 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Monitor size={120} />
+                    </div>
+                    <div className="flex items-center gap-3 mb-6 relative z-10">
+                        <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+                            <Monitor size={20} />
+                        </div>
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Kitchen Hub Live</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <span className="block text-[10px] font-black text-slate-500 uppercase mb-1">Live Load</span>
+                            <div className="flex items-center gap-2">
+                                <TrendingUp size={14} className="text-emerald-400" />
+                                <span className="text-xl font-black text-white">{kitchenHub.liveLoad} / {kitchenHub.capacity}</span>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <span className="block text-[10px] font-black text-slate-500 uppercase mb-1">Queue Size</span>
+                            <div className="flex items-center gap-2">
+                                <Users size={14} className="text-amber-400" />
+                                <span className="text-xl font-black text-white">{kitchenHub.queueSize}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-4 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex items-center gap-3">
+                        <AlertTriangle size={18} className="text-emerald-400" />
+                        <p className="text-[11px] font-bold text-emerald-400">{kitchenHub.recommendation}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Predictive Menu AI Suggestion */}
+            {predictiveMenu && (
+                <div className="glass-3 p-6 rounded-[32px] border-white/5 shadow-yhisk-float animate-fade-in mb-6 bg-indigo-950 overflow-hidden relative">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-[var(--accent-primary)]/10 rounded-full blur-3xl"></div>
+                    <div className="flex items-center justify-between mb-6 relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[var(--accent-primary)]/20 flex items-center justify-center text-[var(--accent-primary)]">
+                                <Sparkles size={20} />
+                            </div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest">AI Menu Predictor</h3>
+                        </div>
+                        <div className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-black text-white/70 uppercase">
+                            Accuracy: {predictiveMenu.confidence}%
+                        </div>
+                    </div>
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 mb-4 relative z-10">
+                        <h4 className="text-lg font-black text-white tracking-tight mb-2">Tomorrow's Best: {predictiveMenu.recommendedDish}</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed">{predictiveMenu.rationale}</p>
+                    </div>
+                    <div className="flex gap-2 relative z-10">
+                        <div className="flex-1 p-3 bg-white/5 rounded-xl text-center">
+                            <span className="block text-lg font-black text-emerald-400">-{predictiveMenu.expectedWasteReduction}%</span>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">Waste</span>
+                        </div>
+                        <div className="flex-1 p-3 bg-white/5 rounded-xl text-center">
+                            <span className="block text-lg font-black text-amber-400">+{predictiveMenu.marginImprovement}%</span>
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">Profit</span>
+                        </div>
+                    </div>
+                    <button className="w-full mt-4 py-3 bg-[var(--accent-primary)] text-black text-[10px] font-black rounded-xl uppercase tracking-widest hover:opacity-90 transition-opacity">Apply Suggestion</button>
+                </div>
+            )}
+
+            {/* V5 Inventory Status (Inspired by Demo) */}
+            <div className="glass-3 p-6 rounded-[32px] border-white/5 bg-slate-900 mb-6">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Carrot size={16} className="text-emerald-400" /> Inventory Analytics
+                </h3>
+                <div className="space-y-4">
+                    {[
+                        { name: 'Atta (Wheat Flour)', level: 12, color: 'bg-red-500', alert: '12% Low' },
+                        { name: 'Rice (Basmati)', level: 65, color: 'bg-emerald-500', alert: 'Stable' },
+                        { name: 'Cooking Oil', level: 25, color: 'bg-warm-500', alert: 'Refill Soon' },
+                    ].map((item, idx) => (
+                        <div key={idx} className="v5-inventory-item">
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-bold text-slate-300">{item.name}</span>
+                                <span className={`text-[9px] font-black uppercase ${item.level < 20 ? 'text-red-500' : 'text-slate-500'}`}>{item.alert}</span>
+                            </div>
+                            <div className="v5-inventory-bar-bg">
+                                <InventoryBar level={item.level} color={item.color} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* V5 Order History (Inspired by Demo) */}
+            <div className="glass-3 p-6 rounded-[32px] border-white/5 bg-slate-900 mb-6">
+                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <ClipboardList size={16} className="text-[var(--accent-secondary)]" /> Recent Bulk Orders
+                </h3>
+                <div className="space-y-2">
+                    {[
+                        { id: '#ORD-9923', type: 'Veg Dinner', count: 120, status: 'Ready' },
+                        { id: '#ORD-9924', type: 'Rice & Dal', count: 45, status: 'In Prep' },
+                    ].map((order, idx) => (
+                        <div key={idx} className="v5-order-card">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white/5 rounded-xl">
+                                    <ChefHat size={18} className="text-slate-400" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-white">{order.type}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">{order.id}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs font-black text-white">{order.count} Servings</p>
+                                <span className={`text-[9px] font-black uppercase ${order.status === 'Ready' ? 'text-emerald-500' : 'text-warm-500'}`}>{order.status}</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 

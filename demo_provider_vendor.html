@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Provider - Vendor Dashboard Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 100px;
+        }
+
+        /* Vendor Header - Purple Theme */
+        .header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo-text span {
+            color: #e9d5ff;
+        }
+
+        .provider-badge {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* App Distinction Banner */
+        .app-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.1) 100%);
+            padding: 12px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .app-banner-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #a78bfa;
+        }
+
+        .app-banner-sub {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Vendor Profile */
+        .vendor-profile {
+            padding: 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            margin: 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .profile-role {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .profile-shop {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 20px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-trend {
+            font-size: 11px;
+            color: #10b981;
+            margin-top: 4px;
+        }
+
+        /* Quick Actions */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 12px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-scroll {
+            display: flex;
+            gap: 12px;
+            padding: 0 20px 20px;
+            overflow-x: auto;
+        }
+
+        .action-card {
+            flex-shrink: 0;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            min-width: 130px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 10px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .action-icon.inventory {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .action-icon.orders {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .action-icon.customers {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .action-icon.analytics {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .action-icon.supply {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        }
+
+        .action-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .action-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-top: 6px;
+        }
+
+        /* Inventory Section */
+        .inventory-section {
+            padding: 0 20px 20px;
+        }
+
+        .inventory-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .inventory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .inventory-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inventory-icon {
+            font-size: 20px;
+        }
+
+        .inventory-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .inventory-edit {
+            color: #8b5cf6;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .inventory-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .inventory-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bar-label {
+            font-size: 11px;
+            color: #64748b;
+            width: 60px;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .bar-fill.high {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .bar-fill.medium {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .bar-fill.low {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .bar-value {
+            font-size: 11px;
+            color: #fff;
+            width: 40px;
+            text-align: right;
+        }
+
+        .w-85p {
+            width: 85%;
+        }
+
+        .w-45p {
+            width: 45%;
+        }
+
+        .w-15p {
+            width: 15%;
+        }
+
+        /* Today's Orders */
+        .orders-section {
+            margin: 0 20px 20px;
+        }
+
+        .order-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-info {
+            flex: 1;
+        }
+
+        .order-id {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .order-customer {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .order-items {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .order-right {
+            text-align: right;
+        }
+
+        .order-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .order-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .order-status.new {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .order-status.preparing {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .order-status.ready {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        /* Supply Chain */
+        .supply-section {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(219, 39, 119, 0.05) 100%);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(236, 72, 153, 0.2);
+        }
+
+        .supply-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .supply-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f472b6;
+        }
+
+        .supply-items {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+        }
+
+        .supply-item {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .supply-item-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .supply-item-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .supply-item-source {
+            font-size: 9px;
+            color: #64748b;
+        }
+
+        .supply-item-price {
+            font-size: 10px;
+            color: #10b981;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, rgba(13, 27, 42, 0.95) 0%, #0d1b2a 100%);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #64748b;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #8b5cf6;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: #fff;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🏪 Vendor Dashboard - Separate Provider App</strong>
+        This is in the PROVIDER APP (separate from consumer VillageLink)
+    </div>
+
+    <div class="phone-frame">
+        <!-- Vendor Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">Village<span>Link</span> Provider</div>
+            </div>
+            <div class="provider-badge">🏪 VENDOR</div>
+        </div>
+
+        <!-- App Distinction -->
+        <div class="app-banner">
+            <div class="app-banner-text">📱 VillageLink Provider App</div>
+            <div class="app-banner-sub">For Vendors - Wholesale Buying & Selling</div>
+        </div>
+
+        <!-- Vendor Profile -->
+        <div class="vendor-profile">
+            <div class="profile-row">
+                <div class="profile-avatar">🏪</div>
+                <div class="profile-info">
+                    <div class="profile-name">Sharma General Store</div>
+                    <div class="profile-role">
+                        <span>🏪</span> Verified Vendor
+                    </div>
+                    <div class="profile-shop">📍 Main Market, Dehri-On-Sone</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value">156</div>
+                <div class="stat-label">Products</div>
+                <div class="stat-trend">↑ 12 new</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">23</div>
+                <div class="stat-label">Today's Orders</div>
+                <div class="stat-trend">↑ 8%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">₹45K</div>
+                <div class="stat-label">Today's Sales</div>
+                <div class="stat-trend">↑ 15%</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>⚡</span> Quick Actions
+            </div>
+        </div>
+
+        <div class="actions-scroll">
+            <div class="action-card">
+                <div class="action-icon inventory">📦</div>
+                <div class="action-title">Inventory</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon orders">📋</div>
+                <div class="action-title">Orders</div>
+                <div class="action-badge">5 New</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon customers">👥</div>
+                <div class="action-title">Customers</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon analytics">📊</div>
+                <div class="action-title">Analytics</div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon supply">🔗</div>
+                <div class="action-title">Supply Chain</div>
+            </div>
+        </div>
+
+        <!-- Inventory Overview -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>📦</span> Inventory Status
+            </div>
+        </div>
+
+        <div class="inventory-section">
+            <div class="inventory-card">
+                <div class="inventory-header">
+                    <div class="inventory-title">
+                        <span class="inventory-icon">🥬</span>
+                        <span class="inventory-name">Vegetables</span>
+                    </div>
+                    <span class="inventory-edit">Edit →</span>
+                </div>
+                <div class="inventory-bars">
+                    <div class="inventory-bar">
+                        <span class="bar-label">Tomatoes</span>
+                        <div class="bar-track">
+                            <div class="bar-fill high w-85p"></div>
+                        </div>
+                        <span class="bar-value">85%</span>
+                    </div>
+                    <div class="inventory-bar">
+                        <span class="bar-label">Onions</span>
+                        <div class="bar-track">
+                            <div class="bar-fill medium w-45p"></div>
+                        </div>
+                        <span class="bar-value">45%</span>
+                    </div>
+                    <div class="inventory-bar">
+                        <span class="bar-label">Potatoes</span>
+                        <div class="bar-track">
+                            <div class="bar-fill low w-15p"></div>
+                        </div>
+                        <span class="bar-value">15%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Orders -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>📋</span> Today's Orders
+            </div>
+        </div>
+
+        <div class="orders-section">
+            <div class="order-card">
+                <div class="order-info">
+                    <div class="order-id">#ORD-2547</div>
+                    <div class="order-customer">Rajesh Kumar</div>
+                    <div class="order-items">3 items • 5 mins ago</div>
+                </div>
+                <div class="order-right">
+                    <div class="order-amount">₹850</div>
+                    <div class="order-status new">🆕 New</div>
+                </div>
+            </div>
+
+            <div class="order-card">
+                <div class="order-info">
+                    <div class="order-id">#ORD-2546</div>
+                    <div class="order-customer">Priya Sharma</div>
+                    <div class="order-items">5 items • 20 mins ago</div>
+                </div>
+                <div class="order-right">
+                    <div class="order-amount">₹1,250</div>
+                    <div class="order-status preparing">⏳ Preparing</div>
+                </div>
+            </div>
+
+            <div class="order-card">
+                <div class="order-info">
+                    <div class="order-id">#ORD-2545</div>
+                    <div class="order-customer">Amit Verma</div>
+                    <div class="order-items">2 items • 45 mins ago</div>
+                </div>
+                <div class="order-right">
+                    <div class="order-amount">₹420</div>
+                    <div class="order-status ready">✅ Ready</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supply Chain -->
+        <div class="supply-section">
+            <div class="supply-header">
+                <span>🔗</span>
+                <div class="supply-title">Buy from Farmers</div>
+            </div>
+            <div class="supply-items">
+                <div class="supply-item">
+                    <div class="supply-item-icon">🍅</div>
+                    <div class="supply-item-name">Tomatoes</div>
+                    <div class="supply-item-source">Ramesh Farm</div>
+                    <div class="supply-item-price">₹25/Kg</div>
+                </div>
+                <div class="supply-item">
+                    <div class="supply-item-icon">🧅</div>
+                    <div class="supply-item-name">Onions</div>
+                    <div class="supply-item-source">Local Mandi</div>
+                    <div class="supply-item-price">₹20/Kg</div>
+                </div>
+                <div class="supply-item">
+                    <div class="supply-item-icon">🥔</div>
+                    <div class="supply-item-name">Potatoes</div>
+                    <div class="supply-item-source">Agra Farm</div>
+                    <div class="supply-item-price">₹18/Kg</div>
+                </div>
+                <div class="supply-item">
+                    <div class="supply-item-icon">🌽</div>
+                    <div class="supply-item-name">Corn</div>
+                    <div class="supply-item-source">Direct Farm</div>
+                    <div class="supply-item-price">₹28/Kg</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-icon">🏠</div>
+                <span>Home</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">📦</div>
+                <span>Inventory</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">📋</div>
+                <span>Orders</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">📊</div>
+                <span>Analytics</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">⚙️</div>
+                <span>Settings</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

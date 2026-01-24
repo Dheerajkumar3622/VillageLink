@@ -666,67 +666,52 @@ body,
    ======================================== */
 
 :root {
-  /* V5 CORE BACKGROUNDS */
+  /* V5 CORE BACKGROUNDS - ULTIMATE VOID */
   --bg-void: #000000;
-  --bg-deep: #030712;
-  --bg-surface: #0c1222;
-  --bg-elevated: #151d2e;
-  --bg-glass: rgba(12, 18, 34, 0.7);
+  --bg-deep: #020617;
+  --bg-surface: #0a0f1e;
+  --bg-elevated: #111827;
+  --bg-glass: rgba(2, 6, 23, 0.75);
 
-  /* V5 ACCENT COLORS */
-  --accent-primary: #00f5a0;
-  --accent-secondary: #00d9f5;
-  --accent-tertiary: #a855f7;
-  --accent-warm: #fb923c;
-  --accent-hot: #f43f5e;
+  /* V5 ACCENT COLORS - BHOOMI & HARVEST */
+  --accent-primary: #10b981;
+  /* Bhoomi Green */
+  --accent-secondary: #0ea5e9;
+  /* Sky Blue */
+  --accent-tertiary: #8b5cf6;
+  /* Royal Purple */
+  --accent-warm: #f59e0b;
+  /* Saffron Harvest */
+  --accent-hot: #ef4444;
+  /* alert Red */
+  --accent-neon: #00ff9d;
+  /* Neo Trace */
 
   /* V5 GLOW EFFECTS */
-  --glow-primary: 0 0 40px rgba(0, 245, 160, 0.3);
-  --glow-secondary: 0 0 40px rgba(0, 217, 245, 0.3);
-  --glow-tertiary: 0 0 40px rgba(168, 85, 247, 0.3);
-  --glow-warm: 0 0 40px rgba(251, 146, 60, 0.3);
+  --glow-primary: 0 0 30px rgba(16, 185, 129, 0.3);
+  --glow-secondary: 0 0 30px rgba(14, 165, 233, 0.3);
+  --glow-neon: 0 0 40px rgba(0, 255, 157, 0.4);
 
   /* V5 TEXT HIERARCHY */
   --text-white: #ffffff;
-  --text-primary: #f1f5f9;
-  --text-secondary: rgba(241, 245, 249, 0.7);
-  --text-muted: rgba(241, 245, 249, 0.4);
+  --text-primary: #f8fafc;
+  --text-secondary: rgba(248, 250, 252, 0.75);
+  --text-muted: rgba(248, 250, 252, 0.45);
 
   /* V5 BORDERS */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-glow: rgba(0, 245, 160, 0.3);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(0, 255, 157, 0.25);
 
   /* V5 TYPOGRAPHY */
-  --font-display: 'Plus Jakarta Sans', 'Outfit', sans-serif;
-  --font-mono: 'Space Grotesk', 'Inter', monospace;
-
-  /* V5 SPACING */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-
-  /* V5 RADIUS */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
-  --radius-full: 100px;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'Space Grotesk', monospace;
 
   /* LEGACY COMPATIBILITY */
-  --neon-emerald: var(--accent-primary);
+  --neon-emerald: var(--accent-neon);
   --electric-saffron: var(--accent-warm);
-  --cyber-indigo: var(--accent-tertiary);
   --obsidian-deep: var(--bg-deep);
   --obsidian-glass: var(--bg-glass);
-  --liquid-glass: rgba(255, 255, 255, 0.05);
-  --glass-border: var(--border-subtle);
-  --glow-emerald: var(--glow-primary);
-  --glow-saffron: var(--glow-warm);
-  --font-hud: var(--font-display);
-  --van-primary: #f8fafc;
-  --van-accent: var(--accent-primary);
 }
 
 /* ========================================
@@ -798,11 +783,63 @@ body,
 
 /* V5 Mesh Background */
 .v5-mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
   background:
-    radial-gradient(ellipse 100% 70% at 0% 0%, rgba(0, 245, 160, 0.12), transparent 50%),
-    radial-gradient(ellipse 80% 60% at 100% 20%, rgba(0, 217, 245, 0.1), transparent 50%),
-    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(168, 85, 247, 0.08), transparent 50%);
+    radial-gradient(circle at 10% 10%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, rgba(139, 92, 219, 0.08) 0%, transparent 40%),
+    var(--bg-deep);
+}
+
+/* V5 Cinematic Grain */
+.v5-grain {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+  opacity: 0.02;
+  animation: v5Drift 60s linear infinite;
   pointer-events: none;
+  z-index: -5;
+}
+
+@keyframes v5Drift {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-5%, -5%);
+  }
+}
+
+/* V5 Section Header */
+.v5-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  margin: 24px 0 16px;
+}
+
+.v5-section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.v5-section-action {
+  font-size: 0.75rem;
+  color: var(--accent-neon);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* V5 App Shell */

@@ -1,28 +1,101 @@
 
 import { GoogleGenAI } from "@google/genai";
 
+
+
+import Models from '../models.js';
+const { AISahayakSession, NewsItem, MarketItem, User } = Models;
+
 // Initialize Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY });
 
-export const chatWithSarpanch = async (req, res) => {
+export const chatWithGramSahayak = async (req, res) => {
     try {
-        const { message, history } = req.body;
-        const systemInstruction = "You are 'Sarpanch AI', a wise, helpful, and rustic village headman for the 'VillageLink' transport app. You speak in a mix of Hindi/Bhojpuri and English. You help users book tickets, find buses, and check market prices. Keep answers short and concise.";
-        const model = "gemini-2.5-flash";
+        const { message, sessionId, userId } = req.body;
 
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: message,
-            config: { systemInstruction: systemInstruction, temperature: 0.7 }
-        });
+        // 1. Fetch or Create Session Context
+        let session = await AISahayakSession.findOne({ sessionId: sessionId || `SESS-${userId}-${Date.now()}` });
+        if (!session) {
+            session = new AISahayakSession({
+                sessionId: sessionId || `SESS-${userId}-${Date.now()}`,
+                userId: userId,
+                history: []
+            });
+        }
+
+        const systemInstruction = `You are 'Gram Sahayak', the ultimate AI Heart of VillageLink. 
+        You are a proactive, helpful, and technologically savvy assistant for rural India.
+        You speak a blend of Hinglish (Hindi + English) and local dialects like Bhojpuri which makes users feel at home.
+        Your goals:
+        1. Predict user needs (e.g., 'Aapka kal ka bus 8 baje hai, book karun?')
+        2. Provide expert advice on Mandi prices, farming, and village life.
+        3. Be empathetic and proactive.
+        Keep responses concise, human-like, and culturally relevant. Use emojis like 🌱, 🚌, 💰.`;
+
+        const model = "gemini-2.0-flash"; // Upgrading to latest 2.0 Flash for speed
+
+        // Add user message to history
+        session.history.push({ role: 'user', text: message });
+
+        const contents = session.history.map(h => ({
+            role: h.role,
+            parts: [{ text: h.text }]
+        }));
+
+        const genModel = ai.getGenerativeModel({ model: model, systemInstruction });
+        const chat = genModel.startChat({ history: contents.slice(0, -1) });
+        const result = await chat.sendMessage(message);
+        const responseText = result.response.text();
+
+        // Add model response to history and save
+        session.history.push({ role: 'model', text: responseText });
+        session.lastInteracted = Date.now();
+        await session.save();
+
+        // Psychology Hook: Occasional "Level Up" or "Insight" injection
+        const actionLink = responseText.toLowerCase().includes("book") ? { label: "Book Now", tab: "HOME" } : null;
 
         res.json({
-            text: response.text,
-            actionLink: response.text.toLowerCase().includes("book") ? { label: "Book Now", tab: "HOME" } : null
+            text: responseText,
+            sessionId: session.sessionId,
+            actionLink
         });
     } catch (e) {
-        console.error("Gemini Chat Error:", e);
-        res.status(500).json({ text: "Maaf karin, abhi network kamjor ba (Network error).", error: e.message });
+        console.error("Gram Sahayak Error:", e);
+        res.status(500).json({
+            text: "Maaf kijiyega, Sahayak abhi thoda vyast hai. (Sahayak is busy)",
+            error: e.message
+        });
+    }
+};
+
+/**
+ * Gram Insights: Dynamic, Personalized AI Peek for the Dashboard
+ */
+export const getGramInsights = async (req, res) => {
+    try {
+        const { userId } = req.query;
+        const user = await User.findOne({ id: userId });
+        const news = await NewsItem.find().sort({ timestamp: -1 }).limit(1);
+        const mandi = await MarketItem.find({ type: 'COMMODITY' }).limit(2);
+
+        const prompt = `Based on:
+        User: ${user?.name || 'Villager'} (Level: ${user?.heroLevel || 'Novice'})
+        Latest News: ${news[0]?.title || 'Normal day'}
+        Mandi: ${mandi.map(m => m.name + ': ₹' + m.price).join(', ')}
+        
+        Generate a 1-line proactive "Peek" insight for their dashboard. 
+        Example: '💡 Tomato prices up by 10%, Ramesh! Want to list your harvest?' 
+        Example: '🌦️ Rain alert tomorrow. Your 9 AM bus might be 10 mins late.'
+        Return ONLY the 1-line text.`;
+
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const result = await model.generateContent(prompt);
+        const insight = result.response.text().trim();
+
+        res.json({ insight });
+    } catch (e) {
+        res.json({ insight: "💡 Check mandi prices for new opportunities today!" });
     }
 };
 

@@ -11,8 +11,11 @@ import path from 'path';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import compression from 'compression';
 
 // Security Imports
 import helmet from 'helmet';
@@ -43,6 +46,7 @@ import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
 import gramMandiRoutes from './backend/routes/gramMandiRoutes.js';
 import indiaLocationRoutes from './backend/routes/indiaLocationRoutes.js';
+import socialRoutes from './backend/routes/socialRoutes.js';
 
 import EmailService from './backend/services/emailService.js';
 const { sendEmail } = EmailService;
@@ -74,11 +78,14 @@ const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDevice
 
 const app = express();
 
+app.use(compression());
 app.set('trust proxy', 1);
 
-// Initialize Real Data
-refreshMarketPrices();
-initializeJobs(); // Seed jobs if empty
+// Initialize Real Data in background to allow faster server startup
+setImmediate(() => {
+    refreshMarketPrices();
+    initializeJobs(); // Seed jobs if empty
+});
 
 // --- SECURITY MIDDLEWARE ---
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -118,17 +125,35 @@ app.get('/api/config/razorpay', (req, res) => {
 
 // --- DATABASE STATE ---
 let isDbConnected = false;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
+const MONGO_URI_SRV = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
+const MONGO_URI_STANDARD = 'mongodb://dheerakumar3622:Dheeraj123@ac-klokthx-shard-00-00.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-01.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-02.j9op0nf.mongodb.net:27017/test?ssl=true&replicaSet=atlas-2yklok-shard-0&authSource=admin&retryWrites=true&w=majority';
 
-mongoose.connect(MONGO_URI)
-    .then(async () => {
-        console.log('✅ Connected to MongoDB (Production Mode)');
-        isDbConnected = true;
+mongoose.connection.on('connecting', () => console.log('⏳ Connecting to MongoDB...'));
+mongoose.connection.on('connected', () => console.log('✅ MongoDB Connected'));
+mongoose.connection.on('error', (err) => console.error('❌ MongoDB Connection Error:', err));
+mongoose.connection.on('disconnected', () => console.log('🔌 MongoDB Disconnected'));
+
+const connectWithRetry = (uri) => {
+    console.log(`📡 Connecting to: ${uri.includes('+srv') ? 'SRV Cluster' : 'Standard Nodes'}`);
+    mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+        family: 4, // Force IPv4
     })
-    .catch(err => {
-        console.warn('⚠️ MongoDB Connection Failed.', err.message);
-        isDbConnected = false;
-    });
+        .then(() => {
+            isDbConnected = true;
+        })
+        .catch(err => {
+            console.warn(`❌ Connection to ${uri.includes('+srv') ? 'SRV' : 'Standard'} failed:`, err.message);
+            isDbConnected = false;
+            if (uri === MONGO_URI_SRV) {
+                console.log('🔄 Retrying with Standard URI...');
+                connectWithRetry(MONGO_URI_STANDARD);
+            }
+        });
+};
+
+connectWithRetry(MONGO_URI_SRV);
 
 // --- MIDDLEWARE: ACTIVITY LOGGER ---
 const logActivity = async (req, res, next) => {
@@ -256,6 +281,7 @@ app.use('/api/pricing', pricingRoutes);         // Admin Pricing Control
 app.use('/api/reels', reelsRoutes);             // Instagram-style Reels
 app.use('/api/chat', chatRoutes);               // WhatsApp-style Chat
 app.use('/api/village-manager', villageManagerRoutes); // Village Manager Proxy Services
+app.use('/api/social', socialRoutes);           // Village Circles & Gamification
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 

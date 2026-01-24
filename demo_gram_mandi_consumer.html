@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Gram Mandi Consumer View Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 100px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo-text span {
+            color: #a7f3d0;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Mandi Header */
+        .mandi-header {
+            padding: 24px 20px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+        }
+
+        .mandi-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .mandi-title h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .mandi-subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* Stats */
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            margin: 0 20px;
+            border-radius: 16px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Compare: Old vs New */
+        .compare-section {
+            margin: 20px;
+            padding: 20px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 16px;
+            border: 1px dashed rgba(239, 68, 68, 0.3);
+        }
+
+        .compare-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f87171;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .old-roles {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .old-role {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        .old-role-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .old-role-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .old-role-desc {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .cross-overlay {
+            position: relative;
+        }
+
+        .cross-overlay::after {
+            content: '❌ REMOVED';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ef4444;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* New Consumer View */
+        .new-section {
+            margin: 20px;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .new-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #10b981;
+            text-align: center;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0 20px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-icon {
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+        .voice-btn {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Categories */
+        .categories {
+            padding: 0 20px 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .view-all {
+            font-size: 13px;
+            color: #10b981;
+            cursor: pointer;
+        }
+
+        .category-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .category-chip {
+            flex-shrink: 0;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 24px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .category-chip:hover,
+        .category-chip.active {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
+        }
+
+        .category-icon {
+            font-size: 18px;
+        }
+
+        .category-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Fresh Today */
+        .fresh-section {
+            padding: 0 20px 20px;
+        }
+
+        .fresh-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .fresh-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .fresh-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .fresh-image {
+            height: 100px;
+            background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .fresh-content {
+            padding: 12px;
+        }
+
+        .fresh-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .fresh-farm {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .fresh-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fresh-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .fresh-unit {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .add-btn {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .organic-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(16, 185, 129, 0.9);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .fresh-card {
+            position: relative;
+        }
+
+        /* ML Section */
+        .ml-section {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .ml-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .ml-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #a78bfa;
+        }
+
+        .ai-badge {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .ml-items {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+        }
+
+        .ml-item {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .ml-item-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .ml-item-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .ml-item-reason {
+            font-size: 9px;
+            color: #a78bfa;
+            margin-top: 4px;
+        }
+
+        /* Cart Floating */
+        .cart-float {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .cart-float span {
+            font-size: 28px;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, rgba(13, 27, 42, 0.95) 0%, #0d1b2a 100%);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #64748b;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #10b981;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        .nav-center {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: -28px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .nav-center-icon {
+            font-size: 24px;
+        }
+
+        .mandi-title-icon {
+            font-size: 32px;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🌾 Gram Mandi - Consumer Only View</strong>
+        No farmer/vendor/cold storage options - pure shopping experience
+    </div>
+
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">Village<span>Link</span></div>
+            </div>
+            <div class="back-btn">← Back</div>
+        </div>
+
+        <!-- Mandi Header -->
+        <div class="mandi-header">
+            <div class="mandi-title">
+                <span class="mandi-title-icon">🌾</span>
+                <h1>GramMandi</h1>
+            </div>
+            <div class="mandi-subtitle">Farm to Kitchen Marketplace</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-value">4</div>
+                <div class="stat-label">Products</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">50+</div>
+                <div class="stat-label">Farmers</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">70%+</div>
+                <div class="stat-label">Savings</div>
+            </div>
+        </div>
+
+        <!-- Compare: What's Removed -->
+        <div class="compare-section cross-overlay">
+            <div class="compare-title">❌ Old design had role selector (REMOVED)</div>
+            <div class="old-roles">
+                <div class="old-role">
+                    <div class="old-role-icon">🌾</div>
+                    <div class="old-role-name">Farmer</div>
+                    <div class="old-role-desc">Sell crops</div>
+                </div>
+                <div class="old-role">
+                    <div class="old-role-icon">🛒</div>
+                    <div class="old-role-name">Consumer</div>
+                    <div class="old-role-desc">Buy fresh</div>
+                </div>
+                <div class="old-role">
+                    <div class="old-role-icon">🏪</div>
+                    <div class="old-role-name">Vendor</div>
+                    <div class="old-role-desc">Wholesale</div>
+                </div>
+                <div class="old-role">
+                    <div class="old-role-icon">❄️</div>
+                    <div class="old-role-name">Cold Storage</div>
+                    <div class="old-role-desc">Rent space</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Design -->
+        <div class="new-section">
+            <div class="new-title">
+                ✅ New Design: Direct Shopping Experience
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search vegetables, fruits, grains...">
+            <div class="voice-btn">🎤</div>
+        </div>
+
+        <!-- Categories -->
+        <div class="categories">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🏷️</span> Categories
+                </div>
+            </div>
+            <div class="category-scroll">
+                <div class="category-chip active">
+                    <span class="category-icon">✨</span>
+                    <span class="category-name">All</span>
+                </div>
+                <div class="category-chip">
+                    <span class="category-icon">🥬</span>
+                    <span class="category-name">Vegetables</span>
+                </div>
+                <div class="category-chip">
+                    <span class="category-icon">🍎</span>
+                    <span class="category-name">Fruits</span>
+                </div>
+                <div class="category-chip">
+                    <span class="category-icon">🌾</span>
+                    <span class="category-name">Grains</span>
+                </div>
+                <div class="category-chip">
+                    <span class="category-icon">🥛</span>
+                    <span class="category-name">Dairy</span>
+                </div>
+                <div class="category-chip">
+                    <span class="category-icon">🌿</span>
+                    <span class="category-name">Organic</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fresh Today -->
+        <div class="fresh-section">
+            <div class="section-header">
+                <div class="section-title">
+                    <span>🌿</span> Fresh Today
+                </div>
+                <div class="view-all">See all →</div>
+            </div>
+            <div class="fresh-grid">
+                <div class="fresh-card">
+                    <div class="organic-badge">🌱 Organic</div>
+                    <div class="fresh-image">🥛</div>
+                    <div class="fresh-content">
+                        <div class="fresh-name">Fresh Milk</div>
+                        <div class="fresh-farm">Nasirganj Farm</div>
+                        <div class="fresh-bottom">
+                            <div>
+                                <div class="fresh-price">₹50</div>
+                                <div class="fresh-unit">per liter</div>
+                            </div>
+                            <div class="add-btn">+</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fresh-card">
+                    <div class="fresh-image">🌾</div>
+                    <div class="fresh-content">
+                        <div class="fresh-name">Wheat</div>
+                        <div class="fresh-farm">Sasaram Mill</div>
+                        <div class="fresh-bottom">
+                            <div>
+                                <div class="fresh-price">₹2200</div>
+                                <div class="fresh-unit">per quintal</div>
+                            </div>
+                            <div class="add-btn">+</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fresh-card">
+                    <div class="fresh-image">🍅</div>
+                    <div class="fresh-content">
+                        <div class="fresh-name">Tomatoes</div>
+                        <div class="fresh-farm">Dehri Farm</div>
+                        <div class="fresh-bottom">
+                            <div>
+                                <div class="fresh-price">₹35</div>
+                                <div class="fresh-unit">per kg</div>
+                            </div>
+                            <div class="add-btn">+</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fresh-card">
+                    <div class="organic-badge">🌱 Organic</div>
+                    <div class="fresh-image">🥬</div>
+                    <div class="fresh-content">
+                        <div class="fresh-name">Spinach</div>
+                        <div class="fresh-farm">Local Farm</div>
+                        <div class="fresh-bottom">
+                            <div>
+                                <div class="fresh-price">₹25</div>
+                                <div class="fresh-unit">per bundle</div>
+                            </div>
+                            <div class="add-btn">+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Recommendations -->
+        <div class="ml-section">
+            <div class="ml-header">
+                <span>🤖</span>
+                <div class="ml-title">You May Also Like</div>
+                <div class="ai-badge">AI Picks</div>
+            </div>
+            <div class="ml-items">
+                <div class="ml-item">
+                    <div class="ml-item-icon">🧅</div>
+                    <div class="ml-item-name">Onions</div>
+                    <div class="ml-item-reason">Often bought together</div>
+                </div>
+                <div class="ml-item">
+                    <div class="ml-item-icon">🫚</div>
+                    <div class="ml-item-name">Ginger</div>
+                    <div class="ml-item-reason">Trending now</div>
+                </div>
+                <div class="ml-item">
+                    <div class="ml-item-icon">🌶️</div>
+                    <div class="ml-item-name">Green Chilli</div>
+                    <div class="ml-item-reason">Your usual pick</div>
+                </div>
+                <div class="ml-item">
+                    <div class="ml-item-icon">🥔</div>
+                    <div class="ml-item-name">Potatoes</div>
+                    <div class="ml-item-reason">Weekly special</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Float -->
+        <div class="cart-float">
+            <span>🛒</span>
+            <div class="cart-badge">3</div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <div class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <span>Home</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">🎬</div>
+                <span>Reels</span>
+            </div>
+            <div class="nav-center">
+                <span class="nav-center-icon">📷</span>
+            </div>
+            <div class="nav-item active">
+                <div class="nav-icon">🏪</div>
+                <span>Mandi</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">👤</div>
+                <span>Profile</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

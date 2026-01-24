@@ -132,6 +132,60 @@ router.get('/manager/dashboard', Auth.authenticate, async (req, res) => {
     }
 });
 
+// --- MESS MASTER: ULTIMATE ENDPOINTS ---
+
+/**
+ * Kitchen Hub: Live visual status of orders
+ */
+router.get('/manager/kitchen-hub', Auth.authenticate, async (req, res) => {
+    try {
+        const shop = await Shop.findOne({ ownerId: req.user.id, category: 'MESS' });
+        if (!shop) return res.status(403).json({ error: "No Mess Found" });
+
+        const orders = await FoodBooking.find({
+            messId: shop.id,
+            status: { $in: ['PAID', 'PREPARING', 'READY'] }
+        }).sort({ bookingTime: 1 });
+
+        res.json({
+            success: true,
+            activeOrders: orders.map(o => ({
+                id: o.id,
+                items: o.items,
+                status: o.status,
+                token: o.token,
+                timeSinceOrder: Math.floor((Date.now() - o.bookingTime) / 60000) + 'm'
+            }))
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+/**
+ * Predictive Menu: AI suggestions based on stock and demand
+ */
+router.get('/manager/predictive-menu', Auth.authenticate, async (req, res) => {
+    try {
+        const shop = await Shop.findOne({ ownerId: req.user.id, category: 'MESS' });
+        const prediction = await ML.predictDemand(shop.id);
+
+        // 100x: This would ideally use a more complex LLM or ML model
+        const suggestions = [
+            { name: 'Special Masala Khichdi', probability: 0.92, reason: 'High demand predicted due to rainy weather' },
+            { name: 'Cold Lassi', probability: 0.15, reason: 'Low probability (Cooler temperature)' }
+        ];
+
+        res.json({
+            success: true,
+            demandForecast: prediction,
+            suggestions
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Verify Token
 router.post('/manager/verify', Auth.authenticate, async (req, res) => {
     try {

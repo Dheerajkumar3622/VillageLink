@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Provider - Farmer Dashboard Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 100px;
+        }
+
+        /* Provider Header - Different from Consumer */
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo-text span {
+            color: #fef3c7;
+        }
+
+        .provider-badge {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* App Distinction Banner */
+        .app-banner {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%);
+            padding: 12px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .app-banner-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .app-banner-sub {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Farmer Profile */
+        .farmer-profile {
+            padding: 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            margin: 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .profile-role {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .profile-farm {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        /* Quick Actions */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 12px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .action-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .action-icon.add {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .action-icon.orders {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .action-icon.price {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .action-icon.analytics {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .action-content {
+            flex: 1;
+        }
+
+        .action-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .action-desc {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .action-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-card {
+            position: relative;
+        }
+
+        /* My Listings */
+        .listings-section {
+            padding: 0 20px 20px;
+        }
+
+        .listing-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 12px;
+        }
+
+        .listing-image {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .listing-content {
+            flex: 1;
+        }
+
+        .listing-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .listing-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .listing-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .listing-tag.organic {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .listing-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .listing-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .listing-stock {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .listing-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .listing-status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .listing-status.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        /* Weather Widget */
+        .weather-widget {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .weather-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .weather-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .weather-loc {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .weather-icon {
+            font-size: 48px;
+        }
+
+        .weather-temp {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .weather-desc {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        /* Mandi Prices */
+        .mandi-prices {
+            margin: 0 20px 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .price-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .price-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .price-update {
+            font-size: 10px;
+            color: #10b981;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .price-row:last-child {
+            border-bottom: none;
+        }
+
+        .price-item-name {
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .price-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-amount {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .price-trend {
+            font-size: 12px;
+        }
+
+        .price-trend.up {
+            color: #10b981;
+        }
+
+        .price-trend.down {
+            color: #ef4444;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, rgba(13, 27, 42, 0.95) 0%, #0d1b2a 100%);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #64748b;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #f59e0b;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .playstore-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .playstore-icon {
+            font-size: 32px;
+        }
+
+        .playstore-text {
+            text-align: left;
+        }
+
+        .playstore-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .playstore-sub {
+            font-size: 11px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🌾 Farmer Dashboard - Separate Provider App</strong>
+        This is in the PROVIDER APP (separate from consumer VillageLink)
+    </div>
+
+    <div class="phone-frame">
+        <!-- Provider Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">Village<span>Link</span> Provider</div>
+            </div>
+            <div class="provider-badge">🌾 FARMER</div>
+        </div>
+
+        <!-- App Distinction -->
+        <div class="app-banner">
+            <div class="app-banner-text">📱 VillageLink Provider App</div>
+            <div class="app-banner-sub">Separate app for service providers - Available on Play Store</div>
+        </div>
+
+        <!-- Play Store Badge -->
+        <div class="playstore-badge">
+            <div class="playstore-icon">📱</div>
+            <div class="playstore-text">
+                <div class="playstore-title">Download: VillageLink Provider</div>
+                <div class="playstore-sub">Separate app on Google Play Store for Farmers, Vendors, etc.</div>
+            </div>
+        </div>
+
+        <!-- Farmer Profile -->
+        <div class="farmer-profile">
+            <div class="profile-row">
+                <div class="profile-avatar">👨‍🌾</div>
+                <div class="profile-info">
+                    <div class="profile-name">Ramesh Kumar</div>
+                    <div class="profile-role">
+                        <span>🌾</span> Verified Farmer
+                    </div>
+                    <div class="profile-farm">📍 Nasirganj, Rohtas District</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Active Listings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🛒</div>
+                <div class="stat-value">48</div>
+                <div class="stat-label">Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">₹1.2L</div>
+                <div class="stat-label">Earnings</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>⚡</span> Quick Actions
+            </div>
+        </div>
+
+        <div class="actions-grid">
+            <div class="action-card">
+                <div class="action-icon add">➕</div>
+                <div class="action-content">
+                    <div class="action-title">Add Produce</div>
+                    <div class="action-desc">List new harvest</div>
+                </div>
+            </div>
+            <div class="action-card">
+                <div class="action-badge">5</div>
+                <div class="action-icon orders">📋</div>
+                <div class="action-content">
+                    <div class="action-title">View Orders</div>
+                    <div class="action-desc">Pending orders</div>
+                </div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon price">📊</div>
+                <div class="action-content">
+                    <div class="action-title">Mandi Prices</div>
+                    <div class="action-desc">Today's rates</div>
+                </div>
+            </div>
+            <div class="action-card">
+                <div class="action-icon analytics">📈</div>
+                <div class="action-content">
+                    <div class="action-title">Analytics</div>
+                    <div class="action-desc">Sales insights</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Widget -->
+        <div class="weather-widget">
+            <div class="weather-header">
+                <div class="weather-title">☀️ Weather Forecast</div>
+                <div class="weather-loc">Rohtas, Bihar</div>
+            </div>
+            <div class="weather-main">
+                <div class="weather-icon">🌤️</div>
+                <div>
+                    <div class="weather-temp">28°C</div>
+                    <div class="weather-desc">Partly Cloudy • Good for harvest</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Listings -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>📦</span> My Listings
+            </div>
+        </div>
+
+        <div class="listings-section">
+            <div class="listing-card">
+                <div class="listing-image">🥛</div>
+                <div class="listing-content">
+                    <div class="listing-name">Fresh Milk</div>
+                    <div class="listing-meta">
+                        <span class="listing-tag organic">🌱 Organic</span>
+                        <span class="listing-tag">Daily Fresh</span>
+                    </div>
+                    <div class="listing-bottom">
+                        <div>
+                            <div class="listing-price">₹50/Liter</div>
+                            <div class="listing-stock">Stock: 50L</div>
+                        </div>
+                        <div class="listing-status active">✓ Active</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="listing-card">
+                <div class="listing-image">🌾</div>
+                <div class="listing-content">
+                    <div class="listing-name">Wheat (Grade A)</div>
+                    <div class="listing-meta">
+                        <span class="listing-tag">Premium</span>
+                    </div>
+                    <div class="listing-bottom">
+                        <div>
+                            <div class="listing-price">₹2200/Quintal</div>
+                            <div class="listing-stock">Stock: 50 Qtl</div>
+                        </div>
+                        <div class="listing-status active">✓ Active</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="listing-card">
+                <div class="listing-image">🍅</div>
+                <div class="listing-content">
+                    <div class="listing-name">Tomatoes</div>
+                    <div class="listing-meta">
+                        <span class="listing-tag">Fresh</span>
+                    </div>
+                    <div class="listing-bottom">
+                        <div>
+                            <div class="listing-price">₹35/Kg</div>
+                            <div class="listing-stock">Stock: 100 Kg</div>
+                        </div>
+                        <div class="listing-status pending">⏳ Pending</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mandi Prices -->
+        <div class="mandi-prices">
+            <div class="price-header">
+                <div class="price-title">📈 Rohtas Mandi Prices</div>
+                <div class="price-update">Updated 2h ago</div>
+            </div>
+            <div class="price-row">
+                <div class="price-item-name">🌾 Wheat</div>
+                <div class="price-value">
+                    <span class="price-amount">₹2,200/Qtl</span>
+                    <span class="price-trend up">↑ 2%</span>
+                </div>
+            </div>
+            <div class="price-row">
+                <div class="price-item-name">🌽 Maize</div>
+                <div class="price-value">
+                    <span class="price-amount">₹1,850/Qtl</span>
+                    <span class="price-trend down">↓ 1%</span>
+                </div>
+            </div>
+            <div class="price-row">
+                <div class="price-item-name">🧅 Onion</div>
+                <div class="price-value">
+                    <span class="price-amount">₹25/Kg</span>
+                    <span class="price-trend up">↑ 5%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-icon">🏠</div>
+                <span>Home</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">📦</div>
+                <span>Listings</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">📋</div>
+                <span>Orders</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">💰</div>
+                <span>Earnings</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">👤</div>
+                <span>Profile</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

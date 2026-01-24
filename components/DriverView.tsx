@@ -13,6 +13,7 @@ import { Camera, Activity, Check, MapPin, Clock, Mic, AlertOctagon, ScanLine, Co
 import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
 import { TRANSLATIONS } from '../constants';
+import { API_BASE_URL } from '../config';
 import CargoDriverView from './CargoDriverView';
 
 interface DriverViewProps {
@@ -36,6 +37,38 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [showCargoPanel, setShowCargoPanel] = useState(false);
 
     const [voiceAssist, setVoiceAssist] = useState(true);
+
+    const HeatmapBar: React.FC<{ intensity: number }> = ({ intensity }) => {
+        const barRef = React.useRef<HTMLDivElement>(null);
+        React.useEffect(() => {
+            if (barRef.current) barRef.current.style.width = `${intensity * 10}%`;
+        }, [intensity]);
+        return <div ref={barRef} className="h-full bg-rose-500 transition-all duration-500 ease-out"></div>;
+    };
+
+    const LevelBar: React.FC<{ widthPercent: number }> = ({ widthPercent }) => {
+        const ref = React.useRef<HTMLDivElement>(null);
+        React.useEffect(() => {
+            if (ref.current) ref.current.style.setProperty('--xp-width', `${widthPercent}%`);
+        }, [widthPercent]);
+        return (
+            <div className="v5-xp-bar">
+                <div ref={ref} className="v5-xp-fill"></div>
+            </div>
+        );
+    };
+
+    const HeatPulse: React.FC<{ top: number; left: number; opacity: number }> = ({ top, left, opacity }) => {
+        const ref = React.useRef<HTMLDivElement>(null);
+        React.useEffect(() => {
+            if (ref.current) {
+                ref.current.style.setProperty('--heat-top', `${top}%`);
+                ref.current.style.setProperty('--heat-left', `${left}%`);
+                ref.current.style.setProperty('--heat-opacity', `${opacity}`);
+            }
+        }, [top, left, opacity]);
+        return <div ref={ref} className="v5-heatmap-pulse"></div>;
+    };
 
     if (!user.isVerified) {
         return (
@@ -93,6 +126,8 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [aheadCompetitors, setAheadCompetitors] = useState<any[]>([]);
     const [profitWarning, setProfitWarning] = useState<string | null>(null);
     const [logisticsAdvice, setLogisticsAdvice] = useState<any>(null);
+    const [demandHeatmap, setDemandHeatmap] = useState<any[]>([]);
+    const [heroStats, setHeroStats] = useState<any>(null);
     const routeListRef = useRef<HTMLDivElement>(null);
 
     const currentOccupancy = useMemo(() => {
@@ -226,11 +261,33 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         const loadParcels = async () => { const p = await getAllParcels(); setParcels(p); }; loadParcels();
         const loadWallet = async () => { const w = await getWallet(user.id); if (w) setWalletBalance(w.balance); }; loadWallet();
 
+        const loadHeatmap = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/fleet/demand-heatmap`);
+                const data = await res.json();
+                if (data.success) setDemandHeatmap(data.heatmap);
+            } catch (e) { console.error("Heatmap fetch error", e); }
+        };
+
+        const loadHeroStats = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/fleet/hero-stats/${user.id}`);
+                const data = await res.json();
+                if (data.success) setHeroStats(data.stats);
+            } catch (e) { console.error("Hero stats fetch error", e); }
+        };
+
         const rentalInterval = setInterval(async () => {
             if (viewMode === 'CHARTER' && isCharterAvailable) { const reqs = await getRentalRequests(); setRentalRequests(reqs); }
             if (viewMode === 'CARGO') { loadParcels(); }
             loadWallet();
+            loadHeatmap();
+            loadHeroStats();
         }, 5000);
+
+        loadHeatmap();
+        loadHeroStats();
+
         return () => { disconnectDriver(user.id); clearInterval(rentalInterval); };
     }, [user.id, viewMode, isCharterAvailable, tickets.length]);
 
@@ -395,9 +452,17 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-400 flex items-center justify-center font-black text-xl text-white shadow-glow-md">{user.name.charAt(0)}</div>
                                 <div>
                                     <h2 className="text-lg font-black text-white tracking-tight leading-none mb-1">Cpt. {user.name.split(' ')[0]}</h2>
-                                    <div className="flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">
+                                    <div className="flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">
                                         <span>{viewMode} Mode</span>
                                         {isMobileATM && <span className="text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1"><Coins size={10} /> ATM Active</span>}
+                                    </div>
+                                    {/* Village Legend Leveling (V5 Parity) */}
+                                    <div className="w-48">
+                                        <div className="flex justify-between text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">
+                                            <span>Village Legend</span>
+                                            <span>Lvl {heroStats?.heroLevel || 1} • 1,200 XP</span>
+                                        </div>
+                                        <LevelBar widthPercent={75} />
                                     </div>
                                 </div>
                             </div>
@@ -421,7 +486,76 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                         </div>
                     </div>
 
-                    {/* Contextual Body */}
+                    {/* Hero Stats Card */}
+                    {heroStats && (
+                        <div className="glass-3 p-6 rounded-[32px] border-white/5 shadow-yhisk-float animate-fade-in mb-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <TrendingDown className="w-4 h-4 text-[var(--accent-primary)] rotate-180" />
+                                    Hero Performance
+                                </h3>
+                                <div className="px-3 py-1 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded-full text-[10px] font-black uppercase">
+                                    Grade: {heroStats.heroLevel > 5 ? 'A+' : 'B'}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="text-center">
+                                    <span className="block text-2xl font-black text-white">{heroStats.totalTrips}</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Trips</span>
+                                </div>
+                                <div className="text-center">
+                                    <span className="block text-2xl font-black text-[var(--accent-warm)]">{heroStats.heroPoints}</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Points</span>
+                                </div>
+                                <div className="text-center">
+                                    <span className="block text-2xl font-black text-emerald-400">₹{heroStats.totalEarnings}</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Revenue</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Demand Heatmap Visualization */}
+                    {demandHeatmap.length > 0 && (
+                        <div className="glass-3 p-6 rounded-[32px] border-white/5 shadow-yhisk-float animate-fade-in mb-6">
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-rose-500" />
+                                Live Demand Heatmap
+                            </h3>
+                            <div className="relative h-48 bg-slate-900/50 rounded-2xl border border-white/5 overflow-hidden">
+                                {/* Pulse Overlays for Heatmap (V5 Parity) */}
+                                {demandHeatmap.slice(0, 3).map((point, i) => (
+                                    <HeatPulse key={i} top={20 + i * 25} left={30 + i * 20} opacity={point.intensity / 10} />
+                                ))}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-950/80 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm">
+                                        NavIC Grid Overlay Active
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">You are here</span>
+                                </div>
+                            </div>
+                            <div className="space-y-3 mt-4">
+                                {demandHeatmap.slice(0, 4).map((point, i) => (
+                                    <div key={i} className="flex items-center justify-between group">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${point.intensity > 7 ? 'bg-rose-500 animate-pulse' : point.intensity > 4 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                            <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{point.location}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <HeatmapBar intensity={point.intensity} />
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">{point.intensity}/10</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {viewMode === 'UTILITIES' && (
                         <div className="space-y-6 animate-fade-in shadow-whisk-float rounded-[32px]">
                             <div className="grid grid-cols-2 gap-4">

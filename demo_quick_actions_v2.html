@@ -1,0 +1,452 @@
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        background: #020617;
+        min-height: 100vh;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .phone-frame {
+        width: 380px;
+        height: 800px;
+        background: #0f172a;
+        border-radius: 40px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        border: 8px solid #1e293b;
+        position: relative;
+        /* Removed for linting */
+        /* Modern Firefox */
+    }
+
+    .phone-frame::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Premium Header */
+    .header {
+        background: linear-gradient(135deg, #10b981 0%, #064e3b 100%);
+        padding: 40px 24px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: white;
+        color: #10b981;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 20px;
+    }
+
+    .logo-text {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    /* Voice Assistant Bar */
+    .voice-bar {
+        margin: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .voice-bar:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #8b5cf6;
+    }
+
+    .voice-icon {
+        font-size: 20px;
+        animation: pulse-voice 2s infinite;
+    }
+
+    @keyframes pulse-voice {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .voice-text {
+        font-size: 13px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    /* Greeting */
+    .greeting {
+        padding: 0 24px 20px;
+    }
+
+    .greeting-name {
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    /* Filter Pills */
+    .filters {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 0 24px 24px;
+        /* Removed for linting */
+        /* Modern Firefox */
+    }
+
+    .filters::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-pill {
+        flex-shrink: 0;
+        padding: 10px 20px;
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    .filter-pill.active {
+        background: #10b981;
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Grid */
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        padding: 0 24px 100px;
+    }
+
+    .action-card {
+        background: #1e293b;
+        border-radius: 24px;
+        padding: 20px 12px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .action-card:hover {
+        transform: translateY(-10px);
+        border-color: #10b981;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon-box {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 12px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .action-label {
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .badge-hot {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #ef4444;
+        color: white;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 6px;
+        animation: pulse-hot 1s infinite;
+    }
+
+    @keyframes pulse-hot {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* AI Segment */
+    .ai-peek {
+        margin: 0 24px 24px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 24px;
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .ai-msg {
+        font-size: 13px;
+        color: #a5b4fc;
+        line-height: 1.4;
+    }
+
+    .ai-msg b {
+        color: white;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 80px;
+        background: rgba(15, 23, 42, 0.9);
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: #64748b;
+        font-size: 10px;
+    }
+
+    .nav-item.active {
+        color: #10b981;
+    }
+
+    .text-icon {
+        font-size: 20px;
+    }
+
+    .text-icon-l {
+        font-size: 24px;
+    }
+
+    /* Color Utility Classes for Tokens */
+    .color-green {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .color-orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .color-blue {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .color-pink {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
+    }
+
+    .color-purple {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+
+    .color-rust {
+        background: rgba(249, 115, 22, 0.1);
+        color: #f97316;
+    }
+
+    .color-indigo {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+    }
+
+    .color-gold {
+        background: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+    }
+
+    .color-rose {
+        background: rgba(244, 114, 182, 0.1);
+        color: #f472b6;
+    }
+
+    .badge-hot-gold {
+        background: #fbbf24;
+        color: #020617;
+    }
+
+    .floating-action {
+        background: #10b981;
+        color: white;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-top: -30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="phone-frame">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">VillageLink</div>
+            </div>
+            <div class="text-icon">🛡️</div>
+        </div>
+
+        <div class="voice-bar">
+            <span class="voice-icon">🎙️</span>
+            <span class="voice-text">"Order fresh milk from Nasirganj..."</span>
+        </div>
+
+        <div class="greeting">
+            <div class="greeting-name">Namaste, Dheeraj! 👋</div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-pill active">All Ultimate</div>
+            <div class="filter-pill">Groceries</div>
+            <div class="filter-pill">Transport</div>
+            <div class="filter-pill">Mess</div>
+            <div class="filter-pill">Mandi</div>
+        </div>
+
+        <div class="ai-peek">
+            <span class="text-icon-l">🔮</span>
+            <div class="ai-msg">
+                <b>Gram Insight:</b> Rain predicted tonight. Should I book your <b>Commute</b> for tomorrow early? ⛈️
+            </div>
+        </div>
+
+        <div class="actions-grid">
+            <div class="action-card">
+                <span class="badge-hot">LIVE</span>
+                <div class="icon-box color-green">🌿</div>
+                <div class="action-label">Fresh Today</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-orange">🛒</div>
+                <div class="action-label">Daily Needs</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-blue">🚌</div>
+                <div class="action-label">Book Ride</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-pink">🍽️</div>
+                <div class="action-label">Mess Menu</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-purple">📦</div>
+                <div class="action-label">Cargo</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-rust">🌾</div>
+                <div class="action-label">Gram Mandi</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-indigo">📋</div>
+                <div class="action-label">My Orders</div>
+            </div>
+
+            <div class="action-card">
+                <span class="badge-hot badge-hot-gold">3 NEW</span>
+                <div class="icon-box color-gold">🎁</div>
+                <div class="action-label">Offers</div>
+            </div>
+
+            <div class="action-card">
+                <div class="icon-box color-rose">⭐</div>
+                <div class="action-label">Favorites</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <div class="nav-ico">🏠</div>Home
+            </div>
+            <div class="nav-item">
+                <div class="nav-ico">📽️</div>Reels
+            </div>
+            <div class="nav-item floating-action">📷</div>
+            <div class="nav-item">
+                <div class="nav-ico">🏪</div>Mandi
+            </div>
+            <div class="nav-item">
+                <div class="nav-ico">👤</div>Profile
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

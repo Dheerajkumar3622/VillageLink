@@ -8,10 +8,15 @@ import { User } from '../types';
 import { API_BASE_URL } from '../config';
 import { Button } from './Button';
 import {
-    LayoutDashboard, Package, Wallet, Film, Settings,
-    QrCode, Bell, ChevronDown, Plus, Loader2, ArrowLeft,
-    Truck, Wheat, Store, UtensilsCrossed, ShoppingCart, Box, Check
+    Truck, Wheat, Store, UtensilsCrossed, ShoppingCart, Box, Check,
+    Sparkles, X, MessageSquare, LayoutDashboard, Package, Wallet, Film, Settings,
+    QrCode, Bell, ChevronDown, Plus, Loader2
 } from 'lucide-react';
+
+// Import Shared Components
+import { GramSahayakBubble } from './GramSahayakBubble';
+import ChatSection from './ChatSection';
+import { ProfilePill } from './ProfilePill';
 
 // Import Role-specific Views
 import DriverView from './DriverView';
@@ -57,6 +62,23 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const [showRoleSelector, setShowRoleSelector] = useState(false);
     const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0 });
     const [pendingOrders, setPendingOrders] = useState(0);
+    const [showAIChat, setShowAIChat] = useState(false);
+
+    const ColorIcon: React.FC<{ icon: React.ReactNode; color: string }> = ({ icon, color }) => {
+        const iconRef = React.useRef<HTMLDivElement>(null);
+        React.useEffect(() => {
+            if (iconRef.current) iconRef.current.style.color = color;
+        }, [color]);
+        return <div ref={iconRef}>{icon}</div>;
+    };
+
+    const ColorStat: React.FC<{ value: string | number; color: string }> = ({ value, color }) => {
+        const textRef = React.useRef<HTMLSpanElement>(null);
+        React.useEffect(() => {
+            if (textRef.current) textRef.current.style.color = color;
+        }, [color]);
+        return <span ref={textRef} className="text-sm font-extrabold">{value}</span>;
+    };
 
     // Load user's roles
     useEffect(() => {
@@ -189,123 +211,168 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
 
     React.useEffect(() => {
         if (headerRef.current) {
-            headerRef.current.style.background = `linear-gradient(135deg, ${currentRoleConfig.color} 0%, ${currentRoleConfig.color}dd 100%)`;
+            headerRef.current.style.borderBottom = `2px solid ${currentRoleConfig.color}44`;
         }
     }, [currentRoleConfig.color]);
 
     return (
-        <div className="provider-app">
+        <div className="v5-app-shell">
+            {/* Mesh Background */}
+            <div className="v5-mesh-bg fixed inset-0 z-0"></div>
+            <div className="v5-grain"></div>
+
             {/* Header */}
-            <header ref={headerRef} className="provider-app-header">
-                <div className="header-left">
+            <header ref={headerRef} className="v5-header">
+                <div className="flex items-center gap-3">
                     <button
-                        className="role-switcher-btn"
+                        className="role-switcher-btn liquid-glass-card px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10 hover:border-white/20 transition-all font-bold"
                         onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
                     >
-                        {currentRoleConfig.icon}
-                        <span>{currentRoleConfig.label} Mode</span>
-                        <ChevronDown className="w-4 h-4" />
+                        <ColorIcon icon={currentRoleConfig.icon} color={currentRoleConfig.color} />
+                        <span className="text-sm">{currentRoleConfig.label} Mode</span>
+                        <ChevronDown className="w-4 h-4 opacity-50" />
                     </button>
 
                     {/* Role Dropdown */}
                     {showRoleSwitcher && (
-                        <div className="role-dropdown">
+                        <div className="role-dropdown absolute top-full left-5 mt-2 liquid-glass-card p-2 rounded-2xl border border-white/10 z-[200] animate-fade-in backdrop-blur-3xl bg-black/60 min-w-[200px]">
                             {userRoles.map(role => (
                                 <button
                                     key={role}
-                                    className={`role-option ${role === activeRole ? 'active' : ''}`}
+                                    className={`role-option flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 transition-colors ${role === activeRole ? 'text-[var(--accent-primary)]' : 'text-white'}`}
                                     onClick={() => switchRole(role)}
                                 >
-                                    {ROLE_CONFIGS[role].icon}
-                                    <span>{ROLE_CONFIGS[role].label}</span>
+                                    <ColorIcon
+                                        icon={ROLE_CONFIGS[role].icon}
+                                        color={role === activeRole ? 'inherit' : ROLE_CONFIGS[role].color}
+                                    />
+                                    <span className="text-sm font-semibold">{ROLE_CONFIGS[role].label}</span>
                                     {role === activeRole && <Check className="w-4 h-4 ml-auto" />}
                                 </button>
                             ))}
                             <button
-                                className="role-option add-role"
+                                className="role-option flex items-center gap-3 w-full p-3 rounded-xl hover:bg-white/5 transition-colors border-t border-white/5 mt-1 text-white/50"
                                 onClick={() => setShowRoleSelector(true)}
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Add New Role</span>
+                                <span className="text-sm font-semibold">Add New Role</span>
                             </button>
                         </div>
                     )}
                 </div>
 
-                <div className="header-right">
-                    <button className="icon-btn" title="Notifications">
-                        <Bell className="w-5 h-5" />
-                        {pendingOrders > 0 && <span className="badge">{pendingOrders}</span>}
+                <div className="flex items-center gap-3">
+                    <ProfilePill
+                        name={user?.name || 'Provider'}
+                        balance={user?.walletBalance || 0}
+                    />
+                    <button className="relative w-10 h-10 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl flex items-center justify-center hover:border-[var(--border-glow)] transition-colors" title="Notifications">
+                        <Bell size={18} className="opacity-70" />
+                        {pendingOrders > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center border-2 border-[var(--bg-deep)]">
+                                {pendingOrders}
+                            </span>
+                        )}
                     </button>
                 </div>
             </header>
 
             {/* Stats Bar */}
-            <div className="stats-bar">
-                <div className="stat-item">
-                    <span className="stat-value">₹{earnings.today}</span>
-                    <span className="stat-label">Today</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat-item">
-                    <span className="stat-value">₹{earnings.week}</span>
-                    <span className="stat-label">This Week</span>
-                </div>
-                <div className="stat-divider" />
-                <div className="stat-item">
-                    <span className="stat-value">{pendingOrders}</span>
-                    <span className="stat-label">Pending</span>
-                </div>
+            <div className="grid grid-cols-3 gap-3 px-5 my-4">
+                {[
+                    { label: 'Today', value: `₹${earnings.today}`, icon: <Wallet size={12} />, color: 'var(--accent-primary)' },
+                    { label: 'Weekly', value: `₹${earnings.week}`, icon: <Sparkles size={12} />, color: 'var(--accent-secondary)' },
+                    { label: 'Pending', value: pendingOrders, icon: <Package size={12} />, color: 'var(--accent-warm)' }
+                ].map((stat, i) => (
+                    <div key={i} className="v5-card p-3 flex flex-col items-center justify-center bg-white/5">
+                        <ColorStat value={stat.value} color={stat.color} />
+                        <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5 font-bold">{stat.label}</span>
+                    </div>
+                ))}
             </div>
 
             {/* Main Content */}
-            <main className="provider-app-content">
+            <main className="v5-scroll-view flex-1 pb-24 relative z-10 px-5">
                 {renderContent()}
             </main>
 
             {/* Floating My QR Button */}
             <button
-                className="floating-qr-btn"
+                className="fixed bottom-24 right-5 w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent-warm)] to-[var(--accent-hot)] flex items-center justify-center shadow-lg transform hover:scale-110 active:scale-95 transition-all z-50 text-white"
                 onClick={() => setShowMyQR(true)}
                 title="My QR Code"
             >
-                <QrCode className="w-6 h-6" />
+                <QrCode size={24} />
             </button>
 
             {/* Bottom Navigation */}
-            <nav className="provider-app-nav">
+            <nav className="v5-bottom-nav">
                 <ProviderNavItem
-                    icon={<LayoutDashboard />}
+                    icon={<LayoutDashboard size={22} />}
                     label="Dashboard"
                     active={activeTab === 'dashboard'}
                     onClick={() => setActiveTab('dashboard')}
                 />
                 <ProviderNavItem
-                    icon={<Package />}
+                    icon={<Package size={22} />}
                     label="Orders"
                     active={activeTab === 'orders'}
                     onClick={() => setActiveTab('orders')}
                     badge={pendingOrders}
                 />
                 <ProviderNavItem
-                    icon={<Wallet />}
+                    icon={<Wallet size={22} />}
                     label="Earnings"
                     active={activeTab === 'earnings'}
                     onClick={() => setActiveTab('earnings')}
                 />
                 <ProviderNavItem
-                    icon={<Film />}
+                    icon={<Film size={22} />}
                     label="Reels"
                     active={activeTab === 'reels'}
                     onClick={() => setActiveTab('reels')}
                 />
                 <ProviderNavItem
-                    icon={<Settings />}
+                    icon={<Settings size={22} />}
                     label="Settings"
                     active={activeTab === 'settings'}
                     onClick={() => setActiveTab('settings')}
                 />
             </nav>
+
+            {/* Gram Sahayak Floating Assistant */}
+            <GramSahayakBubble
+                user={user!}
+                onOpenChat={() => {
+                    setActiveTab('reels'); // Shift focus to chat
+                    setShowAIChat(true);
+                }}
+            />
+
+            {/* AI Chat Drawer */}
+            {showAIChat && (
+                <div className="fixed inset-0 z-[200] bg-[var(--bg-void)]/90 backdrop-blur-xl animate-fade-in h-[100dvh]">
+                    <div className="flex flex-col h-full max-w-lg mx-auto bg-[var(--bg-surface)] shadow-2xl">
+                        <header className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center">
+                                    <Sparkles size={20} className="text-black" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold">Gram Sahayak Pro</span>
+                                    <span className="text-[10px] text-[var(--accent-primary)] animate-pulse">Business Advisor Active</span>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAIChat(false)} className="p-2 rounded-xl bg-white/5" title="Close AI Assistant">
+                                <X size={20} />
+                            </button>
+                        </header>
+                        <div className="flex-1 overflow-hidden">
+                            <ChatSection user={user!} isAIAssistant={true} />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* My QR Modal */}
             {showMyQR && (
@@ -315,182 +382,6 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     onClose={() => setShowMyQR(false)}
                 />
             )}
-
-            <style>{`
-        .provider-app {
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-          background: var(--bg-primary, #f5f7fa);
-        }
-
-        .provider-app-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 16px;
-          color: white;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .role-switcher-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(255,255,255,0.2);
-          border: none;
-          border-radius: 8px;
-          padding: 8px 12px;
-          color: white;
-          cursor: pointer;
-          font-weight: 500;
-          transition: background 0.2s;
-        }
-
-        .role-switcher-btn:hover {
-          background: rgba(255,255,255,0.3);
-        }
-
-        .role-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 16px;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-          padding: 8px;
-          min-width: 200px;
-          z-index: 1000;
-        }
-
-        .role-option {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
-          padding: 10px 12px;
-          background: none;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          color: #374151;
-          transition: background 0.2s;
-        }
-
-        .role-option:hover {
-          background: #f3f4f6;
-        }
-
-        .role-option.active {
-          background: #dbeafe;
-          color: #1d4ed8;
-        }
-
-        .role-option.add-role {
-          border-top: 1px solid #e5e7eb;
-          margin-top: 4px;
-          padding-top: 12px;
-          color: #6b7280;
-        }
-
-        .stats-bar {
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          background: white;
-          padding: 12px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .stat-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .stat-value {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #111827;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          color: #6b7280;
-        }
-
-        .stat-divider {
-          width: 1px;
-          height: 30px;
-          background: #e5e7eb;
-        }
-
-        .provider-app-content {
-          flex: 1;
-          overflow-y: auto;
-          padding-bottom: 80px;
-        }
-
-        .floating-qr-btn {
-          position: fixed;
-          bottom: 90px;
-          right: 16px;
-          width: 56px;
-          height: 56px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-          color: white;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
-          cursor: pointer;
-          z-index: 50;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .floating-qr-btn:hover {
-          transform: scale(1.1);
-          box-shadow: 0 6px 25px rgba(249, 115, 22, 0.5);
-        }
-
-        .provider-app-nav {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: space-around;
-          background: white;
-          border-top: 1px solid #e5e7eb;
-          padding: 8px 0 env(safe-area-inset-bottom, 8px);
-          z-index: 100;
-        }
-
-        .icon-btn {
-          position: relative;
-          background: rgba(255,255,255,0.2);
-          border: none;
-          border-radius: 8px;
-          padding: 8px;
-          color: white;
-          cursor: pointer;
-        }
-
-        .icon-btn .badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          background: #ef4444;
-          color: white;
-          font-size: 10px;
-          padding: 2px 5px;
-          border-radius: 10px;
-        }
-      `}</style>
         </div>
     );
 };
@@ -536,16 +427,20 @@ const ProviderNavItem: React.FC<{
     badge?: number;
 }> = ({ icon, label, active, onClick, badge }) => (
     <button
-        className={`provider-nav-item ${active ? 'active' : ''}`}
+        className={`v5-nav-item ${active ? 'active' : ''}`}
         onClick={onClick}
     >
         <div className="relative">
-            {icon}
+            <span className={`text-xl ${active ? 'opacity-100' : 'opacity-40'}`}>{icon}</span>
             {badge && badge > 0 && (
-                <span className="badge-round">{badge}</span>
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center text-white">
+                    {badge > 9 ? '9+' : badge}
+                </span>
             )}
         </div>
-        <span className="text-[0.65rem] font-medium">{label}</span>
+        <span className={`text-[10px] font-semibold mt-1 ${active ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'}`}>
+            {label}
+        </span>
     </button>
 );
 

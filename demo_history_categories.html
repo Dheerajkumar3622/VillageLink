@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - History by Category</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 30px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 20px;
+            gap: 8px;
+        }
+
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .tab.active {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .tab-icon {
+            font-size: 24px;
+        }
+
+        .tab-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .tab.active .tab-label {
+            color: #10b981;
+        }
+
+        .tab-count {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Summary Cards */
+        .summary-row {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .summary-card {
+            flex: 1;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .summary-label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* History List */
+        .history-section {
+            padding: 0 20px;
+        }
+
+        .date-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            margin-top: 16px;
+        }
+
+        .history-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 12px;
+        }
+
+        .history-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .history-icon.ride {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .history-icon.mess {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+        }
+
+        .history-icon.mandi {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .history-content {
+            flex: 1;
+        }
+
+        .history-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .history-subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .history-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .meta-badge.paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .meta-badge.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .history-right {
+            text-align: right;
+        }
+
+        .history-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Reorder Button */
+        .reorder-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: #fff;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>📋 History by Category</strong>
+        Separate tabs: Rides | Mess | Gram Mandi (No "All History")
+    </div>
+
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <span class="back-btn">←</span>
+            <span class="header-title">Order History</span>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="category-tabs">
+            <div class="tab">
+                <span class="tab-icon">🚌</span>
+                <span class="tab-label">Rides</span>
+                <span class="tab-count">12</span>
+            </div>
+            <div class="tab">
+                <span class="tab-icon">🍽️</span>
+                <span class="tab-label">Mess</span>
+                <span class="tab-count">8</span>
+            </div>
+            <div class="tab active">
+                <span class="tab-icon">🌾</span>
+                <span class="tab-label">Mandi</span>
+                <span class="tab-count">23</span>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-row">
+            <div class="summary-card">
+                <div class="summary-value">23</div>
+                <div class="summary-label">Total Orders</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-value">₹4,250.75</div>
+                <div class="summary-label">This Month</div>
+            </div>
+        </div>
+
+        <!-- Mandi History -->
+        <div class="history-section">
+            <div class="date-header">Today</div>
+
+            <div class="history-card">
+                <div class="history-icon mandi">🥛</div>
+                <div class="history-content">
+                    <div class="history-title">Fresh Milk + Vegetables</div>
+                    <div class="history-subtitle">Nasirganj Farm • 3 items</div>
+                    <div class="history-meta">
+                        <span class="meta-badge paid">✓ Delivered</span>
+                        <span class="meta-badge">Online</span>
+                    </div>
+                    <div class="reorder-btn">🔄 Reorder</div>
+                </div>
+                <div class="history-right">
+                    <div class="history-amount">₹185.00</div>
+                    <div class="history-time">2:30 PM</div>
+                </div>
+            </div>
+
+            <div class="date-header">Yesterday</div>
+
+            <div class="history-card">
+                <div class="history-icon mandi">🍅</div>
+                <div class="history-content">
+                    <div class="history-title">Aalu Gobhi Combo</div>
+                    <div class="history-subtitle">Dehri Garden • 5 items</div>
+                    <div class="history-meta">
+                        <span class="meta-badge paid">✓ Delivered</span>
+                        <span class="meta-badge">Cash</span>
+                    </div>
+                    <div class="reorder-btn">🔄 Reorder</div>
+                </div>
+                <div class="history-right">
+                    <div class="history-amount">₹80.50</div>
+                    <div class="history-time">5:15 PM</div>
+                </div>
+            </div>
+
+            <div class="history-card">
+                <div class="history-icon mandi">🌾</div>
+                <div class="history-content">
+                    <div class="history-title">Wheat - 10kg</div>
+                    <div class="history-subtitle">Sasaram Mill • 1 item</div>
+                    <div class="history-meta">
+                        <span class="meta-badge paid">✓ Delivered</span>
+                        <span class="meta-badge">Online</span>
+                    </div>
+                </div>
+                <div class="history-right">
+                    <div class="history-amount">₹450.00</div>
+                    <div class="history-time">11:00 AM</div>
+                </div>
+            </div>
+
+            <div class="date-header">Jan 20, 2026</div>
+
+            <div class="history-card">
+                <div class="history-icon mandi">🥬</div>
+                <div class="history-content">
+                    <div class="history-title">Vegetables Bundle</div>
+                    <div class="history-subtitle">Local Farm • 4 items</div>
+                    <div class="history-meta">
+                        <span class="meta-badge pending">⏳ Pending Payment</span>
+                    </div>
+                </div>
+                <div class="history-right">
+                    <div class="history-amount">₹125.25</div>
+                    <div class="history-time">4:45 PM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Recipe Combo Offers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 30px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.1) 100%);
+            padding: 24px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .hero-emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .hero-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .hero-subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        /* Search */
+        .search-bar {
+            margin: 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-icon {
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+        /* Categories */
+        .categories {
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+
+        .category-chip {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-chip.active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            border-color: transparent;
+        }
+
+        /* Combo Cards */
+        .combo-section {
+            padding: 0 20px 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .combo-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .combo-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .combo-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .combo-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .combo-info {
+            flex: 1;
+        }
+
+        .combo-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fbbf24;
+            margin-bottom: 4px;
+        }
+
+        .combo-desc {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .combo-tags {
+            display: flex;
+            gap: 6px;
+        }
+
+        .combo-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+
+        .combo-tag.veg {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        /* Ingredients */
+        .ingredients {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .ingredients-title {
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ingredients-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ingredient {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+
+        .ingredient-icon {
+            font-size: 14px;
+        }
+
+        .ingredient-text {
+            font-size: 11px;
+            color: #fff;
+        }
+
+        .ingredient-qty {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        /* Pricing */
+        .combo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pricing {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .original-price {
+            font-size: 14px;
+            color: #64748b;
+            text-decoration: line-through;
+        }
+
+        .final-price {
+            font-size: 22px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .savings-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .add-combo-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .add-combo-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Popular Section */
+        .popular-row {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 0 20px 20px;
+        }
+
+        .popular-card {
+            flex-shrink: 0;
+            width: 140px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .popular-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .popular-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .popular-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🎁 Recipe Combo Offers</strong>
+        Smart recommendations: "Make Aalu Gobhi" with all ingredients
+    </div>
+
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <span class="back-btn">←</span>
+            <span class="header-title">🎁 Recipe Combos</span>
+        </div>
+
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+            <div class="hero-emoji">👨‍🍳</div>
+            <div class="hero-title">Cook Complete Dishes!</div>
+            <div class="hero-subtitle">All ingredients bundled together with savings</div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" placeholder="Search combos or dishes...">
+        </div>
+
+        <!-- Categories -->
+        <div class="categories">
+            <div class="category-chip active">🍛 All</div>
+            <div class="category-chip">🥗 Sabji</div>
+            <div class="category-chip">🍲 Dal</div>
+            <div class="category-chip">🍚 Rice</div>
+            <div class="category-chip">🥘 Curry</div>
+            <div class="category-chip">🥙 Snacks</div>
+        </div>
+
+        <!-- Combo Cards -->
+        <div class="combo-section">
+            <div class="section-title">
+                <span>🔥</span> Popular Today
+            </div>
+
+            <!-- Aalu Gobhi Combo -->
+            <div class="combo-card">
+                <div class="combo-header">
+                    <div class="combo-image">🥘</div>
+                    <div class="combo-info">
+                        <div class="combo-name">Aalu Gobhi Kit</div>
+                        <div class="combo-desc">Everything to make delicious dry aalu gobhi</div>
+                        <div class="combo-tags">
+                            <span class="combo-tag veg">🌱 Veg</span>
+                            <span class="combo-tag">4 servings</span>
+                            <span class="combo-tag">30 min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ingredients">
+                    <div class="ingredients-title">Includes</div>
+                    <div class="ingredients-list">
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🥔</span>
+                            <span class="ingredient-text">Potato</span>
+                            <span class="ingredient-qty">500g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🥦</span>
+                            <span class="ingredient-text">Cauliflower</span>
+                            <span class="ingredient-qty">1 pc</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🌶️</span>
+                            <span class="ingredient-text">Green Chilli</span>
+                            <span class="ingredient-qty">50g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🧅</span>
+                            <span class="ingredient-text">Onion</span>
+                            <span class="ingredient-qty">250g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🧄</span>
+                            <span class="ingredient-text">Ginger-Garlic</span>
+                            <span class="ingredient-qty">50g</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="combo-footer">
+                    <div>
+                        <div class="pricing">
+                            <span class="original-price">₹95</span>
+                            <span class="final-price">₹80</span>
+                        </div>
+                        <div class="savings-badge">Save ₹15</div>
+                    </div>
+                    <div class="add-combo-btn">
+                        <span>+</span> Add Combo
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dal Tadka Combo -->
+            <div class="combo-card">
+                <div class="combo-header">
+                    <div class="combo-image">🍲</div>
+                    <div class="combo-info">
+                        <div class="combo-name">Dal Tadka Kit</div>
+                        <div class="combo-desc">Yellow dal with perfect tadka ingredients</div>
+                        <div class="combo-tags">
+                            <span class="combo-tag veg">🌱 Veg</span>
+                            <span class="combo-tag">6 servings</span>
+                            <span class="combo-tag">40 min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ingredients">
+                    <div class="ingredients-title">Includes</div>
+                    <div class="ingredients-list">
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🫘</span>
+                            <span class="ingredient-text">Toor Dal</span>
+                            <span class="ingredient-qty">250g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🍅</span>
+                            <span class="ingredient-text">Tomato</span>
+                            <span class="ingredient-qty">200g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🧅</span>
+                            <span class="ingredient-text">Onion</span>
+                            <span class="ingredient-qty">150g</span>
+                        </div>
+                        <div class="ingredient">
+                            <span class="ingredient-icon">🧄</span>
+                            <span class="ingredient-text">Garlic</span>
+                            <span class="ingredient-qty">30g</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="combo-footer">
+                    <div>
+                        <div class="pricing">
+                            <span class="original-price">₹120</span>
+                            <span class="final-price">₹99</span>
+                        </div>
+                        <div class="savings-badge">Save ₹21</div>
+                    </div>
+                    <div class="add-combo-btn">
+                        <span>+</span> Add Combo
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Combos -->
+        <div class="combo-section">
+            <div class="section-title">
+                <span>⚡</span> Quick Combos
+            </div>
+        </div>
+        <div class="popular-row">
+            <div class="popular-card">
+                <div class="popular-icon">🥗</div>
+                <div class="popular-name">Salad Mix</div>
+                <div class="popular-price">₹45</div>
+            </div>
+            <div class="popular-card">
+                <div class="popular-icon">🍳</div>
+                <div class="popular-name">Omelette Kit</div>
+                <div class="popular-price">₹60</div>
+            </div>
+            <div class="popular-card">
+                <div class="popular-icon">🥪</div>
+                <div class="popular-name">Sandwich Kit</div>
+                <div class="popular-price">₹55</div>
+            </div>
+            <div class="popular-card">
+                <div class="popular-icon">🍜</div>
+                <div class="popular-name">Maggi Pack</div>
+                <div class="popular-price">₹40</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

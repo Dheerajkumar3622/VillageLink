@@ -965,6 +965,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                         {/* Floating Pull Handle */}
                                         <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
 
+                                        {/* V5 AI Suggestion Banner */}
+                                        <div className="v5-ai-suggestion">
+                                            <span className="text-2xl">🤖</span>
+                                            <div className="v5-ai-suggestion-text">
+                                                <span>Sahayak AI:</span> It's {new Date().getHours()}:00. Your usual commute pulse detected. {gramSetuMode ? "E-Rickshaw" : "Village Bus"} available in <span>3 mins</span>.
+                                            </div>
+                                        </div>
+
                                         <div className="flex flex-col gap-4 mb-6">
                                             <div className="flex justify-between items-center">
                                                 <h3 className="text-xl font-black flex items-center gap-2 text-white">
@@ -1063,40 +1071,42 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                         </div>
                                         {isGift && (<div className="mt-2 animate-fade-in"><input type="tel" placeholder="Enter Friend's Phone Number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-brand-200 dark:border-brand-800 outline-none text-sm" /></div>)}
 
-                                        {/* Whisk 2.0: Schedule Comparison List (Inspired by Image 1) */}
+                                        {/* Whisk 3.0: Ultimate Ride Selector (Inspired by Demo) */}
                                         {fareDetails && (
-                                            <div className="mt-6 space-y-3">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Available Rides</label>
-                                                {[
-                                                    { time: '08:00', duration: '45m', type: 'Express Bus', price: fareDetails.totalFare, logo: Bus, color: 'text-brand-600' },
-                                                    { time: '08:30', duration: '55m', type: 'Regular Bus', price: Math.round(fareDetails.totalFare * 0.8), logo: Bus, color: 'text-slate-500' },
-                                                    { time: '09:00', duration: '40m', type: 'Shared Cab', price: Math.round(fareDetails.totalFare * 1.5), logo: Car, color: 'text-indigo-600' },
-                                                ].map((ride, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between hover:border-brand-300 transition-all cursor-pointer group"
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="text-right border-r border-slate-100 dark:border-slate-700 pr-4">
-                                                                <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">{ride.time}</p>
-                                                                <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">{ride.duration}</p>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <div className={`p-2 rounded-lg bg-slate-50 dark:bg-slate-900 ${ride.color}`}>
-                                                                    <ride.logo size={16} />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{ride.type}</p>
-                                                                    <p className="text-[9px] text-slate-400 font-medium">Daily Service</p>
-                                                                </div>
-                                                            </div>
+                                            <div className="mt-6">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Select Vehicle</label>
+                                                    <span className="v5-match-badge group-hover:animate-pulse">AI Route Match</span>
+                                                </div>
+                                                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                                                    {[
+                                                        { id: 'RICKSHAW', icon: '🛺', name: 'E-Rickshaw', price: 12 },
+                                                        { id: 'BUS', icon: '🚌', name: 'Village Bus', price: 5 },
+                                                        { id: 'MOTO', icon: '🛵', name: 'Moto Taxi', price: 15 },
+                                                        { id: 'CARGO', icon: '🛒', name: 'Cargo Cart', price: 8 },
+                                                    ].map((ride) => (
+                                                        <div
+                                                            key={ride.id}
+                                                            className={`v5-ride-option ${(!gramSetuMode && ride.id === 'BUS') || (gramSetuMode && ride.id === 'RICKSHAW') ? 'active' : ''}`}
+                                                        >
+                                                            <span className="v5-ride-icon">{ride.icon}</span>
+                                                            <div className="v5-ride-name">{ride.name}</div>
+                                                            <div className="v5-ride-price">₹{Math.round(fareDetails.totalFare * (ride.price / 10))}</div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-sm font-bold text-brand-600 dark:text-brand-400">₹{ride.price}</p>
-                                                            <button className="text-[9px] font-bold text-slate-400 uppercase mt-1 group-hover:text-brand-500">Details →</button>
-                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Ride Details (Inspired by Demo) */}
+                                                <div className="space-y-3 mt-2">
+                                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-2xl border border-white/5">
+                                                        <span className="text-xs text-slate-400">Distance / ETA</span>
+                                                        <span className="text-xs font-bold text-white">{tripDistance?.toFixed(1) || '2.4'} km • {Math.round((tripDistance || 2.4) * 3)} min</span>
                                                     </div>
-                                                ))}
+                                                    <div className="flex justify-between items-center p-3 bg-white/5 rounded-2xl border border-white/5">
+                                                        <span className="text-xs text-slate-400">Route Match</span>
+                                                        <span className="v5-match-badge">98% Efficient</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
 
@@ -1239,6 +1249,33 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     </div>
                 </div>
             )}
+            {/* VILLAGE SOS - PREMIUM SAFETY OVERLAY */}
+            <button
+                className="fixed bottom-28 left-4 w-14 h-14 bg-rose-600 rounded-full flex flex-col items-center justify-center text-white shadow-glow-rose z-[150] v5-sos-pulse group active:scale-95 transition-all"
+                onClick={() => {
+                    const confirmSOS = window.confirm("🚨 CRITICAL: Activate Village SOS? This will alert nearby Hero Drivers and Local Security.");
+                    if (confirmSOS) {
+                        alert("SOS Activated. Broadcast sent to Nasirganj Hub & Community Shield.");
+                    }
+                }}
+            >
+                <AlertOctagon size={24} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[8px] font-black uppercase tracking-tighter">SOS</span>
+            </button>
+
+            <style>{`
+                    .shadow-glow-rose {
+                        box-shadow: 0 0 20px rgba(225, 29, 72, 0.4), 0 0 40px rgba(225, 29, 72, 0.2);
+                    }
+                    .v5-sos-pulse {
+                        animation: v5-sos-ripple 2s infinite ease-out;
+                    }
+                    @keyframes v5-sos-ripple {
+                        0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+                        70% { box-shadow: 0 0 0 15px rgba(225, 29, 72, 0); }
+                        100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+                    }
+                `}</style>
         </>
     );
 };

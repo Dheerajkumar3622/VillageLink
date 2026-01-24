@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Profile & Activity Panel Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo-text span {
+            color: #a7f3d0;
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            text-align: left;
+        }
+
+        .user-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .user-balance {
+            font-size: 10px;
+            color: #a7f3d0;
+        }
+
+        /* Profile Section Header - FIXED CONTRAST */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, transparent 100%);
+            border-left: 4px solid #10b981;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            /* FIXED: White text instead of green-on-green */
+            color: #fff;
+        }
+
+        /* Profile Card - ENHANCED */
+        .profile-card {
+            margin: 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            /* FIXED: Bright white for visibility */
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .profile-role {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .profile-id {
+            font-size: 12px;
+            /* FIXED: Light gray instead of dark */
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Tabs - ENHANCED */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+            color: #fff;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .tab:not(.active) {
+            background: transparent;
+            color: #64748b;
+        }
+
+        .tab:not(.active):hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #94a3b8;
+        }
+
+        /* Activity Filters */
+        .filters {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+        }
+
+        .filter-chip:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+
+        /* Date Header */
+        .date-header {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            /* FIXED: Light gray color for visibility */
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Activity Cards - COMPLETELY REDESIGNED FOR VISIBILITY */
+        .activity-list {
+            padding: 0 20px 100px;
+        }
+
+        .activity-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #162d4a 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .activity-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .activity-icon.trip {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .activity-icon.paid {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .activity-icon.pending {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .activity-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .activity-route {
+            font-size: 15px;
+            font-weight: 600;
+            /* FIXED: Bright white for route names - THIS IS THE KEY FIX */
+            color: #fff;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .arrow {
+            color: #10b981;
+            font-size: 12px;
+        }
+
+        .activity-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .payment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .payment-badge.cash {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .payment-badge.online {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-badge.paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .status-badge.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .txn-id {
+            font-size: 11px;
+            /* FIXED: Visible gray instead of invisible dark */
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        .activity-amount {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .amount {
+            font-size: 18px;
+            font-weight: 700;
+            /* FIXED: White for amount */
+            color: #fff;
+        }
+
+        .amount-time {
+            font-size: 11px;
+            /* FIXED: Light gray for visibility */
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* Before/After Comparison */
+        .comparison {
+            padding: 20px;
+            margin: 20px;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border-radius: 16px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .comparison-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .comparison-item {
+            text-align: center;
+        }
+
+        .comparison-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .old-text {
+            background: rgba(239, 68, 68, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            /* Intentionally bad contrast to show the problem */
+            color: #1a5c3d;
+        }
+
+        .new-text {
+            background: rgba(16, 185, 129, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, rgba(13, 27, 42, 0.95) 0%, #0d1b2a 100%);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            padding: 12px 20px 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #64748b;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #10b981;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        .nav-center {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: -28px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .nav-center-icon {
+            font-size: 24px;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: #fff;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🎨 Profile & Activity Panel - Enhanced Demo</strong>
+        Fixed color contrast issues for better visibility
+    </div>
+
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">Village<span>Link</span></div>
+            </div>
+            <div class="user-pill">
+                <div class="user-avatar">D</div>
+                <div class="user-info">
+                    <div class="user-name">Dheeraj</div>
+                    <div class="user-balance">₹2,440</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Header - FIXED -->
+        <div class="section-header">
+            <div class="back-btn">←</div>
+            <div class="section-title">Profile & Activity</div>
+        </div>
+
+        <!-- Profile Card - ENHANCED -->
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">D</div>
+                <div class="profile-info">
+                    <div class="profile-name">Dheeraj kumar</div>
+                    <div class="profile-role">
+                        <span>🚌</span> PASSENGER
+                    </div>
+                    <div class="profile-id">• USR-2617</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active">
+                <span>⏱️</span> Activity
+            </div>
+            <div class="tab">
+                <span>💰</span> Wallet
+            </div>
+            <div class="tab">
+                <span>👥</span> Invite
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-chip active">All</div>
+            <div class="filter-chip">Trips</div>
+            <div class="filter-chip">Passes</div>
+            <div class="filter-chip">Parcels</div>
+        </div>
+
+        <!-- Comparison Demo -->
+        <div class="comparison">
+            <div class="comparison-title">🔄 Before vs After Comparison</div>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <div class="comparison-label">❌ Before (Invisible)</div>
+                    <div class="old-text">Champua → Kusum</div>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">✅ After (Visible)</div>
+                    <div class="new-text">Champua → Kusum</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity List - FIXED CONTRAST -->
+        <div class="date-header">Jan 17, 2026</div>
+
+        <div class="activity-list">
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="activity-icon pending">🚌</div>
+                    <div class="activity-content">
+                        <div class="activity-route">
+                            Champua <span class="arrow">→</span> Kusum
+                        </div>
+                        <div class="activity-meta">
+                            <span class="payment-badge cash">💵 CASH</span>
+                            <span class="status-badge pending">⏳ PENDING</span>
+                        </div>
+                    </div>
+                    <div class="activity-amount">
+                        <div class="amount">₹152</div>
+                        <div class="amount-time">01:03 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="date-header">Jan 14, 2026</div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="activity-icon paid">🚌</div>
+                    <div class="activity-content">
+                        <div class="activity-route">
+                            Kuraloi <span class="arrow">→</span> Gomuwan
+                        </div>
+                        <div class="activity-meta">
+                            <span class="payment-badge online">💳 ONLINE</span>
+                            <span class="status-badge paid">✓ PAID</span>
+                        </div>
+                        <div class="txn-id">Txn: pay_S31nX7StPF1KsZ</div>
+                    </div>
+                    <div class="activity-amount">
+                        <div class="amount">₹82</div>
+                        <div class="amount-time">06:24 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="activity-icon pending">🚌</div>
+                    <div class="activity-content">
+                        <div class="activity-route">
+                            Admapur <span class="arrow">→</span> Bagen
+                        </div>
+                        <div class="activity-meta">
+                            <span class="payment-badge cash">💵 CASH</span>
+                            <span class="status-badge pending">⏳ PENDING</span>
+                        </div>
+                    </div>
+                    <div class="activity-amount">
+                        <div class="amount">₹26</div>
+                        <div class="amount-time">05:43 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="activity-icon pending">🚌</div>
+                    <div class="activity-content">
+                        <div class="activity-route">
+                            Admapur <span class="arrow">→</span> Rampur
+                        </div>
+                        <div class="activity-meta">
+                            <span class="payment-badge cash">💵 CASH</span>
+                            <span class="status-badge pending">⏳ PENDING</span>
+                        </div>
+                    </div>
+                    <div class="activity-amount">
+                        <div class="amount">₹16</div>
+                        <div class="amount-time">05:17 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <div class="activity-icon paid">🚌</div>
+                    <div class="activity-content">
+                        <div class="activity-route">
+                            Dauta <span class="arrow">→</span> Tendubahar
+                        </div>
+                        <div class="activity-meta">
+                            <span class="payment-badge cash">💵 CASH</span>
+                            <span class="status-badge pending">⏳ PENDING</span>
+                        </div>
+                    </div>
+                    <div class="activity-amount">
+                        <div class="amount">₹130.09</div>
+                        <div class="amount-time">12:19 AM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <div class="nav-item">
+                <div class="nav-icon">🏠</div>
+                <span>Home</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">🎬</div>
+                <span>Reels</span>
+            </div>
+            <div class="nav-center">
+                <span class="nav-center-icon">📷</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">🏪</div>
+                <span>Mandi</span>
+            </div>
+            <div class="nav-item active">
+                <div class="nav-icon">👤</div>
+                <span>Profile</span>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

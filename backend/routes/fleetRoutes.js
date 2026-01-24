@@ -376,6 +376,44 @@ router.get('/analytics', (req, res) => {
     res.json(analytics);
 });
 
+// --- DRIVER HERO: ULTIMATE ENDPOINTS ---
+
+// Get demand heatmap for drivers
+router.get('/demand-heatmap', (req, res) => {
+    // 100x: In production, this would use historic + real-time trip demand data
+    // For now, returning realistic high-demand hotspots for the demo
+    const hotspots = [
+        { name: 'Village Mandi', lat: 28.6139, lng: 77.2090, intensity: 0.9, demandDesc: 'High Harvest Activity' },
+        { name: 'Bus Stand Junction', lat: 28.6145, lng: 77.2095, intensity: 0.8, demandDesc: 'Peak Commute Time' },
+        { name: 'Rural Health Center', lat: 28.6120, lng: 77.2080, intensity: 0.6, demandDesc: 'Regular Visitors' },
+        { name: 'Social Circle Hub', lat: 28.6150, lng: 77.2100, intensity: 0.7, demandDesc: 'Group Delivery Pending' }
+    ];
+    res.json({ success: true, hotspots });
+});
+
+// Get driver hero gamification stats
+router.get('/hero-stats/:driverId', async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.params.driverId });
+        if (!user) return res.status(404).json({ error: 'Driver profile error' });
+
+        res.json({
+            heroPoints: user.heroPoints || 1200,
+            level: user.heroLevel || 5,
+            rank: 'BHOOMI PUTRA',
+            achievements: [
+                { id: '1', name: 'Safe Pilot', icon: '🛡️', unlocked: true },
+                { id: '2', name: 'Mandi Master', icon: '🌾', unlocked: true },
+                { id: '3', name: 'Elite Guardian', icon: '👮', unlocked: false }
+            ],
+            nextLevelExp: 2000,
+            currentExp: user.heroPoints || 1200
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Revenue breakdown
 router.get('/analytics/revenue', (req, res) => {
     const { start, end } = req.query;

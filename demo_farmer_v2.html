@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink Provider - Farmer Dashboard V2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2d47 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .phone-frame {
+            max-width: 400px;
+            margin: 20px auto;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b2838 100%);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 30px;
+        }
+
+        /* Provider Header - Orange Theme */
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .logo-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .provider-badge {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        /* Farmer Profile */
+        .farmer-card {
+            margin: 20px;
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .farmer-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .farmer-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .farmer-info {
+            flex: 1;
+        }
+
+        .farmer-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .farmer-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .farmer-location {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-box {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 12px 8px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .label-sm {
+            margin: 0;
+        }
+
+        /* Add Product Section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 12px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Product Form */
+        .add-product-card {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+            border: 1px dashed rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .quantity-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .qty-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .unit-chips {
+            display: flex;
+            gap: 8px;
+        }
+
+        .unit-chip {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .unit-chip.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .price-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-symbol {
+            font-size: 16px;
+            color: #10b981;
+            font-weight: 700;
+        }
+
+        .price-hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 10px;
+        }
+
+        .hint-icon {
+            font-size: 16px;
+        }
+
+        .hint-text {
+            font-size: 11px;
+            color: #a78bfa;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* My Listings */
+        .listings-section {
+            padding: 0 20px;
+        }
+
+        .listing-card {
+            background: linear-gradient(145deg, #1e3a5f 0%, #0f2744 100%);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .listing-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .listing-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .listing-info {
+            flex: 1;
+        }
+
+        .listing-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .listing-qty {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .listing-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .listing-status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .listing-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .listing-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .listing-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Market Price Recommendation */
+        .price-rec {
+            margin: 0 20px 20px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .price-rec-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .price-rec-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #a78bfa;
+        }
+
+        .ml-badge {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .price-rec-text {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .price-rec-highlight {
+            color: #10b981;
+            font-weight: 700;
+        }
+
+        /* Demo Note */
+        .demo-note {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .demo-note strong {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-note">
+        <strong>🌾 Farmer Dashboard V2</strong>
+        Add products with quantity units (kg/quintal/gram), free pricing, ML recommendations
+    </div>
+
+    <div class="phone-frame">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">V</div>
+                <div class="logo-text">VillageLink Provider</div>
+            </div>
+            <div class="provider-badge">🌾 FARMER</div>
+        </div>
+
+        <!-- Farmer Profile -->
+        <div class="farmer-card">
+            <div class="farmer-header">
+                <div class="farmer-avatar">👨‍🌾</div>
+                <div class="farmer-info">
+                    <div class="farmer-name">Ramesh Kumar</div>
+                    <div class="farmer-tag">✓ Verified Farmer</div>
+                    <div class="farmer-location">📍 Nasirganj, Rohtas District</div>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Listings</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">48</div>
+                    <div class="stat-label">Orders</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">₹1.2L</div>
+                    <div class="stat-label">Earnings</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Product -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>➕</span> Add New Product
+            </div>
+        </div>
+
+        <div class="add-product-card">
+            <div class="form-group">
+                <label class="form-label">Product Name (Type or Select)</label>
+                <input type="text" class="form-input" placeholder="e.g. Fresh Milk, Wheat, Tomatoes">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Quantity Available</label>
+                <div class="quantity-row">
+                    <input type="number" class="qty-input" placeholder="50" value="50">
+                    <div class="unit-chips">
+                        <div class="unit-chip">gram</div>
+                        <div class="unit-chip active">kg</div>
+                        <div class="unit-chip">quintal</div>
+                        <div class="unit-chip">liter</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Your Price (You decide!)</label>
+                <div class="price-input-group">
+                    <span class="price-symbol">₹</span>
+                    <input type="number" class="form-input" placeholder="50" value="50">
+                    <span class="form-label label-sm">per kg</span>
+                </div>
+                <div class="price-hint">
+                    <span class="hint-icon">💡</span>
+                    <span class="hint-text">Market rate: ₹45-55/kg. Demand is HIGH, consider ₹52-55</span>
+                </div>
+            </div>
+
+            <button class="submit-btn">
+                <span>📦</span> List Product
+            </button>
+        </div>
+
+        <!-- ML Price Recommendation -->
+        <div class="price-rec">
+            <div class="price-rec-header">
+                <span>📈</span>
+                <span class="price-rec-title">Price Recommendation</span>
+                <span class="ml-badge">AI</span>
+            </div>
+            <div class="price-rec-text">
+                Based on current market: <strong>Tomato demand is HIGH</strong> (25 orders today) but supply is LOW
+                (only 3 sellers).
+                <br><br>
+                Recommendation: <span class="price-rec-highlight">Raise price by 10-15%</span> to ₹40-42/kg
+            </div>
+        </div>
+
+        <!-- My Listings -->
+        <div class="section-header">
+            <div class="section-title">
+                <span>📦</span> My Listings
+            </div>
+        </div>
+
+        <div class="listings-section">
+            <div class="listing-card">
+                <div class="listing-header">
+                    <div class="listing-icon">🥛</div>
+                    <div class="listing-info">
+                        <div class="listing-name">Fresh Milk</div>
+                        <div class="listing-qty">Stock: 50 Liters</div>
+                    </div>
+                    <div class="listing-status active">✓ Active</div>
+                </div>
+                <div class="listing-price-row">
+                    <div class="listing-price">₹50/Liter</div>
+                    <div class="listing-actions">
+                        <div class="action-btn">✏️ Edit</div>
+                        <div class="action-btn">📊 Stats</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="listing-card">
+                <div class="listing-header">
+                    <div class="listing-icon">🌾</div>
+                    <div class="listing-info">
+                        <div class="listing-name">Wheat (Grade A)</div>
+                        <div class="listing-qty">Stock: 5 Quintals</div>
+                    </div>
+                    <div class="listing-status active">✓ Active</div>
+                </div>
+                <div class="listing-price-row">
+                    <div class="listing-price">₹2,200/Quintal</div>
+                    <div class="listing-actions">
+                        <div class="action-btn">✏️ Edit</div>
+                        <div class="action-btn">📊 Stats</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

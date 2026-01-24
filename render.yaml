@@ -8,6 +8,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
+      - key: NODE_ENV
+        value: production
       - key: MONGO_URI
         sync: false
       - key: RAZORPAY_KEY_ID
