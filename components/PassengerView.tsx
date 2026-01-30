@@ -170,21 +170,45 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
             setUpcomingBuses(relevant);
         };
 
+        // Initial Fetch
         fetchTickets();
+        filterUpcomingBuses();
         fetchPasses();
         fetchWallet();
         fetchParcels();
-        filterUpcomingBuses();
 
-        const interval = setInterval(() => {
-            fetchTickets();
-            fetchPasses();
-            fetchWallet();
-            fetchParcels();
-            filterUpcomingBuses();
-        }, 5000);
+        // Optimize Polling: Split into Fast (Local) and Slow (Network) intervals
+        // Also pause polling when tab is inactive to save battery/data
+        const runFastUpdates = () => {
+            if (document.hidden) return;
+            fetchTickets(); // Reads from local memory (socket synced)
+            filterUpcomingBuses(); // Reads from local memory
+        };
+
+        const runSlowUpdates = () => {
+            if (document.hidden) return;
+            fetchPasses(); // Network call
+            fetchWallet(); // Network call
+            fetchParcels(); // Network call
+        };
+
+        const fastInterval = setInterval(runFastUpdates, 5000);
+        const slowInterval = setInterval(runSlowUpdates, 30000);
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Refresh immediately when user returns
+                runFastUpdates();
+                runSlowUpdates();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
-            clearInterval(interval);
+            clearInterval(fastInterval);
+            clearInterval(slowInterval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('online', () => setIsOfflineMode(false));
             window.removeEventListener('offline', () => setIsOfflineMode(true));
         };
