@@ -243,16 +243,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
 
       <div className="glass-portal rounded-[32px] p-8 pt-16 shadow-2xl relative overflow-hidden ring-1 ring-white/10">
         {/* Nano Green Glow Ball */}
-        <div className="absolute -top-20 -right-20 w-60 h-60 bg-nano-green rounded-full blur-[100px] opacity-20 animate-pulse-glow"></div>
-        {/* Indigo Depth Ball */}
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-brand-600 rounded-full blur-[100px] opacity-20"></div>
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-luxe-gold rounded-full blur-[100px] opacity-20 animate-pulse-glow"></div>
+        {/* Rust Depth Ball */}
+        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-luxe-rust rounded-full blur-[100px] opacity-20"></div>
 
         <div className="relative z-10 text-center mb-8">
           <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">
             {viewState === 'LOGIN' ? t('welcome') : (viewState === 'REGISTER' ? t('register') : 'Reset Password')}
           </h2>
-          <p className="text-brand-200 mt-2 text-sm font-medium tracking-wide">
-            Whisk 3.0 Platform
+          <p className="text-luxe-gold mt-2 text-sm font-medium tracking-wide">
+            VillageLink V6 Luxe
           </p>
         </div>
 
@@ -263,9 +263,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
           <div className="space-y-6">
             {isVoiceAuth ? (
               <div className="py-8 flex flex-col items-center justify-center animate-fade-in glass-panel rounded-2xl border-none bg-white/5">
-                <div className="w-24 h-24 bg-brand-500/20 rounded-full flex items-center justify-center mb-6 relative">
-                  <div className="absolute inset-0 bg-brand-500 rounded-full animate-ping opacity-30"></div>
-                  <Mic size={40} className="text-brand-400" />
+                <div className="w-24 h-24 bg-luxe-sienna/20 rounded-full flex items-center justify-center mb-6 relative">
+                  <div className="absolute inset-0 bg-luxe-sienna rounded-full animate-ping opacity-30"></div>
+                  <Mic size={40} className="text-luxe-gold" />
                 </div>
                 <p className="text-lg font-bold text-white tracking-wide">{voiceStatus}</p>
                 <button onClick={() => setIsVoiceAuth(false)} className="mt-6 px-4 py-2 rounded-full bg-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-all">ABORT VOICE LOGON</button>
@@ -273,10 +273,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
             ) : (
               <form onSubmit={handleLogin} className="space-y-5" autoComplete="on">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-brand-200 uppercase ml-1 tracking-widest">{t('phone')} / ID</label>
+                  <label className="text-xs font-bold text-luxe-gold/80 uppercase ml-1 tracking-widest">{t('phone')} / ID</label>
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-300 z-10" size={18} />
+                    <div className="absolute inset-0 bg-luxe-sienna/20 blur-lg rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-luxe-gold/60 z-10" size={18} />
                     <input
                       type="text"
                       name="username"
@@ -291,12 +291,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <label className="text-xs font-bold text-brand-200 uppercase ml-1 tracking-widest">{t('password')}</label>
-                    <button type="button" onClick={() => setViewState('FORGOT')} className="text-xs font-bold text-banana-yellow hover:text-white transition-colors">Recover Key?</button>
+                    <label className="text-xs font-bold text-luxe-gold/80 uppercase ml-1 tracking-widest">{t('password')}</label>
+                    <button type="button" onClick={() => setViewState('FORGOT')} className="text-xs font-bold text-luxe-gold hover:text-white transition-colors">Recover Key?</button>
                   </div>
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-brand-500/20 blur-lg rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-300 z-10" size={18} />
+                    <div className="absolute inset-0 bg-luxe-sienna/20 blur-lg rounded-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-luxe-gold/60 z-10" size={18} />
                     <input
                       type="password"
                       name="password"
@@ -313,7 +313,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 bg-banana-yellow hover:bg-banana-gold text-midnight-950 font-black rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:shadow-[0_0_30px_rgba(250,204,21,0.6)] transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                  className="w-full py-4 bg-luxe-sienna hover:bg-luxe-rust text-white font-black rounded-xl shadow-[0_0_20px_rgba(190,81,3,0.4)] hover:shadow-[0_0_30px_rgba(183,65,14,0.6)] transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
                 >
                   {loading ? <Loader2 className="animate-spin" /> : <>{t('login')} <ArrowRight size={18} /></>}
                 </button>
@@ -329,14 +329,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                   onClick={handleVoiceLogin}
                   className="w-full py-3 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center gap-2 hover:bg-white/10 transition-colors group"
                 >
-                  <Activity size={18} className="text-nano-green group-hover:animate-bounce" />
-                  <span className="text-sm font-bold text-white group-hover:text-nano-green transition-colors">Initialize Voice Protocol</span>
+                  <Activity size={18} className="text-luxe-teal group-hover:animate-bounce" />
+                  <span className="text-sm font-bold text-white group-hover:text-luxe-gold transition-colors">Initialize Voice Protocol</span>
                 </button>
               </form>
             )}
             <div className="text-center pt-2">
-              <button onClick={() => setViewState('REGISTER')} className="text-sm font-medium text-brand-200 hover:text-white transition-colors flex items-center justify-center gap-1 mx-auto">
-                New User? <span className="font-bold text-nano-green underline decoration-nano-green/50 underline-offset-4">Create Identity</span>
+              <button onClick={() => setViewState('REGISTER')} className="text-sm font-medium text-luxe-gold/80 hover:text-white transition-colors flex items-center justify-center gap-1 mx-auto">
+                New User? <span className="font-bold text-luxe-teal underline decoration-luxe-teal/50 underline-offset-4">Create Identity</span>
               </button>
             </div>
           </div>
@@ -373,7 +373,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                     <div
                       key={type}
                       onClick={() => setRegVehicleType(type)}
-                      className={`cursor-pointer p-2 rounded-lg border flex flex-col items-center justify-center gap-1 ${regVehicleType === type ? 'bg-brand-500 text-white border-brand-500' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-400'}`}
+                      className={`cursor-pointer p-2 rounded-lg border flex flex-col items-center justify-center gap-1 ${regVehicleType === type ? 'bg-luxe-sienna text-white border-luxe-sienna' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-400'}`}
                     >
                       {type === 'BUS' && <Bus size={16} />}
                       {type === 'TAXI' && <Car size={16} />}

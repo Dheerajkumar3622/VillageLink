@@ -18,18 +18,18 @@ export const trackBehavior = () => {
     interactionData.push(diff);
   }
   lastInteractionTime = now;
-  
+
   if (interactionData.length > 20) interactionData.shift();
 };
 
 export const getBehavioralScore = (): number => {
   // Relaxed Constraint: Default to 1.0 (Human) if not enough data
-  if (interactionData.length < 3) return 1.0; 
-  
+  if (interactionData.length < 3) return 1.0;
+
   // Calculate variance. 
   const mean = interactionData.reduce((a, b) => a + b) / interactionData.length;
   const variance = interactionData.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / interactionData.length;
-  
+
   // Adjusted Thresholds for Mobile:
   // Bots are extremely fast (<20ms avg) or perfectly consistent (variance < 2).
   // Humans on mobile can be fast, so we lowered the mean threshold from 50 to 20.
@@ -55,7 +55,7 @@ export const generateDeviceFingerprint = async (): Promise<DeviceFingerprint> =>
   ctx.fillText("TrustChain", 4, 17);
 
   const dataUrl = canvas.toDataURL();
-  
+
   // Simple Hash
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(dataUrl));
   const hashArray = Array.from(new Uint8Array(hash));
@@ -102,106 +102,62 @@ export const encryptData = async (data: string): Promise<string> => {
 
 // 4. DECENTRALIZED IDENTITY (DID) SIGNING
 export const signTransaction = async (payload: any): Promise<string> => {
-    // Simulating ECDSA signing for DID
-    // In real app, this uses private key stored in secure enclave
-    const fingerprint = await generateDeviceFingerprint();
-    const content = JSON.stringify(payload) + fingerprint.id + Date.now();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
-    return `did:vl:${Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+  // Simulating ECDSA signing for DID
+  // In real app, this uses private key stored in secure enclave
+  const fingerprint = await generateDeviceFingerprint();
+  const content = JSON.stringify(payload) + fingerprint.id + Date.now();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
+  return `did:vl:${Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')}`;
 };
 
 export const verifySignature = async (data: any, signature: string): Promise<boolean> => {
-    // Simulate verification
-    // In real world: verify(signature, publicKey, data)
-    await new Promise(r => setTimeout(r, 200));
-    return signature && signature.startsWith('did:vl:');
+  // Simulate verification
+  // In real world: verify(signature, publicKey, data)
+  await new Promise(r => setTimeout(r, 200));
+  return Boolean(signature && signature.startsWith('did:vl:'));
 };
 
 // 5. GEO-VELOCITY CHECK
 let lastKnownLocation: GeoLocation | null = null;
 
 export const updateLastLocation = (loc: GeoLocation) => {
-    lastKnownLocation = loc;
+  lastKnownLocation = loc;
 };
 
 export const checkImpossibleTravel = (lastLoc: GeoLocation, currentLoc: GeoLocation): boolean => {
-    const R = 6371; // km
-    const dLat = (currentLoc.lat - lastLoc.lat) * Math.PI / 180;
-    const dLng = (currentLoc.lng - lastLoc.lng) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lastLoc.lat * Math.PI / 180) * Math.cos(currentLoc.lat * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distanceKm = R * c;
-    
-    // Time diff in hours
-    const timeDiffHours = (currentLoc.timestamp - lastLoc.timestamp) / (1000 * 60 * 60);
-    
-    if (timeDiffHours <= 0) return distanceKm > 5; // Instant teleportation > 5km is impossible
+  const R = 6371; // km
+  const dLat = (currentLoc.lat - lastLoc.lat) * Math.PI / 180;
+  const dLng = (currentLoc.lng - lastLoc.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lastLoc.lat * Math.PI / 180) * Math.cos(currentLoc.lat * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distanceKm = R * c;
 
-    const speed = distanceKm / timeDiffHours;
-    // Speed > 1000 km/h (Plane speed) = Fraud
-    return speed > 1000; 
+  // Time diff in hours
+  const timeDiffHours = (currentLoc.timestamp - lastLoc.timestamp) / (1000 * 60 * 60);
+
+  if (timeDiffHours <= 0) return distanceKm > 5; // Instant teleportation > 5km is impossible
+
+  const speed = distanceKm / timeDiffHours;
+  // Speed > 1000 km/h (Plane speed) = Fraud
+  return speed > 1000;
 };
 
 export const isTravelPossible = (newLoc: GeoLocation): boolean => {
-    if (!lastKnownLocation) {
-        return true;
-    }
-    return !checkImpossibleTravel(lastKnownLocation, newLoc);
-};
-
-// 6. CHUPPI TODEIN (Shake Detection) - Feature 4
-export const initShakeDetection = (onShake: () => void) => {
-  let lastX: number | null = null;
-  let lastY: number | null = null;
-  let lastZ: number | null = null;
-  let lastShakeTime = 0;
-  
-  // High threshold to ensure only vigorous shaking triggers alert
-  // 25 m/s^2 change across axes is roughly 2.5G
-  const threshold = 25; 
-
-  if (typeof window !== 'undefined' && 'ondevicemotion' in window) {
-      window.addEventListener('devicemotion', (event: DeviceMotionEvent) => {
-        const current = event.accelerationIncludingGravity;
-        if (!current) return;
-        
-        // Initialize on first event to prevent initial spike from null -> gravity
-        if (lastX === null) {
-            lastX = current.x || 0;
-            lastY = current.y || 0;
-            lastZ = current.z || 0;
-            return;
-        }
-
-        const deltaX = Math.abs((current.x || 0) - lastX);
-        const deltaY = Math.abs((current.y || 0) - lastY);
-        const deltaZ = Math.abs((current.z || 0) - lastZ);
-
-        // Sum absolute changes to catch any violent movement
-        if ((deltaX + deltaY + deltaZ) > threshold) {
-            const now = Date.now();
-            // 3 Second Cooldown
-            if (now - lastShakeTime > 3000) {
-                lastShakeTime = now;
-                console.log("SOS Shake Detected");
-                onShake();
-            }
-        }
-
-        lastX = current.x || 0;
-        lastY = current.y || 0;
-        lastZ = current.z || 0;
-      });
+  if (!lastKnownLocation) {
+    return true;
   }
+  return !checkImpossibleTravel(lastKnownLocation, newLoc);
 };
+
+
 
 // Initialize listeners
 if (typeof window !== 'undefined') {
-    // Adding touchstart to catch mobile interactions better
-    window.addEventListener('click', trackBehavior);
-    window.addEventListener('touchstart', trackBehavior); 
-    window.addEventListener('scroll', trackBehavior);
-    window.addEventListener('keydown', trackBehavior);
+  // Adding touchstart to catch mobile interactions better
+  window.addEventListener('click', trackBehavior);
+  window.addEventListener('touchstart', trackBehavior);
+  window.addEventListener('scroll', trackBehavior);
+  window.addEventListener('keydown', trackBehavior);
 }

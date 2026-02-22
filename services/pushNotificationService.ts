@@ -310,17 +310,14 @@ export function sendTripUpdateNotification(
  * Send safety alert notification (high priority)
  */
 export function sendSafetyNotification(
-    type: 'SOS_RECEIVED' | 'ROUTE_DEVIATION' | 'LONG_STOP',
+    type: 'ROUTE_DEVIATION' | 'LONG_STOP',
     details: Record<string, any>
 ): void {
     let title = '';
     let body = '';
 
     switch (type) {
-        case 'SOS_RECEIVED':
-            title = '🚨 SOS ALERT';
-            body = `${details.userName} triggered SOS. Check their location immediately.`;
-            break;
+
         case 'ROUTE_DEVIATION':
             title = '⚠️ Route Deviation';
             body = `Vehicle has deviated ${details.distance}km from expected route`;

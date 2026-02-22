@@ -4,7 +4,7 @@
  * Safety features for passengers:
  * - Live trip sharing with trusted contacts
  * - Route deviation alerts
- * - SOS with audio recording
+
  * - Women safety features
  */
 
@@ -35,7 +35,7 @@ export interface LiveShare {
 
 export interface SafetyAlert {
     id: string;
-    type: 'SOS' | 'ROUTE_DEVIATION' | 'LONG_STOP' | 'SPEED_ALERT' | 'MANUAL';
+    type: 'ROUTE_DEVIATION' | 'LONG_STOP' | 'SPEED_ALERT' | 'MANUAL';
     userId: string;
     tripId?: string;
     location: { lat: number; lng: number };
@@ -228,106 +228,7 @@ export async function sendShareViaSMS(shareUrl: string, phones: string[]): Promi
     }
 }
 
-// --- SOS & EMERGENCY ---
 
-/**
- * Trigger SOS alert
- */
-export async function triggerSOS(
-    location: { lat: number; lng: number },
-    tripId?: string,
-    audioBlob?: Blob
-): Promise<SafetyAlert | null> {
-    try {
-        let audioUrl: string | undefined;
-
-        // Upload audio if provided
-        if (audioBlob) {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'sos_audio.webm');
-
-            const uploadRes = await fetch(`${API_BASE_URL}/api/upload/audio`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-                body: formData
-            });
-
-            if (uploadRes.ok) {
-                const { url } = await uploadRes.json();
-                audioUrl = url;
-            }
-        }
-
-        const res = await fetch(`${API_BASE_URL}/api/guardian/sos`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                location,
-                tripId,
-                audioUrl,
-                type: 'SOS'
-            })
-        });
-
-        if (!res.ok) throw new Error('Failed to trigger SOS');
-        return await res.json();
-    } catch {
-        // Log locally and attempt to send via SMS
-        console.error('SOS trigger failed - attempting SMS fallback');
-        return {
-            id: `sos_${Date.now()}`,
-            type: 'SOS',
-            userId: getCurrentUser()?.id || '',
-            tripId,
-            location,
-            message: 'Emergency SOS triggered',
-            status: 'ACTIVE',
-            createdAt: Date.now()
-        };
-    }
-}
-
-/**
- * Record SOS audio
- */
-export async function recordSOSAudio(durationMs: number = 10000): Promise<Blob | null> {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        const chunks: Blob[] = [];
-
-        return new Promise((resolve) => {
-            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-
-            mediaRecorder.onstop = () => {
-                stream.getTracks().forEach(track => track.stop());
-                resolve(new Blob(chunks, { type: 'audio/webm' }));
-            };
-
-            mediaRecorder.start();
-            setTimeout(() => mediaRecorder.stop(), durationMs);
-        });
-    } catch {
-        console.error('Failed to record audio');
-        return null;
-    }
-}
-
-/**
- * Cancel SOS alert
- */
-export async function cancelSOS(alertId: string): Promise<boolean> {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/guardian/sos/${alertId}/cancel`, {
-            method: 'POST',
-            headers: getHeaders()
-        });
-
-        return res.ok;
-    } catch {
-        return false;
-    }
-}
 
 // --- ROUTE MONITORING ---
 

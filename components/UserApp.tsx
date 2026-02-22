@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserType } from '../types';
 import { API_BASE_URL } from '../config';
-import { Bell, Loader2, Sparkles, X } from 'lucide-react';
+import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck } from 'lucide-react';
 
 // Import V5 Shared Components
 import { BentoCard } from './BentoCard';
@@ -17,7 +17,7 @@ import FoodLinkHome from './FoodLinkHome';
 import LogisticsApp from './LogisticsApp';
 
 // Extended TabType for User App
-type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile' | 'chat';
+export type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile' | 'chat' | 'scan';
 
 // Import Views
 import PassengerView from './PassengerView';
@@ -26,22 +26,26 @@ import ReelsSection from './ReelsSection';
 import ChatSection from './ChatSection';
 import UniversalQRScanner from './UniversalQRScanner';
 import UserProfile from './UserProfile';
-import { GramSahayakBubble } from './GramSahayakBubble';
 import ScratchCard from './ScratchCard';
+import { Moon, Sun } from 'lucide-react';
 
 interface UserAppProps {
     user: UserType | any;
     onLogout: () => void;
     lang?: 'EN' | 'HI';
+    darkMode?: boolean;
+    toggleTheme?: () => void;
 }
 
-const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
-    const [activeTab, setActiveTab] = useState<UserTabType>('home');
+const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme }) => {
+    const [activeTab, setActiveTab] = useState<UserTabType>('rides');
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [showAIChat, setShowAIChat] = useState(false);
     const [contextualAdvice, setContextualAdvice] = useState<{ icon: string; text: string } | null>(null);
     const [showScratchCard, setShowScratchCard] = useState(false);
+    const [gramSetuMode, setGramSetuMode] = useState(false);
+    const [didiMode, setDidiMode] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -89,134 +93,35 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
     };
 
     const renderHomeContent = () => (
-        <div className="v5-home-content animate-fade-in px-5">
-            {/* Stats Grid - Premium HUD style */}
-            <div className="grid grid-cols-4 gap-3 my-6">
-                {[
-                    { value: user?.heroLevel || '1', label: 'Level', color: 'var(--accent-primary)' },
-                    { value: user?.dailyStreak || '0', label: 'Streak', color: 'var(--accent-warm)' },
-                    { value: user?.heroPoints || '0', label: 'Points', color: 'var(--accent-tertiary)' },
-                    { value: 'B+', label: 'Grade', color: 'var(--accent-secondary)' }
-                ].map((stat, i) => (
-                    <StatCard key={i} {...stat} />
-                ))}
+        <div className="v5-home-content animate-fade-in px-5 bg-white min-h-screen" style={{ color: '#1A1035' }}>
+
+            {/* Quick Actions Row */}
+            <div className="flex gap-4 pb-4 mb-2 pt-4 overflow-x-auto scrollbar-hide px-2">
+                <BentoCard icon="🚌" title="Book Ride" onClick={() => setActiveTab('rides')} />
+                <BentoCard icon="🌾" title="Gram Mandi" onClick={() => setActiveTab('haat')} />
+                <BentoCard icon="🍽️" title="Mess Master" onClick={() => setActiveTab('food')} />
+                <BentoCard icon="📦" title="CargoLink" onClick={() => setActiveTab('cargo')} />
             </div>
 
-            {/* V5 Voice Bar (Inspired by Demo) */}
-            <div className="v5-voice-bar mb-6" onClick={() => setShowAIChat(true)}>
-                <span className="v5-voice-icon text-indigo-400 text-lg">🎙️</span>
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">"Order organic milk from Nasirganj..."</span>
-                <div className="ml-auto w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-            </div>
+            {/* Reference Spacer Line - Harvest Gold matching theme */}
+            <div className="h-[2px] w-full bg-[#FFCE1B]/20 rounded-full mb-6 mx-2"></div>
 
-            {/* Contextual AI Advisor (V5 Parity) */}
-            {contextualAdvice && (
-                <div
-                    className="v5-ai-peek mb-8 group cursor-pointer"
-                    onClick={() => {
-                        if (contextualAdvice.icon === '🎁') setShowScratchCard(true);
-                        else setShowAIChat(true);
-                    }}
+            {/* Support Pill Buttons - Right Aligned as per image */}
+            <div className="flex justify-end gap-2 mb-8 px-2 pr-4">
+                <button 
+                    onClick={() => setGramSetuMode(!gramSetuMode)}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-[9px] font-[900] uppercase tracking-wider transition-all shadow-sm ${gramSetuMode ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white text-slate-500 border-slate-200'}`}
                 >
-                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                        {contextualAdvice.icon}
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1">Gram Insight</p>
-                        <p className="text-[11px] font-bold text-slate-200 leading-relaxed">{contextualAdvice.text}</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Quick Actions Bento Grid */}
-            <div className="v5-section-header px-0">
-                <h2 className="v5-section-title">
-                    <span className="w-8 h-8 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">⚡</span>
-                    Quick Actions
-                </h2>
-                <span className="v5-section-action">Explore</span>
-            </div>
-
-            <div className="v5-bento-grid mb-8">
-                <BentoCard
-                    icon="🚌"
-                    title="Book Ride"
-                    description="Hero Drivers nearby"
-                    colorClass="v5-icon-emerald"
-                    badge="5m away"
-                    onClick={() => setActiveTab('rides')}
-                />
-                <BentoCard
-                    icon="🌾"
-                    title="Gram Mandi"
-                    description="Direct from Farm"
-                    colorClass="v5-icon-warm"
-                    badge="FRESH"
-                    onClick={() => setActiveTab('haat')}
-                />
-                <BentoCard
-                    icon="🍽️"
-                    title="Mess Master"
-                    description="Live Kitchen Hub"
-                    colorClass="v5-icon-hot"
-                    badge="LIVE"
-                    onClick={() => setActiveTab('food')}
-                />
-                <BentoCard
-                    icon="📦"
-                    title="CargoLink"
-                    description="Track your parcel"
-                    colorClass="v5-icon-cyan"
-                    onClick={() => setActiveTab('cargo')}
-                />
-                <BentoCard
-                    icon="💊"
-                    title="Medicine"
-                    description="Express Pharmacy"
-                    colorClass="v5-icon-rose"
-                />
-                <BentoCard
-                    icon="🛠️"
-                    title="Services"
-                    description="Plumber, Electrician"
-                    colorClass="v5-icon-blue"
-                />
-                <BentoCard
-                    icon="🏷️"
-                    title="Offers"
-                    description="Daily Mandi Deals"
-                    colorClass="v5-icon-gold"
-                />
-                <BentoCard
-                    icon="⭐"
-                    title="Favorites"
-                    description="Quick book routes"
-                    colorClass="v5-icon-purple"
-                />
-                <BentoCard
-                    icon="🥛"
-                    title="Daily Needs"
-                    description="Milk & Bread"
-                    colorClass="v5-icon-sky"
-                />
-                <BentoCard
-                    icon="🤝"
-                    title="Community"
-                    description="Village Board"
-                    colorClass="v5-icon-indigo"
-                />
-                <BentoCard
-                    icon="🏥"
-                    title="Care"
-                    description="Doctor Consult"
-                    colorClass="v5-icon-emerald"
-                />
-                <BentoCard
-                    icon="💰"
-                    title="Finance"
-                    description="Micro-loans"
-                    colorClass="v5-icon-warm"
-                />
+                    <Bike size={12} strokeWidth={3} />
+                    Feeder Mode
+                </button>
+                <button 
+                    onClick={() => setDidiMode(!didiMode)}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-[9px] font-[900] uppercase tracking-wider transition-all shadow-sm ${didiMode ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white text-slate-500 border-slate-200'}`}
+                >
+                    <ShieldCheck size={12} strokeWidth={3} />
+                    Didi Rath
+                </button>
             </div>
 
             {/* Passenger View Content */}
@@ -248,25 +153,60 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
 
     return (
         <div className="v5-app-shell">
-            {/* Mesh Background */}
-            <div className="v5-mesh-bg fixed inset-0 z-0"></div>
+            {/* Mesh Background - Prismatic Luxe */}
+            <div className={`v5-mesh-bg fixed inset-0 z-0 transition-all duration-1000 ${darkMode ? 'bg-[#0A0705]' : 'bg-[#FFF9F5]'}`}>
+                <div className={`absolute top-[-10%] left-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse ${darkMode ? 'bg-[#BE5103]/20' : 'bg-[#BE5103]/10'}`}></div>
+                <div className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse ${darkMode ? 'bg-[#FFCE1B]/15' : 'bg-[#FFCE1B]/10'}`} style={{ animationDelay: '1s' }}></div>
+                <div className={`absolute top-[40%] right-[-5%] w-[30%] h-[30%] blur-[100px] rounded-full animate-pulse ${darkMode ? 'bg-[#069494]/15' : 'bg-[#069494]/10'}`} style={{ animationDelay: '2s' }}></div>
+            </div>
 
             {/* V5 Header */}
-            <header className="v5-header">
+            <header className="v5-header glass-panel rounded-b-3xl px-6 py-4 flex items-center justify-between z-50 transition-all duration-500">
                 <div className="flex items-center gap-3">
-                    <div className="v5-brand-mark">V</div>
-                    <div className="flex flex-col">
-                        <span className="text-base font-extrabold tracking-tight">Village<span className="v5-gradient-text">Link</span></span>
+                    {/* V5 Holographic Prism Logo */}
+                    <div className="v5-logo-holographic">
+                        <span className="v5-logo-sparkle"></span>
+                        <span className="v5-logo-sparkle"></span>
+                        <span className="v5-logo-sparkle"></span>
+                        <span>V</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <ProfilePill
-                        name={user?.name || 'User'}
-                        balance={user?.balance || 2440}
-                    />
-                    <button className="relative w-10 h-10 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl flex items-center justify-center hover:border-[var(--border-glow)] transition-colors" aria-label="Notifications">
-                        <Bell size={18} className="opacity-70" />
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center border-2 border-[var(--bg-deep)]">3</span>
+                <div className="v5-living-header">
+                    {/* Breathing Avatar */}
+                    <div className="v5-avatar-ecosystem" onClick={() => setActiveTab('profile')}>
+                        <div className="v5-breathing-ring"></div>
+                        <div className="v5-avatar-core">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </div>
+                    </div>
+                    
+                    {/* User Info + Wallet */}
+                    <div className="v5-user-info">
+                        <span className="v5-user-name">{user?.name?.split(' ')[0] || 'User'}</span>
+                        <div className="v5-wallet-section">
+                            <span className="v5-wallet-amount">₹{(user?.balance || 2440).toLocaleString()}</span>
+                            <div className="v5-wallet-health">
+                                <div className="v5-wallet-health-fill" style={{ width: '75%' }}></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="v5-header-divider"></div>
+                    
+                    {/* Notification Orb */}
+                    <button className="v5-notification-orb" aria-label="Notifications">
+                        <Bell size={16} />
+                        <span className="v5-notification-badge">3</span>
+                    </button>
+                    
+                    {/* Eclipse Theme Toggle */}
+                    <button 
+                        className={`v5-eclipse-toggle ${darkMode ? 'dark' : 'light'}`}
+                        onClick={toggleTheme}
+                        aria-label="Toggle theme"
+                    >
+                        <Sun size={16} className="v5-sun-icon text-amber-400" />
+                        <Moon size={16} className="v5-moon-icon text-indigo-400" />
                     </button>
                 </div>
             </header>
@@ -276,22 +216,19 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN' }) => {
                 {renderContent()}
             </main>
 
-            {/* V5 Bottom Navigation */}
+            {/* V5 Bottom Navigation - Integrated Quick Actions */}
             <V5BottomNav
-                activeTab={activeTab as 'home' | 'reels' | 'haat' | 'chat' | 'profile'}
-                onTabChange={(tab) => setActiveTab(tab as UserTabType)}
-                onCenterAction={() => setShowQRScanner(true)}
-                notificationBadge={unreadMessages}
-            />
-
-            {/* Gram Sahayak Floating Assistant */}
-            <GramSahayakBubble
-                user={user}
-                onOpenChat={() => {
-                    setActiveTab('chat');
-                    setShowAIChat(true);
+                activeTab={activeTab as any}
+                onTabChange={(tab) => {
+                    if (tab === 'scan') {
+                        setShowQRScanner(true);
+                    } else {
+                        setActiveTab(tab as any);
+                    }
                 }}
             />
+
+
 
             {/* AI Chat Drawer - Simplified integration */}
             {showAIChat && (

@@ -402,47 +402,7 @@ router.post('/guardian/share/:id/stop', async (req, res) => {
     }
 });
 
-// Trigger SOS
-router.post('/guardian/sos', async (req, res) => {
-    try {
-        const userId = req.user?.id;
-        const { location, tripId, audioUrl, type = 'SOS' } = req.body;
 
-        const alert = new SafetyAlert({
-            id: `alert_${Date.now()}`,
-            type,
-            userId,
-            tripId,
-            location,
-            message: 'Emergency SOS triggered',
-            audioUrl,
-            status: 'ACTIVE',
-            createdAt: Date.now()
-        });
-
-        await alert.save();
-
-        // TODO: Send SMS to trusted contacts
-        // TODO: Notify nearby authorities
-
-        res.json(alert);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Cancel SOS
-router.post('/guardian/sos/:id/cancel', async (req, res) => {
-    try {
-        await SafetyAlert.findOneAndUpdate(
-            { id: req.params.id },
-            { status: 'RESOLVED', resolvedAt: Date.now() }
-        );
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 // ==================== CONDUCTOR METRICS ROUTES ====================
 

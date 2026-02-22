@@ -14,10 +14,34 @@ if (!process.env.JWT_SECRET) {
   console.warn("🔒 SECURITY WARNING: No JWT_SECRET in env. Using ephemeral random key.");
 }
 
-// Validation Schemas
+// --- 1000x: SEPARATE VALIDATION SCHEMAS ---
+
+// User Panel registration (consumers only)
+const registerUserSchema = z.object({
+  name: z.string().min(2),
+  password: z.string().min(6),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().min(10).optional().or(z.literal(''))
+});
+
+// Service Provider registration (must choose role)
+const registerProviderSchema = z.object({
+  name: z.string().min(2),
+  role: z.enum(['DRIVER', 'FARMER', 'FOOD_VENDOR', 'MESS_MANAGER', 'SHOPKEEPER', 'LOGISTICS', 'CARGO_DRIVER', 'VILLAGE_MANAGER']),
+  password: z.string().min(6),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().min(10).optional().or(z.literal('')),
+  vehicleCapacity: z.number().optional(),
+  vehicleType: z.string().optional(),
+  vehicleNumber: z.string().optional(),
+  address: z.string().optional(),
+  pincode: z.string().optional()
+});
+
+// Legacy register schema (backward compatibility)
 const registerSchema = z.object({
   name: z.string().min(2),
-  role: z.enum(['PASSENGER', 'DRIVER', 'SHOPKEEPER', 'MESS_MANAGER', 'VILLAGE_MANAGER']),
+  role: z.enum(['PASSENGER', 'DRIVER', 'SHOPKEEPER', 'MESS_MANAGER', 'VILLAGE_MANAGER', 'FARMER', 'FOOD_VENDOR', 'LOGISTICS', 'CARGO_DRIVER']),
   password: z.string().min(6),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().min(10).optional().or(z.literal('')),
@@ -34,10 +58,7 @@ const loginSchema = z.object({
 
 // --- REAL FAST2SMS INTEGRATION ---
 const sendFast2SMS = async (phone, otp) => {
-  // YOUR REAL API KEY
   const apiKey = "3VZns2qWUdbyQm40oeEXa5RLpIF17TNfKkczhMP8OvYCgBiJxwVbMRPqE1BeoGA25SNzgiXhQpIcjTFW";
-
-  // Using bulkV2 route 'otp' which sends a standard OTP message
   const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&route=otp&variables_values=${otp}&flash=0&numbers=${phone}`;
 
   return new Promise((resolve, reject) => {
@@ -56,7 +77,7 @@ const sendFast2SMS = async (phone, otp) => {
           }
         } catch (e) {
           console.error("[Fast2SMS] JSON Parse Error", e);
-          resolve(false); // Assume failure if response isn't JSON
+          resolve(false);
         }
       });
     }).on('error', (e) => {
@@ -66,25 +87,65 @@ const sendFast2SMS = async (phone, otp) => {
   });
 };
 
-export const register = async (req, res) => {
+// Helper: Check existing user by email/phone
+const checkExistingUser = async (email, phone) => {
+  const query = [];
+  if (email) query.push({ email });
+  if (phone) query.push({ phone });
+  if (query.length === 0) return null;
+  return await User.findOne({ $or: query });
+};
+
+// --- 1000x: USER PANEL REGISTRATION (auto PASSENGER) ---
+export const registerUser = async (req, res) => {
   try {
-    const validated = registerSchema.parse(req.body);
-
-    const query = [];
-    if (validated.email) query.push({ email: validated.email });
-    if (validated.phone) query.push({ phone: validated.phone });
-
-    if (query.length > 0) {
-      const existing = await User.findOne({ $or: query });
-      if (existing) {
-        return res.status(400).json({ error: "User already exists with this Email or Phone" });
-      }
+    const validated = registerUserSchema.parse(req.body);
+    
+    const existing = await checkExistingUser(validated.email, validated.phone);
+    if (existing) {
+      return res.status(400).json({ error: "User already exists with this Email or Phone" });
     }
 
-    const id = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
-    const isVerified = validated.role === 'PASSENGER';
+    const id = `USR-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const user = new User({
+      ...validated,
+      id,
+      role: 'PASSENGER',
+      panelType: 'USER',
+      isVerified: true
+    });
+    await user.save();
 
-    const user = new User({ ...validated, id, isVerified });
+    if (validated.phone) console.log(`👤 New USER registered: ${validated.phone}`);
+
+    const token = jwt.sign({ id: user.id, role: user.role, panelType: 'USER' }, JWT_SECRET, { expiresIn: '7d' });
+    const { password, ...safeUser } = user.toObject();
+
+    res.json({ success: true, user: safeUser, token, panelType: 'USER' });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// --- 1000x: SERVICE PROVIDER REGISTRATION (role selection) ---
+export const registerProvider = async (req, res) => {
+  try {
+    const validated = registerProviderSchema.parse(req.body);
+    
+    const existing = await checkExistingUser(validated.email, validated.phone);
+    if (existing) {
+      return res.status(400).json({ error: "User already exists with this Email or Phone" });
+    }
+
+    const id = `PRV-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const user = new User({
+      ...validated,
+      id,
+      panelType: 'PROVIDER',
+      providerRoles: [validated.role],
+      isVerified: false  // Providers need admin verification
+    });
     await user.save();
 
     // Auto-create Shop for Mess Manager
@@ -92,7 +153,7 @@ export const register = async (req, res) => {
       const shop = new Shop({
         id: `SHP-${Math.floor(1000 + Math.random() * 9000)}`,
         ownerId: user.id,
-        name: validated.name, // Mess Name
+        name: validated.name,
         category: 'MESS',
         location: validated.address,
         pincode: validated.pincode,
@@ -103,23 +164,58 @@ export const register = async (req, res) => {
       await shop.save();
     }
 
-    // Ideally verify phone on register, but for now just sending welcome/logging
-    if (validated.phone) {
-      console.log(`New User registered: ${validated.phone}`);
-    }
+    if (validated.phone) console.log(`🔵 New PROVIDER (${validated.role}) registered: ${validated.phone}`);
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, role: user.role, panelType: 'PROVIDER' }, JWT_SECRET, { expiresIn: '7d' });
     const { password, ...safeUser } = user.toObject();
 
-    res.json({ success: true, user: safeUser, token });
+    res.json({ success: true, user: safeUser, token, panelType: 'PROVIDER' });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0].message });
-    }
+    if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
     res.status(500).json({ error: error.message });
   }
 };
 
+// Legacy register (backward compatibility)
+export const register = async (req, res) => {
+  try {
+    const validated = registerSchema.parse(req.body);
+    
+    const existing = await checkExistingUser(validated.email, validated.phone);
+    if (existing) {
+      return res.status(400).json({ error: "User already exists with this Email or Phone" });
+    }
+
+    const id = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isVerified = validated.role === 'PASSENGER';
+    const panelType = validated.role === 'PASSENGER' ? 'USER' : 'PROVIDER';
+
+    const user = new User({ ...validated, id, isVerified, panelType });
+    await user.save();
+
+    if (validated.role === 'MESS_MANAGER') {
+      const shop = new Shop({
+        id: `SHP-${Math.floor(1000 + Math.random() * 9000)}`,
+        ownerId: user.id, name: validated.name, category: 'MESS',
+        location: validated.address, pincode: validated.pincode,
+        rating: 4.0, isOpen: true, themeColor: 'purple'
+      });
+      await shop.save();
+    }
+
+    if (validated.phone) console.log(`New User registered: ${validated.phone}`);
+
+    const token = jwt.sign({ id: user.id, role: user.role, panelType }, JWT_SECRET, { expiresIn: '7d' });
+    const { password, ...safeUser } = user.toObject();
+
+    res.json({ success: true, user: safeUser, token, panelType });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// --- 1000x: LOGIN (unified, returns panelType for auto-redirect) ---
 export const login = async (req, res) => {
   try {
     const { loginId, password } = loginSchema.parse(req.body);
@@ -136,10 +232,30 @@ export const login = async (req, res) => {
       return res.status(403).json({ error: "Account Suspended by Administrator" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    // Determine panel type from user role
+    const panelType = user.panelType || (user.role === 'PASSENGER' ? 'USER' : 'PROVIDER');
+
+    const token = jwt.sign({ id: user.id, role: user.role, panelType }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...safeUser } = user.toObject();
 
-    res.json({ success: true, user: safeUser, token });
+    res.json({ success: true, user: safeUser, token, panelType });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// --- 1000x: FCM TOKEN UPDATE ---
+export const updateFCMToken = async (req, res) => {
+  try {
+    const { fcmToken } = req.body;
+    if (!fcmToken) return res.status(400).json({ error: 'FCM token required' });
+
+    await User.findOneAndUpdate(
+      { id: req.user.id },
+      { fcmToken }
+    );
+
+    res.json({ success: true, message: 'FCM token updated' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

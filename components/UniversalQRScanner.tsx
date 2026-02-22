@@ -56,6 +56,7 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const iconRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         startCamera();

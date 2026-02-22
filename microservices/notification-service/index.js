@@ -98,14 +98,7 @@ export const sendTicketSMS = async (phone, ticketData) => {
     return await sendSMS(phone, message, process.env.MSG91_TICKET_TEMPLATE_ID);
 };
 
-/**
- * Send SOS Alert SMS
- */
-export const sendSOSAlert = async (phone, location) => {
-    const mapLink = `https://maps.google.com/?q=${location.lat},${location.lng}`;
-    const message = `🚨 SOS ALERT! User needs help.\nLocation: ${mapLink}`;
-    return await sendSMS(phone, message, process.env.MSG91_SOS_TEMPLATE_ID);
-};
+
 
 // ==================== EMAIL SERVICE ====================
 
@@ -178,39 +171,7 @@ export const sendWelcomeEmail = async (to, userName) => {
     return await sendEmail(to, 'Welcome to VillageLink! 🚌', html);
 };
 
-/**
- * Send SOS Emergency Email
- */
-export const sendSOSEmail = async (alertData) => {
-    const { userId, userName, location, type } = alertData;
-    const mapLink = `https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`;
 
-    const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 3px solid #ff0000;">
-            <div style="background: #ff0000; padding: 20px; text-align: center;">
-                <h1 style="color: white; margin: 0;">🚨 EMERGENCY SOS ALERT 🚨</h1>
-            </div>
-            <div style="padding: 30px;">
-                <h2 style="color: #ff0000;">Immediate Attention Required</h2>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>User:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${userName} (${userId})</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Type:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${type}</td></tr>
-                    <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Time:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${new Date().toLocaleString('en-IN')}</td></tr>
-                    <tr><td style="padding: 10px;"><strong>Location:</strong></td><td style="padding: 10px;"><a href="${mapLink}" style="color: #0066cc;">View on Map</a></td></tr>
-                </table>
-                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 6px;">
-                    <strong>⚠️ Action Required:</strong> Contact local authorities and dispatch help immediately.
-                </div>
-            </div>
-        </div>
-    `;
-
-    return await sendEmail(
-        process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
-        `🚨 SOS EMERGENCY - ${type} - ${userName}`,
-        html
-    );
-};
 
 // ==================== PUSH NOTIFICATIONS ====================
 
@@ -290,22 +251,7 @@ app.post('/email/welcome', async (req, res) => {
     res.json(result);
 });
 
-// Send SOS Alerts (SMS + Email)
-app.post('/sos', async (req, res) => {
-    const { userId, userName, phone, location, type = 'EMERGENCY' } = req.body;
 
-    // Send to emergency contacts
-    const smsResult = await sendSOSAlert(process.env.EMERGENCY_PHONE || phone, location);
-
-    // Send to admin email
-    const emailResult = await sendSOSEmail({ userId, userName, location, type });
-
-    res.json({
-        success: true,
-        sms: smsResult,
-        email: emailResult
-    });
-});
 
 // Bulk notifications for drivers
 app.post('/broadcast/drivers', async (req, res) => {

@@ -72,7 +72,7 @@ export const SarpanchBot: React.FC<SarpanchBotProps> = ({ onNavigate }) => {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-br from-brand-600 to-indigo-600 rounded-full shadow-2xl flex items-center justify-center text-white z-50 hover:scale-110 transition-transform ring-4 ring-white dark:ring-slate-900"
+        className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-br from-luxe-sienna to-luxe-gold rounded-full shadow-gold-luxe flex items-center justify-center text-white z-50 hover:scale-110 transition-transform ring-4 ring-white dark:ring-slate-900"
       >
         <Bot size={28} />
       </button>
@@ -81,7 +81,7 @@ export const SarpanchBot: React.FC<SarpanchBotProps> = ({ onNavigate }) => {
 
   return (
     <div className="fixed bottom-24 right-4 w-80 h-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden z-50 animate-in slide-in-from-bottom-10">
-      <div className="bg-brand-600 p-4 flex justify-between items-center text-white">
+      <div className="bg-luxe-sienna p-4 flex justify-between items-center text-white">
         <div className="flex items-center gap-2">
             <Bot size={20} />
             <div>
@@ -95,12 +95,12 @@ export const SarpanchBot: React.FC<SarpanchBotProps> = ({ onNavigate }) => {
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-950">
         {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.sender === 'USER' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'USER' ? 'bg-brand-500 text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-none'}`}>
+                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'USER' ? 'bg-luxe-sienna text-white rounded-br-none' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-none'}`}>
                     <p className="dark:text-white">{msg.text}</p>
                     {msg.actionLink && (
                         <button 
                             onClick={() => { onNavigate(msg.actionLink!.tab); setIsOpen(false); }}
-                            className="mt-2 text-xs bg-brand-100 text-brand-700 px-2 py-1 rounded font-bold hover:bg-brand-200 block w-full text-center"
+                            className="mt-2 text-xs bg-luxe-sienna/10 text-luxe-sienna px-2 py-1 rounded font-bold hover:bg-luxe-sienna/20 block w-full text-center"
                         >
                             {msg.actionLink.label}
                         </button>
@@ -128,7 +128,7 @@ export const SarpanchBot: React.FC<SarpanchBotProps> = ({ onNavigate }) => {
             placeholder="Bhojpuri me boli..."
             className="flex-1 bg-transparent outline-none text-sm dark:text-white"
          />
-         <button onClick={handleSend} className="p-2 text-brand-600 hover:bg-brand-50 rounded-full">
+         <button onClick={handleSend} className="p-2 text-luxe-sienna hover:bg-luxe-sienna/10 rounded-full">
             <Send size={20} />
          </button>
       </div>

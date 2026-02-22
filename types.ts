@@ -89,7 +89,6 @@ export interface Ticket {
   encryptedData?: string; // v13.0 E2EE
   seatNumber?: string; // v14.0 Digital Twin
   isOfflineSync?: boolean; // v14.0 Offline
-  isDidiRath?: boolean; // Feature 1: Pink Bus
   hasLivestock?: boolean; // Idea: Pashu Ticket
   hasInsurance?: boolean; // Idea: Micro-Insurance
   fraudFlag?: boolean; // ML Feature 10
@@ -293,19 +292,8 @@ export interface Beneficiary {
   relationship?: string;
 }
 
-export interface ProxyTransaction {
-  id: string;
-  managerId: string;
-  beneficiaryId: string;
-  beneficiaryName: string;
-  transactionType: 'TICKET' | 'PRODUCT_SALE' | 'PARCEL' | 'MESS_BOOKING';
-  amount: number;
-  commission: number;
-  relatedEntityId: string;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
-  paymentMethod: 'CASH' | 'UPI' | 'WALLET';
-  timestamp: number;
-}
+// NOTE: ProxyTransaction interface has been moved to Village Manager Types section (line ~1181)
+
 export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 
@@ -325,7 +313,6 @@ export interface User {
   isBanned?: boolean; // v16.0 - Master Panel Control
   referralCode?: string; // Idea #18
   gender?: 'MALE' | 'FEMALE' | 'OTHER'; // Didi-First
-  isDidiVerified?: boolean; // New Security Flag for Didi Rath
   guardianPhone?: string; // Feature 3
   isMobileATM?: boolean; // Idea: Chalta-Firta Bank
   creditLimit?: number; // Idea #19 & #10
@@ -1201,4 +1188,148 @@ export interface VillageManagerStats {
   totalTransactions: number;
   totalRevenue: number;
   pendingPayments: number;
+}
+
+// --- SMART AEROPONICS IoT TYPES (v19.0) ---
+
+export type AeroTowerLocation = 'ROOF' | 'INDOOR' | 'OUTDOOR' | 'GREENHOUSE';
+export type AeroPumpStatus = 'ON' | 'OFF' | 'AUTO';
+export type AeroDeviceStatus = 'ACTIVE' | 'IDLE' | 'MAINTENANCE' | 'OFFLINE';
+export type AeroAlertType = 'PH_LOW' | 'PH_HIGH' | 'EC_LOW' | 'EC_HIGH' | 'TANK_LOW' | 'TEMP_HIGH' | 'TEMP_LOW' | 'OFFLINE' | 'PUMP_FAILURE';
+export type AeroAlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+export type AeroCommandType = 'START_MIST' | 'STOP_MIST' | 'SET_MODE' | 'SET_PRESET' | 'CALIBRATE_PH' | 'CALIBRATE_EC' | 'REFRESH_DATA';
+
+export interface AeroDevice {
+  id: string;
+  farmerId: string;
+  name: string;
+  location: AeroTowerLocation;
+  status: AeroDeviceStatus;
+  towers: AeroTower[];
+  tankCapacityLiters: number;
+  createdAt: number;
+  lastOnline?: number;
+}
+
+export interface AeroTower {
+  id: string;
+  deviceId: string;
+  name: string;
+  nameHi: string;
+  location: AeroTowerLocation;
+  currentCrop?: string;
+  currentCropHi?: string;
+  presetId?: string;
+  plantedAt?: number;
+  expectedHarvestAt?: number;
+  status: AeroDeviceStatus;
+}
+
+export interface AeroLiveData {
+  deviceId: string;
+  towerId?: string;
+  pH: number;
+  ec: number;
+  waterTemp: number;
+  ambientTemp?: number;
+  humidity?: number;
+  tankLevel: number; // 0-100%
+  pumpStatus: AeroPumpStatus;
+  mistingActive: boolean;
+  mistCycleOnSeconds?: number;
+  mistCycleOffSeconds?: number;
+  lastUpdate: number;
+  isOnline: boolean;
+}
+
+export interface AeroLiveDataWithStatus extends AeroLiveData {
+  pHStatus: 'LOW' | 'NORMAL' | 'HIGH';
+  ecStatus: 'LOW' | 'NORMAL' | 'HIGH';
+  tankStatus: 'LOW' | 'NORMAL' | 'FULL';
+  tempStatus: 'LOW' | 'NORMAL' | 'HIGH';
+}
+
+export interface CropPreset {
+  id: string;
+  nameHi: string;
+  nameEn: string;
+  icon: string;
+  pHMin: number;
+  pHMax: number;
+  ecMin: number;
+  ecMax: number;
+  tempMin: number;
+  tempMax: number;
+  expectedDays: number;
+  mistOnSeconds: number;
+  mistOffSeconds: number;
+  description?: string;
+  descriptionHi?: string;
+}
+
+export interface AeroAlert {
+  id: string;
+  deviceId: string;
+  towerId?: string;
+  type: AeroAlertType;
+  severity: AeroAlertSeverity;
+  message: string;
+  messageHi: string;
+  value?: number;
+  threshold?: number;
+  timestamp: number;
+  acknowledged: boolean;
+  acknowledgedAt?: number;
+  sentViaWhatsApp?: boolean;
+  sentViaSMS?: boolean;
+}
+
+export interface AeroCommand {
+  id?: string;
+  deviceId: string;
+  towerId?: string;
+  command: AeroCommandType;
+  value?: any;
+  timestamp: number;
+  status?: 'PENDING' | 'SENT' | 'EXECUTED' | 'FAILED';
+  signature?: string;
+}
+
+export interface AeroSensorReading {
+  id: string;
+  deviceId: string;
+  towerId?: string;
+  pH: number;
+  ec: number;
+  waterTemp: number;
+  ambientTemp?: number;
+  humidity?: number;
+  tankLevel: number;
+  pumpStatus: AeroPumpStatus;
+  recordedAt: number;
+}
+
+export interface AeroHarvestPrediction {
+  deviceId: string;
+  towerId?: string;
+  cropName: string;
+  cropNameHi: string;
+  plantedAt: number;
+  expectedDays: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  healthScore: number; // 0-100
+  predictedYieldKg?: number;
+  growthStage: 'SEEDLING' | 'VEGETATIVE' | 'MATURATION' | 'HARVEST_READY';
+  recommendation?: string;
+  recommendationHi?: string;
+}
+
+export interface AeroDashboardStats {
+  totalDevices: number;
+  activeTowers: number;
+  plantsGrowing: number;
+  avgHealthScore: number;
+  activeAlerts: number;
+  harvestingSoon: number;
 }

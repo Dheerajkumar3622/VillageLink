@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   id: { type: String, unique: true },
   name: { type: String, required: true },
-  role: { type: String, enum: ['PASSENGER', 'DRIVER', 'ADMIN', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR', 'VILLAGE_MANAGER'], default: 'PASSENGER' },
+  role: { type: String, enum: ['PASSENGER', 'DRIVER', 'ADMIN', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR', 'VILLAGE_MANAGER', 'FARMER', 'LOGISTICS', 'CARGO_DRIVER'], default: 'PASSENGER' },
   password: { type: String, required: true },
   email: String,
   phone: String,
@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema({
   // OTP Fields for Recovery
   resetOTP: String,
   resetOTPExpiry: Number,
+  // --- 1000x: Panel & Auth Fields ---
+  panelType: { type: String, enum: ['USER', 'PROVIDER'], default: 'USER' },
+  providerRoles: [{ type: String }],  // For providers with multiple roles
+  fcmToken: String,                    // Firebase Cloud Messaging token
+  // Driver-specific fields
+  vehicleType: { type: String, enum: ['BUS', 'TEMPO', 'AUTO', 'BIKE', 'TRUCK', 'VAN'], default: 'BUS' },
+  vehicleCapacity: { type: Number, default: 20 },
+  vehicleNumber: String,
+  drivingLicense: String,
   // Keypad Phone Support (v18.0)
   connectionType: { type: String, enum: ['APP', 'SMS', 'USSD', 'IVR'], default: 'APP' },
   smsSessionState: { type: String },
@@ -386,12 +395,26 @@ const driverLocationSchema = new mongoose.Schema({
   isOnline: { type: Boolean, default: false },
   currentTripId: { type: String, default: null },
   vehicleType: { type: String, default: 'BUS' },
-  lastUpdated: { type: Date, default: Date.now }
+  lastUpdated: { type: Date, default: Date.now },
+  // --- 1000x: Seat Tracking & Route Intelligence ---
+  activeRouteId: { type: String, default: null },       // Currently operating route
+  activeRouteName: { type: String, default: null },     // Route display name
+  seatsTotal: { type: Number, default: 20 },            // Vehicle total capacity
+  seatsOccupied: { type: Number, default: 0 },          // Currently occupied seats
+  parcelsOnboard: { type: Number, default: 0 },         // Parcels being carried
+  startLocation: {                                       // Where driver started
+    name: String, lat: Number, lng: Number
+  },
+  nextStopIndex: { type: Number, default: 0 },          // Index in route.stops array
+  nextStopName: String,                                  // Display name
+  driverName: String,                                    // Cached for quick lookups
+  driverPhone: String                                    // Cached for quick lookups
 });
 
 driverLocationSchema.index({ location: '2dsphere' });
 driverLocationSchema.index({ driverId: 1 });
 driverLocationSchema.index({ isOnline: 1, currentTripId: 1 });
+driverLocationSchema.index({ activeRouteId: 1, isOnline: 1 });  // For ahead-vehicles query
 
 export const DriverLocation = mongoose.model('DriverLocation', driverLocationSchema);
 
@@ -1379,7 +1402,7 @@ const safetyAlertSchema = new mongoose.Schema({
   id: { type: String, unique: true },
   type: {
     type: String,
-    enum: ['SOS', 'ROUTE_DEVIATION', 'LONG_STOP', 'SPEED_ALERT', 'MANUAL'],
+    enum: ['ROUTE_DEVIATION', 'LONG_STOP', 'SPEED_ALERT', 'MANUAL'],
     required: true
   },
   userId: String,
@@ -1778,8 +1801,265 @@ const Models = {
   })
 };
 
+// --- SMART AEROPONICS IOT MODELS (v19.0) ---
+
+// Aeroponic Device (Main Controller)
+const aeroDeviceSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  farmerId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  location: { type: String, enum: ['ROOF', 'INDOOR', 'OUTDOOR', 'GREENHOUSE'], default: 'ROOF' },
+  status: { type: String, enum: ['ACTIVE', 'IDLE', 'MAINTENANCE', 'OFFLINE'], default: 'ACTIVE' },
+  tankCapacityLiters: { type: Number, default: 60 },
+  firmwareVersion: String,
+  macAddress: String,
+  isPaired: { type: Boolean, default: true }, // Default true for existing, false for new distributor units
+  pairedAt: Number,
+  lastOnline: { type: Number },
+  createdAt: { type: Number, default: Date.now }
+});
+
+aeroDeviceSchema.index({ farmerId: 1, status: 1 });
+
+export const AeroDevice = mongoose.model('AeroDevice', aeroDeviceSchema);
+
+// Aeroponic Tower
+const aeroTowerSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  deviceId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  nameHi: String,
+  location: { type: String, enum: ['ROOF', 'INDOOR', 'OUTDOOR', 'GREENHOUSE'], default: 'ROOF' },
+  currentCrop: String,
+  currentCropHi: String,
+  presetId: String,
+  plantedAt: Number,
+  expectedHarvestAt: Number,
+  status: { type: String, enum: ['ACTIVE', 'IDLE', 'MAINTENANCE', 'OFFLINE'], default: 'IDLE' }
+});
+
+aeroTowerSchema.index({ deviceId: 1 });
+
+export const AeroTower = mongoose.model('AeroTower', aeroTowerSchema);
+
+// Real-time Sensor Readings
+const aeroReadingSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  deviceId: { type: String, required: true },
+  towerId: String,
+  pH: { type: Number, required: true },
+  ec: { type: Number, required: true },
+  waterTemp: { type: Number, required: true },
+  ambientTemp: Number,
+  humidity: Number,
+  tankLevel: { type: Number, required: true }, // 0-100%
+  pumpStatus: { type: String, enum: ['ON', 'OFF', 'AUTO'], default: 'AUTO' },
+  mistingActive: { type: Boolean, default: false },
+  recordedAt: { type: Number, default: Date.now }
+});
+
+aeroReadingSchema.index({ deviceId: 1, recordedAt: -1 });
+aeroReadingSchema.index({ deviceId: 1, towerId: 1, recordedAt: -1 });
+
+export const AeroReading = mongoose.model('AeroReading', aeroReadingSchema);
+
+// Alerts
+const aeroAlertSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  deviceId: { type: String, required: true },
+  towerId: String,
+  type: {
+    type: String,
+    enum: ['PH_LOW', 'PH_HIGH', 'EC_LOW', 'EC_HIGH', 'TANK_LOW', 'TEMP_HIGH', 'TEMP_LOW', 'OFFLINE', 'PUMP_FAILURE'],
+    required: true
+  },
+  severity: { type: String, enum: ['INFO', 'WARNING', 'CRITICAL'], default: 'WARNING' },
+  message: String,
+  messageHi: String,
+  value: Number,
+  threshold: Number,
+  timestamp: { type: Number, default: Date.now },
+  acknowledged: { type: Boolean, default: false },
+  acknowledgedAt: Number,
+  sentViaWhatsApp: { type: Boolean, default: false },
+  sentViaSMS: { type: Boolean, default: false }
+});
+
+aeroAlertSchema.index({ deviceId: 1, acknowledged: 1, timestamp: -1 });
+
+export const AeroAlert = mongoose.model('AeroAlert', aeroAlertSchema);
+
+// Command Queue
+const aeroCommandSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  deviceId: { type: String, required: true },
+  towerId: String,
+  command: {
+    type: String,
+    enum: ['START_MIST', 'STOP_MIST', 'SET_MODE', 'SET_PRESET', 'CALIBRATE_PH', 'CALIBRATE_EC', 'REFRESH_DATA'],
+    required: true
+  },
+  value: mongoose.Schema.Types.Mixed,
+  timestamp: { type: Number, default: Date.now },
+  status: { type: String, enum: ['PENDING', 'SENT', 'EXECUTED', 'FAILED'], default: 'PENDING' },
+  executedAt: Number,
+  errorMessage: String
+});
+
+aeroCommandSchema.index({ deviceId: 1, status: 1 });
+
+export const AeroCommand = mongoose.model('AeroCommand', aeroCommandSchema);
+
+// Crop Presets
+const aeroCropPresetSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  nameHi: { type: String, required: true },
+  nameEn: { type: String, required: true },
+  icon: String,
+  pHMin: { type: Number, default: 5.5 },
+  pHMax: { type: Number, default: 6.5 },
+  ecMin: { type: Number, default: 1.2 },
+  ecMax: { type: Number, default: 2.2 },
+  tempMin: { type: Number, default: 18 },
+  tempMax: { type: Number, default: 25 },
+  expectedDays: { type: Number, required: true },
+  mistOnSeconds: { type: Number, default: 15 },
+  mistOffSeconds: { type: Number, default: 300 },
+  description: String,
+  descriptionHi: String
+});
+
+export const AeroCropPreset = mongoose.model('AeroCropPreset', aeroCropPresetSchema);
+
+// --- 1000x: NOTIFICATION SYSTEM ---
+
+const notificationSchema = new mongoose.Schema({
+  userId: { type: String, required: true, index: true },
+  type: {
+    type: String,
+    enum: ['TICKET', 'ORDER', 'DELIVERY', 'PAYMENT', 'SYSTEM', 'KISAN', 'DRIVER', 'SPEED_MATCH'],
+    required: true
+  },
+  title: { type: String, required: true },
+  body: String,
+  data: mongoose.Schema.Types.Mixed,   // { orderId, ticketId, driverId, etc. }
+  isRead: { type: Boolean, default: false },
+  sentViaFCM: { type: Boolean, default: false },
+  createdAt: { type: Number, default: Date.now }
+});
+
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+
+export const Notification = mongoose.model('Notification', notificationSchema);
+
+// --- 1000x: LIVE STOP DEMAND (Real-time per-stop passenger/parcel counts) ---
+
+const stopDemandSchema = new mongoose.Schema({
+  stopName: { type: String, required: true },
+  routeId: { type: String, required: true },
+  waitingPassengers: { type: Number, default: 0 },
+  pendingParcels: { type: Number, default: 0 },
+  lastUpdated: { type: Date, default: Date.now }
+});
+
+stopDemandSchema.index({ routeId: 1, stopName: 1 }, { unique: true });
+
+export const StopDemand = mongoose.model('StopDemand', stopDemandSchema);
+
+// --- 1000x: KISAN CROP LISTING (Farmer → Vendor marketplace) ---
+
+const cropListingSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  kisanId: { type: String, required: true, index: true },
+  kisanName: String,
+  kisanPhone: String,
+  cropName: { type: String, required: true },
+  cropNameHi: String,
+  category: {
+    type: String,
+    enum: ['VEGETABLE', 'FRUIT', 'GRAIN', 'DAIRY', 'SPICE', 'PULSE', 'OILSEED', 'OTHER'],
+    default: 'VEGETABLE'
+  },
+  quantity: { type: Number, required: true },
+  unit: { type: String, enum: ['KG', 'QUINTAL', 'DOZEN', 'LITRE', 'PIECE', 'TON'], default: 'KG' },
+  pricePerUnit: { type: Number, required: true },
+  description: String,
+  images: [String],
+  harvestDate: String,
+  location: {
+    name: String,
+    lat: Number,
+    lng: Number,
+    pincode: String
+  },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'SOLD', 'EXPIRED', 'RESERVED'],
+    default: 'ACTIVE'
+  },
+  reservedBy: String,     // vendorId who reserved
+  reservedAt: Number,
+  createdAt: { type: Number, default: Date.now }
+});
+
+cropListingSchema.index({ status: 1, category: 1, createdAt: -1 });
+cropListingSchema.index({ kisanId: 1, status: 1 });
+
+export const CropListing = mongoose.model('CropListing', cropListingSchema);
+
+// --- 1000x: PROCUREMENT ORDER (Vendor buys from Kisan, Driver delivers) ---
+
+const procurementOrderSchema = new mongoose.Schema({
+  id: { type: String, unique: true },
+  vendorId: { type: String, required: true },
+  vendorName: String,
+  kisanId: { type: String, required: true },
+  kisanName: String,
+  cropListingId: String,
+  items: [{
+    cropName: String,
+    quantity: Number,
+    unit: String,
+    pricePerUnit: Number,
+    totalPrice: Number
+  }],
+  totalAmount: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ['PLACED', 'ACCEPTED', 'REJECTED', 'DRIVER_ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'],
+    default: 'PLACED'
+  },
+  assignedDriverId: String,
+  assignedDriverName: String,
+  pickupLocation: { name: String, lat: Number, lng: Number },
+  deliveryLocation: { name: String, lat: Number, lng: Number },
+  pickupOTP: String,
+  deliveryOTP: String,
+  paymentStatus: { type: String, enum: ['PENDING', 'PAID', 'REFUNDED'], default: 'PENDING' },
+  paymentMethod: { type: String, enum: ['CASH', 'ONLINE', 'WALLET'], default: 'CASH' },
+  transactionId: String,
+  createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now },
+  acceptedAt: Number,
+  pickedUpAt: Number,
+  deliveredAt: Number
+});
+
+procurementOrderSchema.index({ vendorId: 1, status: 1 });
+procurementOrderSchema.index({ kisanId: 1, status: 1 });
+procurementOrderSchema.index({ assignedDriverId: 1, status: 1 });
+
+export const ProcurementOrder = mongoose.model('ProcurementOrder', procurementOrderSchema);
+
 // Export individual models for AISahayak and VillageCircle
 export const AISahayakSession = mongoose.model('AISahayakSession', Models.AISahayakSession);
 export const VillageCircle = mongoose.model('VillageCircle', Models.VillageCircle);
 
+// Add new models to the Models object
+Models.Notification = Notification;
+Models.StopDemand = StopDemand;
+Models.CropListing = CropListing;
+Models.ProcurementOrder = ProcurementOrder;
+
 export default Models;
+

@@ -201,7 +201,14 @@ export const ConductorView: React.FC<ConductorViewProps> = ({
         });
     };
 
-    const bonus = calculateConductorBonus(metrics);
+    // Calculate bonus with defaults when metrics is null
+    const bonusAmount = metrics ? calculateConductorBonus(metrics) : 0;
+    const digitalRatio = metrics ? metrics.digitalTickets / Math.max(metrics.totalTickets, 1) : 0;
+    const bonus = {
+        amount: bonusAmount,
+        level: digitalRatio > 0.8 ? 'Gold' : digitalRatio > 0.5 ? 'Silver' : 'Bronze',
+        progress: Math.min(digitalRatio * 100, 100)
+    };
 
     useEffect(() => {
         if (bonusRef.current) {

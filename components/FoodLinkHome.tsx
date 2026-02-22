@@ -114,12 +114,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                 setMlRecommendations(data);
             }
 
-            // Mock social proof for menu items
-            setSocialProof({
-                'm1': 'Rahul ordered this',
-                'm3': 'Sita & 2 friends ordered this',
-                'm5': 'Ankit liked this'
-            });
+            // Social proof from real data - will be populated when API returns
         } catch (e) {
             console.error('Error fetching recommendations:', e);
         }
@@ -159,33 +154,8 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             }
         } catch (e) {
             console.error('Error fetching food data:', e);
-            // Set mock data for demo
-            setStalls([
-                {
-                    id: 'st1', userId: 'u1', name: 'Ramesh Kumar', phone: '9876543210',
-                    stallName: 'Sharma Chaat Corner', stallCategory: 'CHAT_CORNER', location: 'Main Market, Sector 15',
-                    isMobile: false, operatingHours: { open: '10:00', close: '22:00' },
-                    status: 'VERIFIED', badges: ['VERIFIED', 'HYGIENE_RATED'], rating: 4.5, totalOrders: 1200,
-                    isOpen: true, isPureVeg: true, specialties: ['Pani Puri', 'Dahi Bhalla', 'Aloo Tikki'],
-                    images: [], createdAt: Date.now()
-                },
-                {
-                    id: 'st2', userId: 'u2', name: 'Mohan Lal', phone: '9876543211',
-                    stallName: 'Tibetan Momo Point', stallCategory: 'STREET_FOOD', location: 'Near Bus Stand',
-                    isMobile: true, operatingHours: { open: '11:00', close: '21:00' },
-                    status: 'VERIFIED', badges: ['VERIFIED'], rating: 4.3, totalOrders: 800,
-                    isOpen: true, isPureVeg: false, specialties: ['Steamed Momos', 'Fried Momos', 'Thukpa'],
-                    images: [], createdAt: Date.now()
-                },
-                {
-                    id: 'st3', userId: 'u3', name: 'Ravi Tea Stall', phone: '9876543212',
-                    stallName: 'Ravi Special Chai', stallCategory: 'TEA_STALL', location: 'College Road',
-                    isMobile: false, operatingHours: { open: '06:00', close: '22:00' },
-                    status: 'VERIFIED', badges: ['VERIFIED', 'TOP_RATED'], rating: 4.8, totalOrders: 5000,
-                    isOpen: true, isPureVeg: true, specialties: ['Masala Chai', 'Bun Maska', 'Samosa'],
-                    images: [], createdAt: Date.now()
-                }
-            ]);
+            // Show empty state - no mock data
+            setStalls([]);
         } finally {
             setLoading(false);
         }
@@ -202,14 +172,9 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                 const data = await res.json();
                 setMenu(data);
             } else {
-                // Mock menu
-                setMenu([
-                    { id: 'm1', messId: vendorId, name: 'Pani Puri (6 pcs)', price: 30, type: 'VEG', category: 'SNACKS', available: true, description: 'Crispy puris with tangy water' },
-                    { id: 'm2', messId: vendorId, name: 'Dahi Bhalla', price: 40, type: 'VEG', category: 'SNACKS', available: true, description: 'Soft bhallas in creamy curd' },
-                    { id: 'm3', messId: vendorId, name: 'Aloo Tikki Chaat', price: 50, type: 'VEG', category: 'SNACKS', available: true, description: 'Crispy tikki with chutneys', isRecommended: true },
-                    { id: 'm4', messId: vendorId, name: 'Papdi Chaat', price: 45, type: 'VEG', category: 'SNACKS', available: true, description: 'Crispy papdis with masala' },
-                    { id: 'm5', messId: vendorId, name: 'Chole Bhature', price: 80, type: 'VEG', category: 'LUNCH', available: true, description: 'Fluffy bhature with spicy chole' },
-                ]);
+                // Show empty menu state - no mock data
+                setMenu([]);
+                console.warn('Menu fetch failed for vendor:', vendorId);
             }
         } catch (e) {
             console.error('Error fetching menu:', e);
@@ -345,7 +310,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     if (view === 'ORDER_STATUS' && activeOrder) {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
+                <div className="bg-gradient-to-r from-luxe-sienna to-luxe-gold text-white p-4 pt-6">
                     <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
@@ -354,15 +319,15 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
 
                 <div className="p-4">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 mb-4 text-center">
-                        <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                            {activeOrder.status === 'PLACED' && <Clock className="text-orange-500" size={40} />}
-                            {activeOrder.status === 'ACCEPTED' && <UtensilsCrossed className="text-orange-500" size={40} />}
-                            {activeOrder.status === 'PREPARING' && <Flame className="text-orange-500 animate-pulse" size={40} />}
-                            {activeOrder.status === 'READY' && <Check className="text-green-500" size={40} />}
+                        <div className="w-20 h-20 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            {activeOrder.status === 'PLACED' && <Clock className="text-luxe-sienna" size={40} />}
+                            {activeOrder.status === 'ACCEPTED' && <UtensilsCrossed className="text-luxe-sienna" size={40} />}
+                            {activeOrder.status === 'PREPARING' && <Flame className="text-luxe-sienna animate-pulse" size={40} />}
+                            {activeOrder.status === 'READY' && <Check className="text-luxe-teal" size={40} />}
                         </div>
 
                         <h2 className="text-2xl font-bold dark:text-white mb-2">#{activeOrder.token}</h2>
-                        <p className={`text-lg font-medium ${activeOrder.status === 'READY' ? 'text-green-500' : 'text-orange-500'
+                        <p className={`text-lg font-medium ${activeOrder.status === 'READY' ? 'text-luxe-teal' : 'text-luxe-sienna'
                             }`}>
                             {activeOrder.status === 'PLACED' && 'Order Placed'}
                             {activeOrder.status === 'ACCEPTED' && 'Order Accepted'}
@@ -372,9 +337,9 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
 
                         {/* Meal Prep Countdown */}
                         {activeOrder.status === 'PREPARING' && (
-                            <div className="mt-4 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-800 flex items-center justify-center gap-3">
-                                <Timer className="text-orange-500 animate-pulse" size={18} />
-                                <p className="text-xs font-bold text-orange-700 dark:text-orange-400">Prep Countdown: ~8 mins</p>
+                            <div className="mt-4 p-3 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-xl border border-luxe-sienna/20 flex items-center justify-center gap-3">
+                                <Timer className="text-luxe-sienna animate-pulse" size={18} />
+                                <p className="text-xs font-bold text-luxe-sienna/80 dark:text-luxe-sienna/60">Prep Countdown: ~8 mins</p>
                             </div>
                         )}
 
@@ -384,7 +349,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                 const isActive = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY'].indexOf(activeOrder.status) >= idx;
                                 return (
                                     <div key={step} className="flex flex-col items-center">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isActive ? 'bg-orange-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isActive ? 'bg-luxe-sienna text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
                                             }`}>
                                             {idx + 1}
                                         </div>
@@ -406,7 +371,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                         ))}
                         <div className="flex justify-between pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
                             <span className="font-bold dark:text-white">Total</span>
-                            <span className="font-bold text-orange-500">₹{activeOrder.totalAmount}</span>
+                            <span className="font-bold text-luxe-sienna">₹{activeOrder.totalAmount}</span>
                         </div>
                     </div>
 
@@ -432,7 +397,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
                 {/* Header - Veo Cinematic Background */}
                 <div className="relative h-48 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 animate-[bgDrift_20s_ease-in-out_infinite_alternate] scale-110"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-luxe-sienna to-luxe-rust animate-[bgDrift_20s_ease-in-out_infinite_alternate] scale-110"></div>
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
 
                     <button onClick={() => { setView('HOME'); setCart([]); }} className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur rounded-full text-white hover:bg-white/30 transition-colors z-10" aria-label="Go Back">
@@ -503,8 +468,8 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                             </div>
                                             <p className="text-sm text-slate-500 mt-1">{item.description}</p>
                                             <div className="flex items-center gap-3 mt-2">
-                                                <p className="font-bold text-orange-500">₹{item.price}</p>
-                                                <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-800">
+                                                <p className="font-bold text-luxe-sienna">₹{item.price}</p>
+                                                <div className="flex items-center gap-1 bg-luxe-gold/20 dark:bg-luxe-gold/10 px-1.5 py-0.5 rounded border border-luxe-gold/20">
                                                     <Coins size={10} className="text-amber-500" />
                                                     <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">Earn {Math.floor(item.price * 0.05)} G$</span>
                                                 </div>
@@ -513,7 +478,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
 
                                         <div className="flex flex-col items-center justify-center">
                                             {cartItem ? (
-                                                <div className="flex items-center gap-2 bg-orange-500 text-white rounded-full px-2 py-1">
+                                                <div className="flex items-center gap-2 bg-luxe-sienna text-white rounded-full px-2 py-1">
                                                     <button onClick={() => updateCartQuantity(item.id, -1)} className="p-1" aria-label="Decrease Quantity">
                                                         <Minus size={14} />
                                                     </button>
@@ -537,12 +502,12 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
 
                 {/* Cart Footer */}
                 {cart.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-orange-500 text-white p-4 flex justify-between items-center">
+                    <div className="fixed bottom-0 left-0 right-0 bg-luxe-sienna text-white p-4 flex justify-between items-center">
                         <div>
                             <p className="font-bold">{cart.reduce((sum, c) => sum + c.quantity, 0)} items</p>
-                            <p className="text-orange-100 text-sm">₹{cartTotal} + ₹10 packing</p>
+                            <p className="text-luxe-gold text-sm">₹{cartTotal} + ₹10 packing</p>
                         </div>
-                        <Button onClick={() => placeOrder('TAKEAWAY')} className="bg-white text-orange-500 hover:bg-orange-50">
+                        <Button onClick={() => placeOrder('TAKEAWAY')} className="bg-white text-luxe-sienna hover:bg-luxe-rust">
                             Place Order <ChevronRight size={16} />
                         </Button>
                     </div>
@@ -555,7 +520,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     if (view === 'MY_ORDERS') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
+                <div className="bg-gradient-to-r from-luxe-sienna to-luxe-rust text-white p-4 pt-6">
                     <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
@@ -604,7 +569,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     if (view === 'SUBSCRIPTIONS') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6">
+                <div className="bg-gradient-to-r from-luxe-sienna to-luxe-rust text-white p-4 pt-6">
                     <button onClick={() => setView('HOME')} className="mb-4 flex items-center gap-2" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
@@ -670,10 +635,10 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
             {/* Header */}
-            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6 pb-8 rounded-b-3xl">
+            <div className="bg-gradient-to-r from-luxe-sienna to-luxe-gold text-white p-4 pt-6 pb-8 rounded-b-3xl">
                 <div className="flex justify-between items-center mb-4">
                     <div>
-                        <p className="text-orange-100 text-sm">Hello, {user.name?.split(' ')[0]}</p>
+                        <p className="text-luxe-gold text-sm font-bold">Hello, {user.name?.split(' ')[0]}</p>
                         <h1 className="text-xl font-bold">What's for today?</h1>
                     </div>
                     <div className="flex items-center gap-2">
@@ -693,8 +658,8 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                 </div>
 
                 {/* Search Bar - Enhanced */}
-                <div className="relative group variable-font-transition focus-within:ring-2 ring-orange-400 rounded-xl transition-all">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+                <div className="relative group variable-font-transition focus-within:ring-2 ring-luxe-gold/50 rounded-xl transition-all">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-luxe-sienna transition-colors" size={18} />
                     <input
                         type="text"
                         value={searchQuery}
@@ -703,13 +668,13 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                         className="w-full pl-12 pr-12 py-3 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 shadow-lg outline-none font-medium transition-all group-focus-within:font-bold"
                         aria-label="Search Food"
                     />
-                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform" aria-label="Toggle Filters">
+                    <button onClick={() => setShowFilters(!showFilters)} className="absolute right-4 top-1/2 -translate-y-1/2 text-luxe-sienna hover:scale-110 transition-transform" aria-label="Toggle Filters">
                         {/* Waveform for Voice UI hint if filters not active */}
                         <div className="flex items-end gap-0.5 h-3 w-4">
-                            <div className="w-0.5 bg-orange-500 animate-[waveform_1s_ease-in-out_infinite]"></div>
-                            <div className="w-0.5 bg-orange-500 animate-[waveform_1.2s_ease-in-out_infinite]"></div>
-                            <div className="w-0.5 bg-orange-500 animate-[waveform_0.8s_ease-in-out_infinite]"></div>
-                            <div className="w-0.5 bg-orange-500 animate-[waveform_1.1s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-luxe-sienna animate-[waveform_1s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-luxe-sienna animate-[waveform_1.2s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-luxe-sienna animate-[waveform_0.8s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-luxe-sienna animate-[waveform_1.1s_ease-in-out_infinite]"></div>
                         </div>
                     </button>
                 </div>
@@ -731,7 +696,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                             </span>
                             <button
                                 onClick={() => setVegOnly(!vegOnly)}
-                                className={`w-12 h-6 rounded-full transition-all ${vegOnly ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                className={`w-12 h-6 rounded-full transition-all ${vegOnly ? 'bg-luxe-teal' : 'bg-slate-200 dark:bg-slate-700'}`}
                                 aria-label="Toggle Veg Only"
                             >
                                 <div className={`w-5 h-5 rounded-full bg-white shadow transition-all ${vegOnly ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
@@ -747,7 +712,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                         key={r}
                                         onClick={() => setRatingFilter(r)}
                                         className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${ratingFilter === r
-                                            ? 'bg-orange-500 text-white'
+                                            ? 'bg-luxe-sienna text-white'
                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                             }`}
                                     >
@@ -770,7 +735,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                                         key={s.value}
                                         onClick={() => setSortBy(s.value as any)}
                                         className={`px-4 py-2 rounded-full text-sm ${sortBy === s.value
-                                            ? 'bg-orange-500 text-white'
+                                            ? 'bg-luxe-sienna text-white'
                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                             }`}
                                     >
@@ -786,19 +751,19 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             {/* Quick Actions */}
             <div className="flex gap-3 px-4 py-4 overflow-x-auto">
                 <button onClick={() => setView('SUBSCRIPTIONS')} className="flex flex-col items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm min-w-[80px]">
-                    <Calendar className="text-orange-500 mb-1" size={24} />
+                    <Calendar className="text-luxe-sienna mb-1" size={24} />
                     <span className="text-xs dark:text-slate-300">Passes</span>
                 </button>
                 <button onClick={() => setView('MY_ORDERS')} className="flex flex-col items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm min-w-[80px]">
-                    <ShoppingBag className="text-orange-500 mb-1" size={24} />
+                    <ShoppingBag className="text-luxe-sienna mb-1" size={24} />
                     <span className="text-xs dark:text-slate-300">Orders</span>
                 </button>
                 <button className="flex flex-col items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm min-w-[80px]">
-                    <Heart className="text-orange-500 mb-1" size={24} />
+                    <Heart className="text-luxe-sienna mb-1" size={24} />
                     <span className="text-xs dark:text-slate-300">Saved</span>
                 </button>
                 <button className="flex flex-col items-center px-4 py-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm min-w-[80px]">
-                    <TrendingUp className="text-orange-500 mb-1" size={24} />
+                    <TrendingUp className="text-luxe-sienna mb-1" size={24} />
                     <span className="text-xs dark:text-slate-300">Trending</span>
                 </button>
             </div>
@@ -817,9 +782,9 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                         <span className="bg-white/20 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-bold text-white border border-white/20">BETA</span>
                     </div>
                     <div className="relative h-full flex flex-col justify-center px-6">
-                        <h3 className="text-2xl font-black text-white italic">MESS•LINK <span className="text-orange-500">3D</span></h3>
+                        <h3 className="text-2xl font-black text-white italic">MESS•LINK <span className="text-luxe-gold">3D</span></h3>
                         <p className="text-slate-300 text-xs max-w-[200px] mt-1">Build your perfect thali in our new immersive experience.</p>
-                        <div className="mt-3 flex items-center gap-2 text-orange-400 text-xs font-bold uppercase tracking-widest group-hover:text-orange-300 transition-colors">
+                        <div className="mt-3 flex items-center gap-2 text-luxe-gold text-xs font-bold uppercase tracking-widest group-hover:text-luxe-sienna transition-colors">
                             Try Now <ChevronRight size={14} />
                         </div>
                     </div>
@@ -830,7 +795,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             {mlRecommendations.length > 0 && (
                 <div className="px-4 mb-6">
                     <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="text-orange-500" size={18} />
+                        <Sparkles className="text-luxe-gold" size={18} />
                         <h2 className="font-bold dark:text-white">Personalized for You</h2>
                     </div>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">

@@ -29,7 +29,7 @@ import Models from './backend/models.js';
 const { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } = Models;
 
 import Auth from './backend/auth.js';
-const { register, login, authenticate, requireAdmin, requestPasswordReset, resetPassword } = Auth;
+const { register, registerUser, registerProvider, login, authenticate, requireAdmin, requestPasswordReset, resetPassword, updateFCMToken } = Auth;
 
 import Logic from './backend/logic.js';
 const { getRealRoadPath } = Logic;
@@ -47,6 +47,14 @@ import userRoutes from './backend/routes/userRoutes.js';
 import gramMandiRoutes from './backend/routes/gramMandiRoutes.js';
 import indiaLocationRoutes from './backend/routes/indiaLocationRoutes.js';
 import socialRoutes from './backend/routes/socialRoutes.js';
+import aeroRoutes from './backend/routes/aeroRoutes.js';
+
+// --- 1000x IMPORTS ---
+import driverRoutes from './backend/routes/driverRoutes.js';
+import kisanRoutes from './backend/routes/kisanRoutes.js';
+import dashboardRoutes from './backend/routes/dashboardRoutes.js';
+import { initializeSpeedMatchEngine, updateSpeedBuffer, clearSpeedBuffer, checkAlighting } from './backend/services/speedMatchEngine.js';
+import { initializeSeatTracking } from './backend/services/seatTrackingService.js';
 
 import EmailService from './backend/services/emailService.js';
 const { sendEmail } = EmailService;
@@ -167,13 +175,61 @@ const logActivity = async (req, res, next) => {
 };
 app.use(logActivity);
 
+// --- KEEP-ALIVE SERVICE (Prevents Render free tier from sleeping) ---
+const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+app.get('/api/health', async (req, res) => {
+    try {
+        const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+        res.json({
+            status: 'alive',
+            timestamp: new Date().toISOString(),
+            database: dbStatus,
+            uptime: Math.floor(process.uptime())
+        });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
+function startKeepAlive() {
+    // Priority: Environment Variable -> Production Fallback -> Localhost
+    const PRODUCTION_URL = 'https://villagelink-jh20.onrender.com';
+    const serverUrl = process.env.RENDER_EXTERNAL_URL || PRODUCTION_URL || `http://localhost:${process.env.PORT || 3001}`;
+    
+    console.log(`⏰ Keep-Alive Service started (interval: ${KEEP_ALIVE_INTERVAL / 60000} min)`);
+    console.log(`📡 Target URL: ${serverUrl}`);
+
+    setInterval(async () => {
+        try {
+            const response = await fetch(`${serverUrl}/api/health`);
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+            
+            const data = await response.json();
+            console.log(`💓 Heartbeat: [${data.status.toUpperCase()}] | DB: ${data.database} | ${new Date().toLocaleTimeString()}`);
+        } catch (error) {
+            console.error('❌ Heartbeat Error:', error.message);
+            // Fallback attempt if previous URL failed and wasn't already the production one
+            if (serverUrl !== PRODUCTION_URL) {
+                try {
+                    await fetch(`${PRODUCTION_URL}/api/health`);
+                    console.log('🔄 Fallback Heartbeat Successful');
+                } catch (e) { }
+            }
+        }
+    }, KEEP_ALIVE_INTERVAL);
+}
+
 // --- AUTH ROUTES ---
-app.post('/api/auth/register', Auth.register);
+app.post('/api/auth/register', Auth.register);              // Legacy
+app.post('/api/auth/register/user', Auth.registerUser);      // 1000x: User panel
+app.post('/api/auth/register/provider', Auth.registerProvider); // 1000x: Provider panel
 app.post('/api/auth/login', Auth.login);
 app.post('/api/auth/logout', (req, res) => res.json({ success: true }));
 app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
 app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
+app.post('/api/auth/update-fcm-token', Auth.authenticate, Auth.updateFCMToken); // 1000x: FCM
 
 // --- GRAMMANDI ROUTES (Food Ecosystem) ---
 app.use('/api/grammandi', gramMandiRoutes);
@@ -282,32 +338,16 @@ app.use('/api/reels', reelsRoutes);             // Instagram-style Reels
 app.use('/api/chat', chatRoutes);               // WhatsApp-style Chat
 app.use('/api/village-manager', villageManagerRoutes); // Village Manager Proxy Services
 app.use('/api/social', socialRoutes);           // Village Circles & Gamification
+app.use('/api/aero', aeroRoutes);               // Smart Aeroponics IoT
+
+// --- 1000x ROUTES ---
+app.use('/api/driver', driverRoutes);            // Smart Driver Panel
+app.use('/api/kisan', kisanRoutes);              // Kisan Crop Marketplace
+app.use('/api/dashboard', dashboardRoutes);      // Unified Role-Based Dashboard
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 
-app.post('/api/safety/sos', async (req, res) => {
-    try {
-        const { userId, location, audioBlob, type } = req.body;
-        console.log(`🚨 SOS ALERT from User ${userId}`);
-        const report = new RoadReport({
-            userId,
-            type: 'ACCIDENT',
-            location: `${location.lat},${location.lng}`,
-            timestamp: Date.now(),
-            upvotes: 999
-        });
-        await report.save();
 
-        // REAL ALERT: Send Email to Admin/Police
-        const mapLink = `https://www.google.com/maps/search/?api=1&query=${location.lat},${location.lng}`;
-        await sendEmail(process.env.EMAIL_USER, `🚨 SOS EMERGENCY - ${type}`,
-            `<h2>SOS ALERT</h2><p>User <b>${userId}</b> reported an emergency.</p><p>Location: <a href="${mapLink}">View on Map</a></p>`);
-
-        res.json({ success: true, message: "Emergency Services Notified via Priority Channel" });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
 
 // --- CROWDSOURCING ENDPOINTS ---
 app.post('/api/locations/suggest', Auth.authenticate, async (req, res) => {
@@ -690,6 +730,30 @@ app.post('/api/admin/toggle-ban', Auth.requireAdmin, async (req, res) => {
     try { await User.findOneAndUpdate({ id: req.body.userId }, { isBanned: req.body.isBanned }); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/admin/ticket/:ticketId', Auth.requireAdmin, async (req, res) => {
+    try {
+        const { ticketId } = req.params;
+        const ticket = await Ticket.findOne({ id: { $regex: new RegExp(`^${ticketId}$`, 'i') } }).lean();
+        
+        if (!ticket) {
+            return res.status(404).json({ error: 'Ticket not found' });
+        }
+
+        const passenger = await User.findOne({ id: ticket.userId }).lean();
+        const driver = ticket.driverId || ticket.scannedByDriverId ? await User.findOne({ id: ticket.driverId || ticket.scannedByDriverId }).lean() : null;
+        
+        // Fetch ledger (Transactions) related to this ticket
+        const transactions = await Transaction.find({ relatedEntityId: ticket.id }).lean();
+
+        res.json({
+            ticket,
+            passenger: passenger ? { id: passenger.id, name: passenger.name, phone: passenger.phone } : null,
+            driver: driver ? { id: driver.id, name: driver.name, phone: driver.phone, vehicleType: driver.vehicleType } : null,
+            transactions
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- TRAFFIC API ENDPOINTS ---
 app.get('/api/traffic/overlay', async (req, res) => {
     try {
@@ -770,6 +834,13 @@ io.on('connection', (socket) => {
             // Update active trip if applicable
             await onDriverLocationUpdate(data.driverId, data);
 
+            // 1000x: Feed driver speed into Speed Match Engine
+            updateSpeedBuffer(data.driverId, {
+                speed: data.speed || 0,
+                lat: data.lat,
+                lng: data.lng
+            });
+
             // Broadcast to passengers subscribed to this driver
             io.to(`tracking_${data.driverId}`).emit('driver_location_broadcast', {
                 driverId: data.driverId,
@@ -802,6 +873,34 @@ io.on('connection', (socket) => {
 
     socket.on('unsubscribe_driver', (driverId) => {
         socket.leave(`tracking_${driverId}`);
+    });
+
+    // --- 1000x: PASSENGER LOCATION STREAM (for Speed Match Engine) ---
+    socket.on('passenger_location_stream', (data) => {
+        if (!data.passengerId || !data.lat || !data.lng) return;
+        socket.join(`passenger_${data.passengerId}`);
+        socket.passengerId = data.passengerId;
+        
+        // Feed into speed match engine for auto-verification
+        updateSpeedBuffer(data.passengerId, {
+            speed: data.speed || 0,
+            lat: data.lat,
+            lng: data.lng
+        });
+
+        // Check if passenger is alighting (speed=0 near destination)
+        if ((data.speed || 0) < 3) {
+            checkAlighting(data.passengerId, data.lat, data.lng, data.speed || 0).catch(() => {});
+        }
+    });
+
+    // --- 1000x: JOIN ROUTE ROOM (for live seat updates) ---
+    socket.on('join_route', (routeId) => {
+        socket.join(`route_${routeId}`);
+    });
+
+    socket.on('leave_route', (routeId) => {
+        socket.leave(`route_${routeId}`);
     });
 
     // Request ride - find nearby driver
@@ -936,8 +1035,12 @@ io.on('connection', (socket) => {
             try {
                 const { setDriverOffline } = await import('./backend/services/driverAllocationService.js');
                 await setDriverOffline(socket.driverId);
+                clearSpeedBuffer(socket.driverId); // 1000x: Clean up speed buffer
                 console.log(`⚫ Driver ${socket.driverId} disconnected`);
             } catch (e) { }
+        }
+        if (socket.passengerId) {
+            clearSpeedBuffer(socket.passengerId); // 1000x: Clean up passenger buffer
         }
         console.log(`🔌 Socket disconnected: ${socket.id}`);
     });
@@ -969,5 +1072,12 @@ server.listen(PORT, () => {
     // Initialize real-time services with Socket.IO
     initializeTimeoutManager(io);
     initializeReroutingService(io);
+
+    // 1000x: Initialize Speed Match Engine & Seat Tracking
+    initializeSpeedMatchEngine(io);
+    initializeSeatTracking(io);
+    
+    // Start Keep-Alive service to prevent server sleep
+    startKeepAlive();
     console.log('🚀 Real-time Route Allocation Services initialized');
 });

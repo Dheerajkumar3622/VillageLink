@@ -78,15 +78,32 @@ export default {
                     500: '#f97316',
                     600: '#ea580c', // Warm Candle-light
                     900: '#7c2d12',
+                },
+                // NEW GOLDEN HARVEST LUXE PALETTE
+                luxe: {
+                    sienna: '#BE5103', // Primary
+                    gold:   '#FFCE1B', // Luxe Accent
+                    teal:   '#069494', // Modern Tech
+                    rust:   '#b7410E', // Contrast
+                    glass:  'rgba(6, 148, 148, 0.15)',
+                    amber:  'rgba(190, 81, 3, 0.15)',
                 }
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
             },
+            backgroundImage: {
+                'gold-harvest': 'linear-gradient(135deg, #BE5103 0%, #FFCE1B 100%)',
+                'teal-void':    'linear-gradient(135deg, #069494 0%, #b7410E 100%)',
+                'rust-sheen':   'linear-gradient(90deg, transparent, rgba(183, 65, 14, 0.3), transparent)',
+                'luxe-gradient': 'linear-gradient(135deg, #BE5103 0%, #b7410E 50%, #069494 100%)',
+            },
             boxShadow: {
-                'glow-sm': '0 0 15px -3px rgba(99, 102, 241, 0.4)',
-                'glow-md': '0 0 25px -5px rgba(99, 102, 241, 0.5)',
-                'glow-lg': '0 0 40px -8px rgba(99, 102, 241, 0.6)',
+                'glow-sm': '0 0 15px -3px rgba(190, 81, 3, 0.4)',
+                'glow-md': '0 0 25px -5px rgba(190, 81, 3, 0.5)',
+                'glow-lg': '0 0 40px -8px rgba(190, 81, 3, 0.6)',
+                'gold-luxe': '0 10px 40px -10px rgba(255, 206, 27, 0.4)',
+                'teal-glow': '0 0 25px -5px rgba(6, 148, 148, 0.4)',
                 // Whisk "Multi-layered Shadows" (Umbra, Penumbra, Antumbra)
                 'whisk-float': '0 1px 2px rgba(0,0,0,0.04), 0 2px 4px rgba(0,0,0,0.04), 0 4px 8px rgba(0,0,0,0.04), 0 8px 16px rgba(0,0,0,0.04), 0 16px 32px rgba(0,0,0,0.04)',
                 'whisk-subtle': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',

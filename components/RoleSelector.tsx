@@ -36,8 +36,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Truck className="w-6 h-6" />,
         label: 'Driver',
         description: 'Bus, Auto, Taxi, or Vehicle Owner',
-        color: '#3b82f6',
-        colorAlpha: 'rgba(59, 130, 246, 0.1)',
+        color: '#BE5103',
+        colorAlpha: 'rgba(190, 81, 3, 0.1)',
         requiredDocs: ['Driving License', 'Vehicle RC', 'Aadhar Card']
     },
     {
@@ -45,8 +45,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Wheat className="w-6 h-6" />,
         label: 'Farmer (Kisan)',
         description: 'Sell your produce directly',
-        color: '#22c55e',
-        colorAlpha: 'rgba(34, 197, 94, 0.1)',
+        color: '#069494',
+        colorAlpha: 'rgba(6, 148, 148, 0.1)',
         requiredDocs: ['Aadhar Card', 'Land Papers (optional)']
     },
     {
@@ -54,8 +54,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Store className="w-6 h-6" />,
         label: 'Vendor / Wholesaler',
         description: 'Trade goods in bulk',
-        color: '#f97316',
-        colorAlpha: 'rgba(249, 115, 22, 0.1)',
+        color: '#b7410E',
+        colorAlpha: 'rgba(183, 65, 14, 0.1)',
         requiredDocs: ['GST Certificate', 'Business License', 'Aadhar Card']
     },
     {
@@ -63,8 +63,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <ShoppingCart className="w-6 h-6" />,
         label: 'Retailer',
         description: 'Buy from farmers/vendors for retail',
-        color: '#8b5cf6',
-        colorAlpha: 'rgba(139, 92, 246, 0.1)',
+        color: '#FFCE1B',
+        colorAlpha: 'rgba(255, 206, 27, 0.1)',
         requiredDocs: ['Shop License', 'Aadhar Card']
     },
     {
@@ -72,8 +72,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <UtensilsCrossed className="w-6 h-6" />,
         label: 'Mess / Hotel / Dhaba Owner',
         description: 'Food establishment owner',
-        color: '#ef4444',
-        colorAlpha: 'rgba(239, 68, 68, 0.1)',
+        color: '#BE5103',
+        colorAlpha: 'rgba(190, 81, 3, 0.1)',
         requiredDocs: ['FSSAI License', 'Business License', 'Aadhar Card']
     },
     {
@@ -81,8 +81,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Store className="w-6 h-6" />,
         label: 'Shopkeeper',
         description: 'General store or retail shop',
-        color: '#06b6d4',
-        colorAlpha: 'rgba(6, 182, 212, 0.1)',
+        color: '#FFCE1B',
+        colorAlpha: 'rgba(255, 206, 27, 0.1)',
         requiredDocs: ['Shop License', 'Aadhar Card']
     },
     {
@@ -90,8 +90,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Box className="w-6 h-6" />,
         label: 'Logistics Partner',
         description: 'Delivery and cargo transport',
-        color: '#84cc16',
-        colorAlpha: 'rgba(132, 204, 22, 0.1)',
+        color: '#069494',
+        colorAlpha: 'rgba(6, 148, 148, 0.1)',
         requiredDocs: ['Aadhar Card', 'Vehicle Docs']
     },
     {
@@ -99,8 +99,8 @@ const ROLE_OPTIONS: RoleOption[] = [
         icon: <Users className="w-6 h-6" />,
         label: 'Village Manager (ग्राम प्रबंधक)',
         description: 'Help villagers access digital services',
-        color: '#059669',
-        colorAlpha: 'rgba(5, 150, 105, 0.1)',
+        color: '#FFCE1B',
+        colorAlpha: 'rgba(255, 206, 27, 0.1)',
         requiredDocs: ['Aadhar Card', 'Gram Panchayat Authorization']
     }
 ];
@@ -427,7 +427,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
             <style>{`
         .role-selector {
           min-height: 100vh;
-          background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+          background: linear-gradient(135deg, #FFF9F5 0%, #FFF0E5 100%);
           padding: 20px;
         }
 
@@ -479,7 +479,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
         }
 
         .step.active .step-num {
-          background: #3b82f6;
+          background: #BE5103;
           color: white;
         }
 
@@ -618,7 +618,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
           align-items: center;
           gap: 4px;
           font-size: 0.875rem;
-          color: #22c55e;
+          color: #069494;
         }
 
         .doc-actions {
@@ -631,7 +631,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
           align-items: center;
           gap: 6px;
           padding: 8px 12px;
-          background: #3b82f6;
+          background: #BE5103;
           color: white;
           border-radius: 6px;
           cursor: pointer;

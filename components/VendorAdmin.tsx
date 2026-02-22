@@ -81,7 +81,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <ArrowLeft size={20} className="dark:text-white" />
                         </button>
                         <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                            <ShieldCheck className="text-indigo-600" /> Vendor Admin
+                            <ShieldCheck className="text-luxe-sienna" /> Vendor Admin
                         </h2>
                     </div>
                     <p className="text-xs text-slate-500 font-bold uppercase py-1 px-3 bg-slate-100 dark:bg-slate-800 rounded-full">Admin Panel</p>
@@ -95,7 +95,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             placeholder="Search vendors..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-luxe-sienna dark:text-white"
                         />
                     </div>
                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
@@ -103,7 +103,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <button
                                 key={t}
                                 onClick={() => setFilter(t)}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === t ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === t ? 'bg-white dark:bg-slate-700 text-luxe-sienna dark:text-white shadow-sm' : 'text-slate-500'}`}
                             >
                                 {t}
                             </button>
@@ -127,7 +127,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div key={vendor.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                    <div className="w-12 h-12 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-xl flex items-center justify-center text-luxe-sienna">
                                         <Store size={24} />
                                     </div>
                                     <div>
@@ -150,7 +150,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     <FileText size={14} /> View Details
                                 </Button>
                                 {vendor.status === 'PENDING' && (
-                                    <Button size="sm" fullWidth className="gap-2 bg-emerald-600 hover:bg-emerald-700 border-none" onClick={() => handleVerify(vendor.id, 'APPROVED')}>
+                                    <Button size="sm" fullWidth className="gap-2 bg-luxe-teal hover:bg-luxe-teal/80 border-none" onClick={() => handleVerify(vendor.id, 'APPROVED')}>
                                         <CheckCircle2 size={14} /> Approve
                                     </Button>
                                 )}
@@ -188,12 +188,12 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     {['AADHAR_FRONT', 'AADHAR_BACK', 'STALL_PHOTO', 'FSSAI_CERT'].map(doc => (
                                         <div key={doc} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-800 rounded-xl">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600">
+                                                <div className="p-2 bg-luxe-teal/10 dark:bg-luxe-teal/20 rounded-lg text-luxe-teal">
                                                     <FileText size={16} />
                                                 </div>
                                                 <span className="text-xs font-medium dark:text-slate-300">{doc.replace('_', ' ')}</span>
                                             </div>
-                                            <button className="text-[10px] font-bold text-indigo-600 hover:underline" aria-label={`View ${doc.replace('_', ' ')}`}>View File</button>
+                                            <button className="text-[10px] font-bold text-luxe-sienna hover:underline" aria-label={`View ${doc.replace('_', ' ')}`}>View File</button>
                                         </div>
                                     ))}
                                 </div>
@@ -208,7 +208,7 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <Button variant="outline" fullWidth className="border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => handleVerify(selectedVendor.id, 'REJECTED')}>
                                 Reject Application
                             </Button>
-                            <Button fullWidth className="bg-indigo-600 hover:bg-indigo-700 border-none" onClick={() => handleVerify(selectedVendor.id, 'APPROVED')}>
+                            <Button fullWidth className="bg-luxe-sienna hover:bg-luxe-sienna/80 border-none" onClick={() => handleVerify(selectedVendor.id, 'APPROVED')}>
                                 Approve Vendor
                             </Button>
                         </div>

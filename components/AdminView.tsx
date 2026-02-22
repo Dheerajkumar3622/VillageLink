@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { User, AdminStats, RouteDefinition, LocationData } from '../types';
-import { getAdminStats, getAllUsers, verifyDriver, toggleUserBan, getRoutes, createRoute, deleteRoute, getPricingConfig, updatePricingConfig } from '../services/adminService';
+import { getAdminStats, getAllUsers, verifyDriver, toggleUserBan, getRoutes, createRoute, deleteRoute, getPricingConfig, updatePricingConfig, searchTicketHistory } from '../services/adminService';
 import { findDetailedPath, calculatePathDistance } from '../services/graphService';
 import { LayoutDashboard, Users, UserCheck, ShieldAlert, CheckCircle, XCircle, Search, LogOut, Lock, Unlock, Activity, DollarSign, Map, Plus, Trash2, ArrowRight, Route as RouteIcon, Globe, Store, Car, Settings, UserX, UserCheck as UserActive, AlertTriangle, Bug, RefreshCw } from 'lucide-react';
 import { logoutUser } from '../services/authService';
+import { API_BASE_URL } from '../config';
 import { LocationSelector } from './LocationSelector';
 import { Button } from './Button';
+import AutoClicker from './AutoClicker';
 
 interface AdminViewProps {
     user: User;
@@ -15,7 +17,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [routes, setRoutes] = useState<RouteDefinition[]>([]);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'PRICING' | 'ERRORS'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'TICKETS' | 'PRICING' | 'ERRORS'>('DASHBOARD');
     const [search, setSearch] = useState('');
 
     // Route Create State
@@ -35,6 +37,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [errorAnalytics, setErrorAnalytics] = useState<any>(null);
     const [recentErrors, setRecentErrors] = useState<any[]>([]);
     const [isLoadingErrors, setIsLoadingErrors] = useState(false);
+
+    // Ticket Search State
+    const [ticketSearchQuery, setTicketSearchQuery] = useState('');
+    const [ticketSearchResult, setTicketSearchResult] = useState<any>(null);
+    const [isSearchingTicket, setIsSearchingTicket] = useState(false);
 
     const errorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -84,10 +91,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
         try {
             const token = localStorage.getItem('auth_token');
             const [analyticsRes, errorsRes] = await Promise.all([
-                fetch(`${process.env.VITE_API_URL || 'http://localhost:3001'}/api/errors/analytics?days=7`, {
+                fetch(`${API_BASE_URL}/api/errors/analytics?days=7`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch(`${process.env.VITE_API_URL || 'http://localhost:3001'}/api/errors/recent?limit=20`, {
+                fetch(`${API_BASE_URL}/api/errors/recent?limit=20`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
@@ -169,6 +176,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
         else alert("Failed to update pricing");
     };
 
+    const handleSearchTicket = async () => {
+        if (!ticketSearchQuery.trim()) return;
+        setIsSearchingTicket(true);
+        setTicketSearchResult(null);
+        const res = await searchTicketHistory(ticketSearchQuery.trim());
+        setTicketSearchResult(res);
+        setIsSearchingTicket(false);
+    };
+
     // Filter pending users (Drivers & Shopkeepers)
     const pendingUsers = users.filter(u => (u.role === 'DRIVER' || u.role === 'SHOPKEEPER') && !u.isVerified);
 
@@ -182,7 +198,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
             {/* Header */}
             <div className="bg-slate-950 border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-900/50">
+                    <div className="w-10 h-10 bg-luxe-sienna rounded-lg flex items-center justify-center shadow-lg shadow-luxe-sienna/20">
                         <ShieldAlert size={20} className="text-white" />
                     </div>
                     <div>
@@ -198,26 +214,33 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
             <div className="flex flex-col md:flex-row h-[calc(100vh-80px)]">
                 {/* Sidebar */}
                 <div className="w-full md:w-64 bg-slate-900 border-b md:border-r border-slate-800 p-4 flex flex-row md:flex-col gap-2 overflow-x-auto">
-                    <button onClick={() => setActiveTab('DASHBOARD')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'DASHBOARD' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('DASHBOARD')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'DASHBOARD' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <LayoutDashboard size={18} /> <span className="font-bold text-sm">Dashboard</span>
                     </button>
-                    <button onClick={() => setActiveTab('APPROVALS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'APPROVALS' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('APPROVALS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'APPROVALS' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <UserCheck size={18} /> <span className="font-bold text-sm">Approvals</span>
-                        {pendingUsers.length > 0 && <span className="bg-white text-red-600 px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{pendingUsers.length}</span>}
+                        {pendingUsers.length > 0 && <span className="bg-white text-luxe-sienna px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{pendingUsers.length}</span>}
                     </button>
-                    <button onClick={() => setActiveTab('USERS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'USERS' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('USERS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'USERS' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <Users size={18} /> <span className="font-bold text-sm">User Mgmt</span>
                     </button>
-                    <button onClick={() => setActiveTab('ROUTES')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ROUTES' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('ROUTES')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ROUTES' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <Map size={18} /> <span className="font-bold text-sm">Routes</span>
                     </button>
-                    <button onClick={() => setActiveTab('PRICING')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PRICING' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('TICKETS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'TICKETS' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                        <Search size={18} /> <span className="font-bold text-sm">Ticket Search</span>
+                    </button>
+                    <button onClick={() => setActiveTab('PRICING')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PRICING' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <DollarSign size={18} /> <span className="font-bold text-sm">Pricing</span>
                     </button>
-                    <button onClick={() => setActiveTab('ERRORS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ERRORS' ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('ERRORS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ERRORS' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <Bug size={18} /> <span className="font-bold text-sm">Errors</span>
-                        {errorAnalytics?.summary?.total > 0 && <span className="bg-orange-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{errorAnalytics.summary.total}</span>}
+                        {errorAnalytics?.summary?.total > 0 && <span className="bg-luxe-gold text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{errorAnalytics.summary.total}</span>}
                     </button>
+
+                    <div className="mt-auto pt-4">
+                        <AutoClicker />
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -232,11 +255,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                 </div>
                                 <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                     <p className="text-slate-500 text-xs font-bold uppercase">Pending</p>
-                                    <p className="text-3xl font-bold mt-1 text-orange-500">{stats.pendingDrivers}</p>
+                                    <p className="text-3xl font-bold mt-1 text-luxe-gold">{stats.pendingDrivers}</p>
                                 </div>
                                 <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                     <p className="text-slate-500 text-xs font-bold uppercase">Active Trips</p>
-                                    <p className="text-3xl font-bold mt-1 text-emerald-500">{stats.activeTrips}</p>
+                                    <p className="text-3xl font-bold mt-1 text-luxe-teal">{stats.activeTrips}</p>
                                 </div>
                                 <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                     <p className="text-slate-500 text-xs font-bold uppercase">System Health</p>
@@ -254,7 +277,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                             {pendingUsers.map(u => (
                                 <div key={u.id} className="bg-slate-900 p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
                                     <div className="flex items-center gap-4 w-full md:w-auto">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${u.role === 'DRIVER' ? 'bg-indigo-900 text-indigo-300' : 'bg-orange-900 text-orange-300'}`}>
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${u.role === 'DRIVER' ? 'bg-luxe-sienna/20 text-luxe-sienna' : 'bg-luxe-gold/20 text-luxe-gold'}`}>
                                             {u.role === 'DRIVER' ? <Car size={20} /> : <Store size={20} />}
                                         </div>
                                         <div>
@@ -267,7 +290,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     </div>
                                     <div className="flex gap-3 w-full md:w-auto">
                                         <button onClick={() => handleVerify(u.id, false)} className="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg font-bold text-sm">Reject</button>
-                                        <button onClick={() => handleVerify(u.id, true)} className="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
+                                        <button onClick={() => handleVerify(u.id, true)} className="flex-1 md:flex-none bg-luxe-teal hover:bg-luxe-teal/80 text-white px-6 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
                                             <CheckCircle size={16} /> Approve ID
                                         </button>
                                     </div>
@@ -286,7 +309,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-slate-200 outline-none focus:border-red-600"
+                                    className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-slate-200 outline-none focus:border-luxe-sienna"
                                     placeholder="Search users by name or ID..."
                                 />
                             </div>
@@ -296,19 +319,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold">{u.name}</span>
-                                                <span className={`text-[10px] px-2 rounded font-bold ${u.role === 'ADMIN' ? 'bg-red-600 text-white' : (u.role === 'DRIVER' ? 'bg-indigo-600 text-white' : (u.role === 'SHOPKEEPER' ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'))}`}>{u.role}</span>
-                                                {u.isVerified && <CheckCircle size={12} className="text-emerald-500" />}
+                                                <span className={`text-[10px] px-2 rounded font-bold ${u.role === 'ADMIN' ? 'bg-luxe-sienna text-white' : (u.role === 'DRIVER' ? 'bg-luxe-teal text-white' : (u.role === 'SHOPKEEPER' ? 'bg-luxe-gold text-white' : 'bg-slate-700 text-slate-300'))}`}>{u.role}</span>
+                                                {u.isVerified && <CheckCircle size={12} className="text-luxe-teal" />}
                                             </div>
                                             <p className="text-xs text-slate-500 font-mono">{u.id} {u.phone ? `• ${u.phone}` : ''}</p>
                                         </div>
                                         {u.role !== 'ADMIN' && (
                                             <div className="flex items-center gap-3">
-                                                <span className={`text-[10px] uppercase font-bold tracking-wider ${u.isBanned ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                <span className={`text-[10px] uppercase font-bold tracking-wider ${u.isBanned ? 'text-luxe-rust' : 'text-luxe-teal'}`}>
                                                     {u.isBanned ? 'Deactivated' : 'Active'}
                                                 </span>
                                                 <button
                                                     onClick={() => handleBan(u.id, !u.isBanned)}
-                                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${u.isBanned ? 'bg-emerald-600/20 text-emerald-500 hover:bg-emerald-600/30 border border-emerald-600/50' : 'bg-red-600/20 text-red-500 hover:bg-red-600/30 border border-red-600/50'}`}
+                                                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors flex items-center gap-2 ${u.isBanned ? 'bg-luxe-teal/20 text-luxe-teal hover:bg-luxe-teal/30 border border-luxe-teal/50' : 'bg-luxe-sienna/20 text-luxe-sienna hover:bg-luxe-sienna/30 border border-luxe-sienna/50'}`}
                                                 >
                                                     {u.isBanned ? <UserActive size={14} /> : <UserX size={14} />}
                                                     {u.isBanned ? 'Activate ID' : 'Deactivate ID'}
@@ -321,11 +344,112 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                         </div>
                     )}
 
+                    {/* TICKET SEARCH PANEL */}
+                    {activeTab === 'TICKETS' && (
+                        <div className="space-y-6 animate-in slide-in-from-right-4">
+                            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Search size={20} className="text-luxe-teal" /> Ticket Lifecycle Search</h2>
+                                <p className="text-sm text-slate-400 mb-6">Enter a Ticket ID to view full passenger, driver, and transaction ledger history.</p>
+                                
+                                <div className="flex gap-4 mb-8">
+                                    <input 
+                                        type="text"
+                                        placeholder="e.g. TK-1234"
+                                        value={ticketSearchQuery}
+                                        onChange={(e) => setTicketSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearchTicket()}
+                                        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none focus:border-luxe-teal"
+                                    />
+                                    <Button variant="primary" onClick={handleSearchTicket} disabled={isSearchingTicket}>
+                                        {isSearchingTicket ? 'Searching...' : 'Search'}
+                                    </Button>
+                                </div>
+
+                                {ticketSearchResult && ticketSearchResult.ticket ? (
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-lg font-bold text-white uppercase tracking-wider">{ticketSearchResult.ticket.id}</h3>
+                                                <span className={`px-3 py-1 text-xs font-bold rounded-full ${ticketSearchResult.ticket.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                                                    {ticketSearchResult.ticket.status}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                                <div>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Route</p>
+                                                    <p className="text-sm font-bold text-slate-300">{ticketSearchResult.ticket.from} → {ticketSearchResult.ticket.to}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Pax / Price</p>
+                                                    <p className="text-sm font-bold text-slate-300">{ticketSearchResult.ticket.passengerCount || 1} Pax / ₹{ticketSearchResult.ticket.totalPrice}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Payment</p>
+                                                    <p className="text-sm font-bold text-slate-300">{ticketSearchResult.ticket.paymentMethod || 'UNKNOWN'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Date</p>
+                                                    <p className="text-sm font-bold text-slate-300">{ticketSearchResult.ticket.timestamp || ticketSearchResult.ticket.scannedAt ? new Date(ticketSearchResult.ticket.timestamp || ticketSearchResult.ticket.scannedAt).toLocaleDateString() : 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                                                    <p className="text-[10px] text-luxe-sienna font-bold uppercase mb-2 flex items-center gap-1"><UserCheck size={12}/> Passenger</p>
+                                                    {ticketSearchResult.passenger ? (
+                                                        <>
+                                                            <p className="text-sm font-bold text-white">{ticketSearchResult.passenger.name}</p>
+                                                            <p className="text-xs text-slate-400 font-mono">{ticketSearchResult.passenger.phone}</p>
+                                                        </>
+                                                    ) : <p className="text-xs text-slate-500 italic">No account mapped</p>}
+                                                </div>
+                                                <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                                                    <p className="text-[10px] text-luxe-teal font-bold uppercase mb-2 flex items-center gap-1"><Car size={12}/> Assigned Driver</p>
+                                                    {ticketSearchResult.driver ? (
+                                                        <>
+                                                            <p className="text-sm font-bold text-white">{ticketSearchResult.driver.name}</p>
+                                                            <p className="text-xs text-slate-400 font-mono">{ticketSearchResult.driver.phone} • {ticketSearchResult.driver.vehicleType}</p>
+                                                        </>
+                                                    ) : <p className="text-xs text-slate-500 italic">Not boarded yet</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {ticketSearchResult.transactions && ticketSearchResult.transactions.length > 0 && (
+                                            <div className="mt-6">
+                                                <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 text-[10px] tracking-wider">Transaction Ledger</h3>
+                                                <div className="space-y-2">
+                                                    {ticketSearchResult.transactions.map((txn: any) => (
+                                                        <div key={txn.id} className="flex justify-between items-center bg-slate-800/30 p-3 rounded-lg border border-slate-700/50">
+                                                            <div className="flex items-center gap-3">
+                                                                <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase ${txn.type === 'EARN' || txn.type === 'CREDIT' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>{txn.type}</span>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-slate-300">{txn.description}</p>
+                                                                    <p className="text-[9px] text-slate-500 font-mono">{txn.id}</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="font-bold text-sm text-white font-mono">₹{txn.amount}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : ticketSearchResult && (
+                                    <div className="p-8 text-center border-2 border-dashed border-slate-700 rounded-xl">
+                                        <p className="text-slate-400 font-bold mb-2">Ticket ID "{ticketSearchQuery}" not found.</p>
+                                        <p className="text-xs text-slate-500">Ensure the ID is correct (e.g. TK-7770).</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* PRICING PANEL (Existing) */}
                     {activeTab === 'PRICING' && (
                         <div className="space-y-6 animate-in slide-in-from-right-4">
                             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Settings size={20} className="text-red-500" /> Fare Configuration</h2>
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Settings size={20} className="text-luxe-sienna" /> Fare Configuration</h2>
                                 <p className="text-sm text-slate-400 mb-6">Adjust the global pricing logic for the entire platform. Changes apply immediately to new ticket calculations.</p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -382,7 +506,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                         <div className="space-y-8 animate-in slide-in-from-right-4">
                             {/* CREATE ROUTE */}
                             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus size={20} className="text-red-500" /> Define Universal Route</h2>
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus size={20} className="text-luxe-sienna" /> Define Universal Route</h2>
                                 <p className="text-sm text-slate-400 mb-4">Set the official stops for a route. This defines the "Universal Path" logic for passengers.</p>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -390,7 +514,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         placeholder="Route Name (e.g. Express Line 1)"
                                         value={newRouteName}
                                         onChange={e => setNewRouteName(e.target.value)}
-                                        className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none focus:border-red-500"
+                                        className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none focus:border-luxe-sienna"
                                     />
                                     <div className="text-black"><LocationSelector label="Start Point" onSelect={setNewRouteFrom} /></div>
                                     <div className="text-black"><LocationSelector label="End Point" onSelect={setNewRouteTo} /></div>
@@ -406,7 +530,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                 {calculatedStops.length > 0 && (
                                     <div className="mt-6 bg-slate-950 p-4 rounded-xl border border-slate-800">
                                         <div className="flex justify-between items-center mb-2">
-                                            <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2"><RouteIcon size={14} /> Generated Universal Path</h3>
+                                            <h3 className="text-sm font-bold text-luxe-teal flex items-center gap-2"><RouteIcon size={14} /> Generated Universal Path</h3>
                                             <span className="text-xs text-slate-500 font-mono">{calculatedDist.toFixed(1)} km</span>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
@@ -438,9 +562,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                                 <div>
                                                     <h3 className="font-bold text-lg text-white">{r.name}</h3>
                                                     <div className="flex items-center gap-2 text-slate-400 text-sm mt-1">
-                                                        <span className="text-emerald-500">{r.from}</span>
+                                                        <span className="text-luxe-teal">{r.from}</span>
                                                         <ArrowRight size={14} />
-                                                        <span className="text-red-500">{r.to}</span>
+                                                        <span className="text-luxe-sienna">{r.to}</span>
                                                     </div>
                                                     <div className="flex flex-wrap gap-1 mt-2">
                                                         {r.stops.slice(1, -1).map((s, idx) => (
@@ -469,7 +593,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                             {/* Header */}
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h2 className="text-xl font-bold flex items-center gap-2"><Bug size={20} className="text-orange-500" /> Error Analytics</h2>
+                                    <h2 className="text-xl font-bold flex items-center gap-2"><Bug size={20} className="text-luxe-gold" /> Error Analytics</h2>
                                     <p className="text-sm text-slate-400">Automatic error detection across all users</p>
                                 </div>
                                 <button onClick={fetchErrorData} disabled={isLoadingErrors} className="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-slate-300 transition-colors" aria-label="Refresh Errors">
@@ -482,7 +606,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                         <p className="text-slate-500 text-xs font-bold uppercase">Total Errors (7d)</p>
-                                        <p className="text-3xl font-bold mt-1 text-orange-500">{errorAnalytics.summary.total}</p>
+                                        <p className="text-3xl font-bold mt-1 text-luxe-gold">{errorAnalytics.summary.total}</p>
                                     </div>
                                     <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                         <p className="text-slate-500 text-xs font-bold uppercase">Unique Issues</p>
@@ -490,7 +614,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     </div>
                                     <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                         <p className="text-slate-500 text-xs font-bold uppercase">Resolved</p>
-                                        <p className="text-3xl font-bold mt-1 text-emerald-500">{errorAnalytics.summary.resolved}</p>
+                                        <p className="text-3xl font-bold mt-1 text-luxe-teal">{errorAnalytics.summary.resolved}</p>
                                     </div>
                                     <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
                                         <p className="text-slate-500 text-xs font-bold uppercase">Unresolved</p>
@@ -506,14 +630,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                     <div className="space-y-2">
                                         {errorAnalytics.byType.map((item: any) => (
                                             <div key={item._id} className="flex items-center gap-3">
-                                                <span className={`text-xs font-bold px-2 py-1 rounded ${item._id === 'CLIENT_ERROR' ? 'bg-blue-900 text-blue-300' :
-                                                    item._id === 'NETWORK_ERROR' ? 'bg-purple-900 text-purple-300' :
-                                                        item._id === 'PERFORMANCE' ? 'bg-yellow-900 text-yellow-300' :
-                                                            item._id === 'SERVICE_FAILURE' ? 'bg-red-900 text-red-300' :
+                                                <span className={`text-xs font-bold px-2 py-1 rounded ${item._id === 'CLIENT_ERROR' ? 'bg-luxe-teal/20 text-luxe-teal' :
+                                                    item._id === 'NETWORK_ERROR' ? 'bg-luxe-teal/10 text-luxe-teal' :
+                                                        item._id === 'PERFORMANCE' ? 'bg-luxe-gold/20 text-luxe-gold' :
+                                                            item._id === 'SERVICE_FAILURE' ? 'bg-luxe-sienna/20 text-luxe-sienna' :
                                                                 'bg-slate-800 text-slate-300'
                                                     }`}>{item._id}</span>
                                                 <div className="flex-1 bg-slate-800 rounded-full h-2" ref={errorContainerRef}>
-                                                    <div className="bg-orange-500 h-2 rounded-full admin-progress-bar" data-progress={`${Math.min((item.count / errorAnalytics.summary.total) * 100, 100)}%`}></div>
+                                                    <div className="bg-luxe-sienna h-2 rounded-full admin-progress-bar" data-progress={`${Math.min((item.count / errorAnalytics.summary.total) * 100, 100)}%`}></div>
                                                 </div>
                                                 <span className="text-sm font-mono text-slate-400">{item.count}</span>
                                             </div>
@@ -530,20 +654,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                 ) : (
                                     <div className="space-y-3 max-h-96 overflow-y-auto">
                                         {recentErrors.map((err: any) => (
-                                            <div key={err.errorId || err._id} className={`p-4 rounded-xl border ${err.severity === 'CRITICAL' ? 'bg-red-900/20 border-red-800' :
-                                                err.severity === 'HIGH' ? 'bg-orange-900/20 border-orange-800' :
+                                            <div key={err.errorId || err._id} className={`p-4 rounded-xl border ${err.severity === 'CRITICAL' ? 'bg-luxe-sienna/10 border-luxe-sienna/20' :
+                                                err.severity === 'HIGH' ? 'bg-luxe-rust/10 border-luxe-rust/20' :
                                                     'bg-slate-800 border-slate-700'
                                                 }`}>
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${err.severity === 'CRITICAL' ? 'bg-red-600 text-white' :
-                                                                err.severity === 'HIGH' ? 'bg-orange-600 text-white' :
-                                                                    err.severity === 'MEDIUM' ? 'bg-yellow-600 text-black' :
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${err.severity === 'CRITICAL' ? 'bg-luxe-sienna text-white' :
+                                                                err.severity === 'HIGH' ? 'bg-luxe-rust text-white' :
+                                                                    err.severity === 'MEDIUM' ? 'bg-luxe-gold text-black' :
                                                                         'bg-slate-600 text-white'
                                                                 }`}>{err.severity}</span>
                                                             <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{err.type}</span>
-                                                            {err.resolved && <CheckCircle size={12} className="text-emerald-500" />}
+                                                            {err.resolved && <CheckCircle size={12} className="text-luxe-teal" />}
                                                         </div>
                                                         <p className="text-sm text-white font-medium truncate">{err.message}</p>
                                                         <p className="text-[10px] text-slate-500 mt-1">{err.url || 'Unknown URL'}</p>
@@ -551,7 +675,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                                     <div className="text-right">
                                                         <p className="text-[10px] text-slate-500">{new Date(err.createdAt).toLocaleString()}</p>
                                                         {err.occurrenceCount > 1 && (
-                                                            <span className="text-[10px] bg-slate-700 text-orange-400 px-2 py-0.5 rounded">×{err.occurrenceCount}</span>
+                                                            <span className="text-[10px] bg-slate-700 text-luxe-gold px-2 py-0.5 rounded">×{err.occurrenceCount}</span>
                                                         )}
                                                     </div>
                                                 </div>

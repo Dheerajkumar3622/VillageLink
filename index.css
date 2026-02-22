@@ -36,65 +36,399 @@
 }
 
 /* ========================================
-   GLASS PANEL - Premium Glassmorphism
+   V5.1 THEME SYSTEM - PRISMATIC LUXE
    ======================================== */
+:root {
+  /* 🌾 GOLDEN HARVEST LUXE - Universal Foundation */
+  --v5-bg: 25 100% 98%;
+  --v5-surface: 0 0% 100%;
+  --v5-text-main: 25 30% 15%;
+  --v5-text-muted: 25 15% 40%;
+  --v5-border: 25 20% 90%;
+  --v5-glass-bg: 25 100% 99% / 0.9;
+  --v5-accent: 25 96% 38%;
+  /* #BE5103 */
+  --v5-glow: 47 100% 55% / 0.3;
+  /* #FFCE1B */
+
+  /* PRISMATIC LUXE - Saffron Dawn Theme */
+  --bg-deep: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-glass: rgba(255, 250, 245, 0.9);
+  --text-primary: #2D1401;
+  --text-secondary: #522401;
+  --text-muted: #8A3C02;
+
+  /* Golden Harvest Primary Gradient Colors */
+  --accent-primary: #BE5103;
+  /* Burnt Sienna */
+  --accent-secondary: #069494;
+  /* Teal */
+  --accent-tertiary: #b7410E;
+  /* Rust */
+  --accent-hot: #FFCE1B;
+  /* Gold */
+
+  /* Feature-Specific Colors (Calibrated for Harvest Theme) */
+  --color-ride: #069494;
+  --color-food: #BE5103;
+  --color-mandi: #b7410E;
+  --color-cargo: #069494;
+  --color-money: #FFCE1B;
+
+  --border-subtle: rgba(190, 81, 3, 0.15);
+  --border-glow: rgba(255, 206, 27, 0.4);
+
+  /* Golden Harvest Gradient */
+  --gradient-prismatic: linear-gradient(135deg, #BE5103 0%, #b7410E 25%, #FFCE1B 50%, #069494 75%, #BE5103 100%);
+
+  /* Reference Image Specifics - HARVEST UPDATE */
+  --color-haldi: #FFCE1B;
+  /* Authentic Golden Haldi */
+  --color-icon-container: #BE5103;
+  /* Rich Earthy Sienna */
+}
+
+.dark {
+  /* 🌙 DARK MODE - "Amber Obsidian" */
+  --v5-bg: 20 40% 4%;
+  --v5-surface: 20 35% 7%;
+  --v5-text-main: 25 20% 98%;
+  --v5-text-muted: 25 15% 65%;
+  --v5-border: 20 30% 12%;
+  --v5-glass-bg: 20 35% 7% / 0.8;
+  --v5-accent: 25 96% 45%;
+  --v5-glow: 47 100% 50% / 0.4;
+
+  /* LUXE DARK - Amber Night Colors */
+  --bg-deep: #0A0705;
+  --bg-surface: #1A130F;
+  --bg-glass: rgba(26, 19, 15, 0.8);
+  --text-primary: #FFF9F5;
+  --text-secondary: #FFDAB9;
+  --text-muted: #D4722E;
+
+  /* Gold Heat (Brighter for dark) */
+  --accent-primary: #D4722E;
+  --accent-secondary: #0FB8B8;
+  --accent-tertiary: #D4592A;
+  --accent-hot: #FFE066;
+
+  /* Feature Colors (Unified Across Modes) */
+  --color-ride: #0FB8B8;
+  --color-food: #D4722E;
+  --color-mandi: #D4592A;
+  --color-cargo: #0FB8B8;
+  --color-money: #FFE066;
+
+  --border-subtle: rgba(190, 81, 3, 0.15);
+  --border-glow: rgba(255, 206, 27, 0.4);
+}
+
 /* ========================================
-   GLASS PANEL - Premium Glassmorphism (Whisk 3.0)
+   GLASS PANEL - Premium Glassmorphism (V5.1 Upgrade)
    ======================================== */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(190, 81, 3, 0.08) 0%, rgba(255, 206, 27, 0.05) 100%);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border: 1px solid var(--accent-hot);
+  box-shadow:
+    0 8px 32px -4px rgba(190, 81, 3, 0.15),
+    0 4px 16px -2px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  color: #2D1401;
 }
 
 .dark .glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  /* Translucent Midnight */
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(26, 19, 15, 0.85);
+  border: 1px solid var(--accent-hot);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  /* Inner Ring */
+    0 8px 32px -4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: #FFF9F5;
 }
 
-/* The "Glass Portal" - Specific for Auth Cards */
-.glass-portal {
-  background: rgba(11, 15, 25, 0.7);
-  /* Deep Indigo Glass */
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  /* Nano Green Border */
-  box-shadow:
-    0 0 40px -10px rgba(74, 222, 128, 0.15),
-    /* Green Ambient Glow */
-    0 20px 40px rgba(0, 0, 0, 0.6);
+/* ========================================
+   CINEMATIC UTILITIES
+   ======================================== */
+.cinematic-fade-in {
+  animation: cinematicFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.input-portal {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+@keyframes cinematicFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+/* ========================================
+   V5 BENTO CARD - EXACT MATCH (HALDI)
+   ======================================== */
+.v5-bento-card {
+  background: var(--accent-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 32px;
+  box-shadow: 0 12px 32px -8px rgba(190, 81, 3, 0.45);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #FFFFFF;
+  min-width: 95px;
+  height: 145px;
+  padding: 12px !important;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.v5-bento-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 45px -10px rgba(190, 81, 3, 0.6);
+}
+
+.dark .v5-bento-card {
+  background: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+.v5-icon-container-match {
+  background: var(--accent-secondary);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+
+/* ========================================
+   V5 ICON COLORS - Vibrant Prismatic
+   ======================================== */
+.v5-icon-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+  box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.4);
+}
+
+/* ========================================
+   REFERENCE DASHBOARD - Orange Journey Card
+   ======================================== */
+.journey-card-reference {
+  background: linear-gradient(180deg, #BE5103 0%, #b7410E 100%);
+  border-radius: 40px;
+  padding: 30px;
+  min-height: 400px;
+  box-shadow: 0 15px 45px rgba(183, 65, 14, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.journey-card-reference h3 {
   color: white;
-  transition: all 0.3s ease;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.1;
+  width: 50%;
+  margin-bottom: 25px;
 }
 
-.input-portal:focus {
-  border-color: #4ade80;
-  /* Nano Green */
-  box-shadow: 0 0 15px rgba(74, 222, 128, 0.2);
-  background: rgba(0, 0, 0, 0.5);
+.toggle-ticket-match {
+  background: #A06400;
+  /* Darker haldi */
+  padding: 4px;
+  border-radius: 12px;
+  display: flex;
 }
 
-/* Premium card styling */
-.premium-card {
-  @apply bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700;
+.toggle-ticket-match button {
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-/* Gradient text */
-.gradient-text {
-  @apply bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent;
+.toggle-ticket-match button.active {
+  background: #FFCE1B;
+  color: #2D1401;
+  box-shadow: 0 4px 15px rgba(255, 206, 27, 0.4);
+}
+
+.input-container-match {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label-match {
+  color: #1A1035;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.auto-detect-match {
+  background: white;
+  color: #BE5103;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 800;
+  border: 0.5px solid rgba(190, 81, 3, 0.2);
+}
+
+/* ========================================
+   BOTTOM NAV - EXACT MATCH
+   ======================================== */
+.nav-active-pill {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(139, 92, 246, 0.05);
+}
+
+
+
+.v5-icon-warm {
+  background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+  box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.4);
+}
+
+.v5-icon-hot {
+  background: linear-gradient(135deg, #EF4444 0%, #F97316 100%);
+  box-shadow: 0 4px 16px -2px rgba(239, 68, 68, 0.4);
+}
+
+.v5-icon-cyan {
+  background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%);
+  box-shadow: 0 4px 16px -2px rgba(6, 182, 212, 0.4);
+}
+
+.v5-icon-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.4);
+}
+
+.v5-icon-rose {
+  background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+  box-shadow: 0 4px 16px -2px rgba(236, 72, 153, 0.4);
+}
+
+.v5-icon-blue {
+  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+  box-shadow: 0 4px 16px -2px rgba(59, 130, 246, 0.4);
+}
+
+.v5-icon-gold {
+  background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+  box-shadow: 0 4px 16px -2px rgba(217, 119, 6, 0.4);
+}
+
+.v5-icon-sky {
+  background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%);
+  box-shadow: 0 4px 16px -2px rgba(14, 165, 233, 0.4);
+}
+
+.v5-icon-indigo {
+  background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+  box-shadow: 0 4px 16px -2px rgba(99, 102, 241, 0.4);
+}
+
+/* ========================================
+   VILLAGE DOCK STYLES
+   ======================================== */
+.village-dock-container {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.village-dock {
+  pointer-events: auto;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 32px;
+  background: hsla(var(--v5-glass-bg));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid hsla(var(--v5-text-main) / 0.08);
+  box-shadow: 0 20px 48px -12px hsla(0, 0%, 0%, 0.3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+  scroll-snap-type: x mandatory;
+}
+
+.village-dock::-webkit-scrollbar {
+  display: none;
+}
+
+.dock-item {
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 700;
+  color: hsla(var(--v5-text-main) / 0.7);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.dock-item.active {
+  background: hsla(var(--v5-text-main) / 0.05);
+  color: hsla(var(--v5-accent));
+  transform: scale(1.05);
+  box-shadow: inset 0 0 0 1px hsla(var(--v5-accent) / 0.2);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.shadow-whisk {
+  box-shadow: 0 10px 40px -10px hsla(var(--v5-accent) / 0.3);
 }
 
 /* ========================================
@@ -114,10 +448,10 @@
 /* CTA Button - Holographic Gradient (Von Restorff Effect) */
 .btn-cta {
   @apply relative px-8 py-4 font-bold text-white rounded-2xl overflow-hidden;
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #06b6d4 100%);
+  background: linear-gradient(135deg, #BE5103 0%, #b7410E 50%, #069494 100%);
   box-shadow:
-    0 4px 20px -5px rgba(79, 70, 229, 0.5),
-    0 0 30px -10px rgba(6, 182, 212, 0.4);
+    0 4px 20px -5px rgba(190, 81, 3, 0.5),
+    0 0 30px -10px rgba(255, 206, 27, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -168,6 +502,17 @@ html,
 body,
 #root {
   transition-duration: 0ms;
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+}
+
+/* V5 App Shell - Prismatic Luxe Background */
+.v5-app-shell {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: var(--text-primary);
+  position: relative;
+  overflow-x: hidden;
 }
 
 /* Fade In */
@@ -314,27 +659,7 @@ body,
   }
 }
 
-/* "Heartbeat" for SOS */
-.pulse-heartbeat {
-  animation: heartbeat 1.5s ease-in-out infinite;
-}
 
-@keyframes heartbeat {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  }
-
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-  }
-
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-  }
-}
 
 /* Variable Font Transition for Focus States */
 .variable-font-transition {
@@ -504,9 +829,14 @@ body,
 }
 
 .glass-3 {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(255, 255, 255, 0.7);
   -webkit-backdrop-filter: blur(25px);
   backdrop-filter: blur(25px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-3 {
+  background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -673,19 +1003,19 @@ body,
   --bg-elevated: #111827;
   --bg-glass: rgba(2, 6, 23, 0.75);
 
-  /* V5 ACCENT COLORS - BHOOMI & HARVEST */
-  --accent-primary: #10b981;
-  /* Bhoomi Green */
-  --accent-secondary: #0ea5e9;
-  /* Sky Blue */
-  --accent-tertiary: #8b5cf6;
-  /* Royal Purple */
-  --accent-warm: #f59e0b;
-  /* Saffron Harvest */
+  /* V5 ACCENT COLORS - HARVEST LUXE */
+  --accent-primary: #BE5103;
+  /* Burnt Sienna */
+  --accent-secondary: #069494;
+  /* Bhoomi Teal */
+  --accent-tertiary: #b7410E;
+  /* Rust Orange */
+  --accent-warm: #FFCE1B;
+  /* Kanak Gold */
   --accent-hot: #ef4444;
-  /* alert Red */
-  --accent-neon: #00ff9d;
-  /* Neo Trace */
+  /* Alert Red */
+  --accent-neon: #FFCE1B;
+  /* Glow Trace */
 
   /* V5 GLOW EFFECTS */
   --glow-primary: 0 0 30px rgba(16, 185, 129, 0.3);
@@ -698,10 +1028,15 @@ body,
   --text-secondary: rgba(248, 250, 252, 0.75);
   --text-muted: rgba(248, 250, 252, 0.45);
 
-  /* V5 BORDERS */
+  /* V5 BORDERS & RADIUS */
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-glass: rgba(255, 255, 255, 0.1);
   --border-glow: rgba(0, 255, 157, 0.25);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
 
   /* V5 TYPOGRAPHY */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -732,6 +1067,526 @@ body,
   transform: translateY(-4px);
   border-color: var(--border-glow);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================
+   V5 HOLOGRAPHIC PRISM LOGO - ULTRA PREMIUM
+   ======================================== */
+.v5-logo-holographic {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 20px;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  overflow: hidden;
+
+  /* Holographic Base Gradient */
+  background:
+    linear-gradient(135deg,
+      rgba(99, 102, 241, 1) 0%,
+      rgba(139, 92, 246, 1) 20%,
+      rgba(236, 72, 153, 1) 40%,
+      rgba(59, 130, 246, 1) 60%,
+      rgba(16, 185, 129, 1) 80%,
+      rgba(99, 102, 241, 1) 100%);
+  background-size: 300% 300%;
+
+  /* Glassmorphism Border */
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+
+  /* Multi-layer Glow */
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.5),
+    0 0 40px rgba(99, 102, 241, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.15),
+    0 4px 15px rgba(0, 0, 0, 0.3);
+
+  /* Rainbow Sweep Animation */
+  animation:
+    holoRainbowSweep 6s ease infinite,
+    holoPulseGlow 3s ease-in-out infinite alternate,
+    holoFloat 4s ease-in-out infinite;
+
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+/* Crystalline Inner Glow Layer */
+.v5-logo-holographic::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.2) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Light Beam Scanner Effect */
+.v5-logo-holographic::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 60%,
+      transparent 100%);
+  animation: holoLightBeam 4s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Holographic Logo Letter */
+.v5-logo-holographic span:last-child {
+  position: relative;
+  z-index: 3;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+/* Hover State - Burst Effect */
+.v5-logo-holographic:hover {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow:
+    0 0 30px rgba(139, 92, 246, 0.7),
+    0 0 60px rgba(99, 102, 241, 0.5),
+    0 0 90px rgba(236, 72, 153, 0.3),
+    inset 0 0 25px rgba(255, 255, 255, 0.2);
+}
+
+/* Active/Tap State */
+.v5-logo-holographic:active {
+  transform: scale(0.95);
+}
+
+/* Keyframes: Rainbow Color Sweep */
+@keyframes holoRainbowSweep {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  25% {
+    background-position: 100% 50%;
+  }
+
+  50% {
+    background-position: 100% 100%;
+  }
+
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+/* Keyframes: Pulsing Glow */
+@keyframes holoPulseGlow {
+  0% {
+    box-shadow:
+      0 0 20px rgba(139, 92, 246, 0.5),
+      0 0 40px rgba(99, 102, 241, 0.3),
+      inset 0 0 20px rgba(255, 255, 255, 0.15);
+  }
+
+  100% {
+    box-shadow:
+      0 0 30px rgba(236, 72, 153, 0.6),
+      0 0 60px rgba(16, 185, 129, 0.4),
+      inset 0 0 25px rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Keyframes: Light Beam Scanner */
+@keyframes holoLightBeam {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+
+  100% {
+    transform: translateX(100%) rotate(45deg);
+  }
+}
+
+/* Keyframes: Subtle Floating */
+@keyframes holoFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Sparkle Particle Effect (Optional Enhancement) */
+.v5-logo-sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  animation: holoSparkle 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.v5-logo-sparkle:nth-child(1) {
+  top: 10%;
+  left: 80%;
+  animation-delay: 0s;
+}
+
+.v5-logo-sparkle:nth-child(2) {
+  top: 80%;
+  left: 15%;
+  animation-delay: 0.5s;
+}
+
+.v5-logo-sparkle:nth-child(3) {
+  top: 20%;
+  left: 20%;
+  animation-delay: 1s;
+}
+
+@keyframes holoSparkle {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========================================
+   V5 LIVING ECOSYSTEM HEADER - ULTRA PREMIUM
+   ======================================== */
+
+/* Main Container - Floating Glass Pod */
+.v5-living-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  background: hsla(var(--v5-glass-bg));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v5-living-header:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Breathing Avatar Container */
+.v5-avatar-ecosystem {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+/* Breathing Ring - Outer Glow */
+.v5-breathing-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+      rgba(139, 92, 246, 0.7),
+      rgba(59, 130, 246, 0.7),
+      rgba(16, 185, 129, 0.7),
+      rgba(236, 72, 153, 0.7),
+      rgba(139, 92, 246, 0.7));
+  animation: breathingPulse 4s ease-in-out infinite, ringRotate 8s linear infinite;
+  filter: blur(2px);
+  opacity: 0.8;
+}
+
+/* Avatar Core */
+.v5-avatar-core {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #3b82f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 2;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.v5-avatar-core:hover {
+  transform: scale(1.1);
+}
+
+.v5-avatar-core:active {
+  transform: scale(0.95);
+}
+
+/* User Info Section */
+.v5-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 60px;
+}
+
+.v5-user-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: hsla(var(--v5-text-main));
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* Wallet with Health Bar */
+.v5-wallet-section {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.v5-wallet-amount {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'Space Grotesk', monospace;
+  color: #10b981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  animation: walletGlow 3s ease-in-out infinite alternate;
+}
+
+/* Wallet Health Bar */
+.v5-wallet-health {
+  width: 28px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.v5-wallet-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #0ea5e9 100%);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+/* Divider */
+.v5-header-divider {
+  width: 1px;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.2), transparent);
+  margin: 0 2px;
+}
+
+/* Notification Orb */
+.v5-notification-orb {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.v5-notification-orb:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.v5-notification-orb:active {
+  transform: scale(0.95);
+}
+
+.v5-notification-orb svg {
+  width: 16px;
+  height: 16px;
+  color: hsla(var(--v5-text-main) / 0.7);
+}
+
+/* Notification Badge */
+.v5-notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #f43f5e, #ef4444);
+  border-radius: 7px;
+  font-size: 8px;
+  font-weight: 800;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid hsla(var(--v5-surface));
+  animation: badgePulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+}
+
+/* Eclipse Theme Toggle */
+.v5-eclipse-toggle {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.v5-eclipse-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.v5-eclipse-toggle:active {
+  transform: scale(0.95);
+}
+
+.v5-sun-icon,
+.v5-moon-icon {
+  position: absolute;
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.v5-eclipse-toggle.dark .v5-sun-icon {
+  transform: translateY(30px) rotate(180deg);
+  opacity: 0;
+}
+
+.v5-eclipse-toggle.light .v5-sun-icon {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+}
+
+.v5-eclipse-toggle.dark .v5-moon-icon {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+}
+
+.v5-eclipse-toggle.light .v5-moon-icon {
+  transform: translateY(-30px) rotate(-180deg);
+  opacity: 0;
+}
+
+/* Keyframes */
+@keyframes breathingPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+@keyframes ringRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes walletGlow {
+  0% {
+    text-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+
+  100% {
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+  }
+}
+
+@keyframes badgePulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+  }
+
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 16px rgba(244, 63, 94, 0.8);
+  }
+}
+
+@keyframes notificationShake {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(12deg);
+  }
+
+  50% {
+    transform: rotate(-12deg);
+  }
+
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+.v5-notification-orb.shake svg {
+  animation: notificationShake 0.5s ease;
 }
 
 /* V5 Primary Button */
@@ -844,7 +1699,7 @@ body,
 
 /* V5 App Shell */
 .v5-app-shell {
-  background: var(--bg-deep);
+  background: #ffffff;
   color: var(--text-primary);
   font-family: var(--font-display);
   min-height: 100vh;
@@ -857,13 +1712,14 @@ body,
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 16px 20px;
+  padding: 16px 05px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(180deg, var(--bg-deep) 0%, transparent 100%);
+  background: linear-gradient(180deg, #4f46e5 0%, transparent 100%);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
+  border: 1px solid #f59e0b;
 }
 
 /* V5 Brand Mark */
@@ -881,6 +1737,13 @@ body,
   box-shadow: var(--glow-primary);
   position: relative;
   overflow: hidden;
+}
+
+/* V5 Bottom Nav */
+.v5-bottom-nav {
+  background: #4f46e5 !important;
+  border-top: 1px solid #f59e0b !important;
+  box-shadow: 0 -5px 25px #f59e0bba !important;
 }
 
 .v5-brand-mark::before {
@@ -910,18 +1773,6 @@ body,
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   padding: 0 20px;
-}
-
-/* V5 Bento Card */
-.v5-bento-card {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .v5-bento-card::before {

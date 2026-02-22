@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Feature Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --accent: #10b981;
+            --bg-dark: #0f172a;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 2rem;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 50%, var(--bg-dark) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0.15;
+            top: -200px;
+            right: -200px;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+            opacity: 0.15;
+            bottom: -100px;
+            left: -100px;
+            animation: pulse 4s ease-in-out infinite 2s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.15;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.25;
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 50%, var(--secondary) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 0% center;
+            }
+
+            100% {
+                background-position: 200% center;
+            }
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1.5rem 2rem;
+            background: var(--glass);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Sections */
+        section {
+            padding: 5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Module Cards */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+        }
+
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .module-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .module-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Panel Tabs */
+        .panel-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .panel-tab:hover,
+        .panel-tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+        }
+
+        .panel-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .panel-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Phone Mockup */
+        .phone-mockup {
+            max-width: 375px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+        }
+
+        .phone-screen {
+            background: #1e293b;
+            border-radius: 32px;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .phone-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 2rem 1.5rem 1.5rem;
+            text-align: center;
+        }
+
+        .phone-header h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .phone-body {
+            padding: 1rem;
+        }
+
+        /* Demo Cards inside phone */
+        .demo-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .demo-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .demo-card-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .demo-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .demo-card-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Feature List */
+        .feature-list {
+            max-width: 400px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-item h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .feature-item p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Panel Layout */
+        .panel-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .panel-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Flow Diagram */
+        .diagram-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        .diagram-container h3 {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mermaid {
+            background: transparent !important;
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+        }
+
+        /* Architecture Cards */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .arch-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .arch-card h4 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--glass);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 0.25rem;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        footer p {
+            color: var(--text-muted);
+        }
+
+        /* Phone header subtitle */
+        .phone-header-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* Panel header gradients */
+        .phone-header--driver {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+
+        .phone-header--kisan {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .phone-header--vendor {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .phone-header--mess {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+
+        .phone-header--admin {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .phone-header--village {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .phone-header--conductor {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .phone-header--logistics {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        /* Demo card icon gradient variants */
+        .demo-card-icon--green {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .demo-card-icon--orange {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+
+        .demo-card-icon--blue {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .demo-card-icon--amber {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .demo-card-icon--pink {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+
+        .demo-card-icon--cyan {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .demo-card-icon--teal {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .demo-card-icon--red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        /* Section heading spacing */
+        .section-heading {
+            margin: 2rem 0 1rem;
+        }
+
+        /* Architecture card code style */
+        .arch-card--code {
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .arch-card--code pre {
+            color: var(--text-muted);
+        }
+
+        /* Footer text variants */
+        .footer-logo {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-copyright {
+            margin-top: 1rem;
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .stats {
+                gap: 1rem;
+            }
+
+            .stat {
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-inner">
+            <div class="nav-logo">🚐 VillageLink</div>
+            <div class="nav-links">
+                <a href="#modules">Services</a>
+                <a href="#panels">Panels</a>
+                <a href="#flows">Flow Diagrams</a>
+                <a href="#architecture">Architecture</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>VillageLink</h1>
+            <p>India's First Rural Super App - Connecting villages with transport, food, and digital services</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">12+</div>
+                    <div class="stat-label">User Roles</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">Service Modules</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">80+</div>
+                    <div class="stat-label">Components</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Modules -->
+    <section id="modules">
+        <h2 class="section-title">Service Modules</h2>
+        <p class="section-subtitle">Everything rural India needs in one powerful super app</p>
+        <div class="modules-grid">
+            <div class="module-card fade-in">
+                <div class="module-icon">🚐</div>
+                <h3>YatraLink</h3>
+                <p>Book buses, autos, shared rides with real-time GPS tracking and QR tickets</p>
+            </div>
+            <div class="module-card fade-in">
+                <div class="module-icon">🍲</div>
+                <h3>FoodLink</h3>
+                <p>Order from mess, restaurants, street vendors with subscriptions & table booking</p>
+            </div>
+            <div class="module-card fade-in">
+                <div class="module-icon">🌾</div>
+                <h3>GramMandi</h3>
+                <p>Fresh produce marketplace with mandi rates, bidding & cold storage booking</p>
+            </div>
+            <div class="module-card fade-in">
+                <div class="module-icon">📦</div>
+                <h3>CargoLink</h3>
+                <p>Inter-village parcel delivery with real-time tracking</p>
+            </div>
+            <div class="module-card fade-in">
+                <div class="module-icon">🌱</div>
+                <h3>AeroLink</h3>
+                <p>Smart aeroponics IoT dashboard for modern farming</p>
+            </div>
+            <div class="module-card fade-in">
+                <div class="module-icon">💰</div>
+                <h3>Payments</h3>
+                <p>UPI, wallet, GramCoin rewards & credit system</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Role-Based Panels -->
+    <section id="panels">
+        <h2 class="section-title">Role-Based Panels</h2>
+        <p class="section-subtitle">Specialized interfaces for every user type</p>
+
+        <div class="panel-tabs">
+            <div class="panel-tab active" data-panel="passenger">👤 Passenger</div>
+            <div class="panel-tab" data-panel="driver">🚗 Driver</div>
+            <div class="panel-tab" data-panel="kisan">🌾 Kisan</div>
+            <div class="panel-tab" data-panel="vendor">🏪 Vendor</div>
+            <div class="panel-tab" data-panel="mess">🍱 Mess</div>
+            <div class="panel-tab" data-panel="admin">👔 Admin</div>
+            <div class="panel-tab" data-panel="village">🏘️ Village Mgr</div>
+            <div class="panel-tab" data-panel="conductor">🎫 Conductor</div>
+            <div class="panel-tab" data-panel="logistics">📦 Logistics</div>
+        </div>
+
+        <!-- Passenger Panel -->
+        <div class="panel-content active" id="passenger">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">🎫</div>
+                        <div>
+                            <h4>Smart Booking</h4>
+                            <p>Select route, passengers, and pay via UPI or GramCoin wallet</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📍</div>
+                        <div>
+                            <h4>Live Tracking</h4>
+                            <p>Track your vehicle in real-time with ETA updates</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🛡️</div>
+                        <div>
+                            <h4>Guardian Mode</h4>
+                            <p>Share live trip with family for safety</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🍲</div>
+                        <div>
+                            <h4>Food on the Go</h4>
+                            <p>Pre-order food from dhabas on your route</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header">
+                            <h4>👤 Passenger Dashboard</h4>
+                            <p class="phone-header-subtitle">Welcome, Rahul</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">🎫</div>
+                                    <div>
+                                        <div class="demo-card-title">Book a Ride</div>
+                                        <div class="demo-card-subtitle">Chenari → Dehri</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">📍</div>
+                                    <div>
+                                        <div class="demo-card-title">Live Tracking</div>
+                                        <div class="demo-card-subtitle">Bus arriving in 5 min</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">💰</div>
+                                    <div>
+                                        <div class="demo-card-title">Wallet Balance</div>
+                                        <div class="demo-card-subtitle">₹450 + 120 GramCoins</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Panel -->
+        <div class="panel-content" id="driver">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Earnings Dashboard</h4>
+                            <p>Track daily, weekly, monthly earnings with detailed breakdown</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🎟️</div>
+                        <div>
+                            <h4>Ride Requests</h4>
+                            <p>Accept passenger bookings and manage schedule</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📋</div>
+                        <div>
+                            <h4>Digital Ledger</h4>
+                            <p>Track fuel, maintenance, and all expenses</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📄</div>
+                        <div>
+                            <h4>Document Vault</h4>
+                            <p>Store DL, RC, Insurance with expiry alerts</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--driver">
+                            <h4>🚗 Driver Dashboard</h4>
+                            <p class="phone-header-subtitle">Ramesh Kumar</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">💵</div>
+                                    <div>
+                                        <div class="demo-card-title">Today's Earnings</div>
+                                        <div class="demo-card-subtitle">₹2,450 from 12 rides</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--orange">🎟️</div>
+                                    <div>
+                                        <div class="demo-card-title">New Request</div>
+                                        <div class="demo-card-subtitle">3 passengers → Sasaram</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">📦</div>
+                                    <div>
+                                        <div class="demo-card-title">Cargo Space</div>
+                                        <div class="demo-card-subtitle">2 parcels loaded</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kisan Panel -->
+        <div class="panel-content" id="kisan">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📈</div>
+                        <div>
+                            <h4>Mandi Rates</h4>
+                            <p>Live prices from nearby mandis with trends</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🔬</div>
+                        <div>
+                            <h4>Dr. Kisan AI</h4>
+                            <p>AI-powered crop disease diagnosis from photos</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">❄️</div>
+                        <div>
+                            <h4>Cold Storage</h4>
+                            <p>Book storage space to prevent crop rot</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🌱</div>
+                        <div>
+                            <h4>Aeroponics</h4>
+                            <p>IoT dashboard for smart farming towers</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--kisan">
+                            <h4>🌾 Kisan Dashboard</h4>
+                            <p class="phone-header-subtitle">Ram Prasad</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">🌾</div>
+                                    <div>
+                                        <div class="demo-card-title">Wheat - ₹2,150/q</div>
+                                        <div class="demo-card-subtitle">↑ 3% from yesterday</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--blue">🌱</div>
+                                    <div>
+                                        <div class="demo-card-title">Tower 1: Tomato</div>
+                                        <div class="demo-card-subtitle">pH 6.2 | EC 1.8 | 85% Health</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">📦</div>
+                                    <div>
+                                        <div class="demo-card-title">My Produce</div>
+                                        <div class="demo-card-subtitle">50kg Potato listed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendor Panel -->
+        <div class="panel-content" id="vendor">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">🏪</div>
+                        <div>
+                            <h4>Digital Storefront</h4>
+                            <p>List products with photos and prices</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📒</div>
+                        <div>
+                            <h4>Digital Khata</h4>
+                            <p>Track customer credits (Udhari) digitally</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🧼</div>
+                        <div>
+                            <h4>Hygiene Audit</h4>
+                            <p>AI-verified hygiene scores attract more customers</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Analytics</h4>
+                            <p>Sales reports and customer insights</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--vendor">
+                            <h4>🏪 Vendor Dashboard</h4>
+                            <p class="phone-header-subtitle">Sharma General Store</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">📦</div>
+                                    <div>
+                                        <div class="demo-card-title">New Orders</div>
+                                        <div class="demo-card-subtitle">5 pending orders</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--amber">💵</div>
+                                    <div>
+                                        <div class="demo-card-title">Today's Sales</div>
+                                        <div class="demo-card-subtitle">₹4,850</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">📒</div>
+                                    <div>
+                                        <div class="demo-card-title">Pending Udhari</div>
+                                        <div class="demo-card-subtitle">₹2,300 from 8 customers</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mess Panel -->
+        <div class="panel-content" id="mess">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📋</div>
+                        <div>
+                            <h4>Menu Management</h4>
+                            <p>Update daily menu with photos and prices</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📅</div>
+                        <div>
+                            <h4>Subscriptions</h4>
+                            <p>Manage weekly/monthly meal plans</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🎟️</div>
+                        <div>
+                            <h4>Token System</h4>
+                            <p>Digital tokens for quick service</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Waste Tracker</h4>
+                            <p>AI-powered food waste reduction</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--mess">
+                            <h4>🍱 Mess Dashboard</h4>
+                            <p class="phone-header-subtitle">Maa Ki Rasoi</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--pink">📋</div>
+                                    <div>
+                                        <div class="demo-card-title">Lunch Orders</div>
+                                        <div class="demo-card-subtitle">42 confirmed, 8 pending</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">📅</div>
+                                    <div>
+                                        <div class="demo-card-title">Active Subscribers</div>
+                                        <div class="demo-card-subtitle">28 monthly passes</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">✅</div>
+                                    <div>
+                                        <div class="demo-card-title">Today's Menu</div>
+                                        <div class="demo-card-subtitle">Dal, Rice, Sabzi, Roti</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div class="panel-content" id="admin">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Analytics Dashboard</h4>
+                            <p>Real-time metrics and system health</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">👥</div>
+                        <div>
+                            <h4>User Management</h4>
+                            <p>Verify, ban, or manage all users</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💰</div>
+                        <div>
+                            <h4>Revenue Tracking</h4>
+                            <p>Monitor transactions and settlements</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⚙️</div>
+                        <div>
+                            <h4>System Config</h4>
+                            <p>Manage routes, pricing, and settings</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--admin">
+                            <h4>👔 Admin Panel</h4>
+                            <p class="phone-header-subtitle">System Administrator</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">📈</div>
+                                    <div>
+                                        <div class="demo-card-title">System Health</div>
+                                        <div class="demo-card-subtitle">98.5% uptime</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--blue">👥</div>
+                                    <div>
+                                        <div class="demo-card-title">Total Users</div>
+                                        <div class="demo-card-subtitle">2,450 registered</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--amber">⚠️</div>
+                                    <div>
+                                        <div class="demo-card-title">Pending Verifications</div>
+                                        <div class="demo-card-subtitle">12 drivers awaiting</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Village Manager Panel -->
+        <div class="panel-content" id="village">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">👥</div>
+                        <div>
+                            <h4>Beneficiary Management</h4>
+                            <p>Register and manage village members</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🎫</div>
+                        <div>
+                            <h4>Proxy Transactions</h4>
+                            <p>Book tickets on behalf of villagers</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💵</div>
+                        <div>
+                            <h4>Commission Earnings</h4>
+                            <p>Earn from every transaction</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Village Analytics</h4>
+                            <p>Track adoption and usage stats</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--village">
+                            <h4>🏘️ Village Manager</h4>
+                            <p class="phone-header-subtitle">Chenari Village</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--cyan">👥</div>
+                                    <div>
+                                        <div class="demo-card-title">Beneficiaries</div>
+                                        <div class="demo-card-subtitle">156 registered</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">💵</div>
+                                    <div>
+                                        <div class="demo-card-title">This Month</div>
+                                        <div class="demo-card-subtitle">₹4,200 earned</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">🎫</div>
+                                    <div>
+                                        <div class="demo-card-title">Today's Bookings</div>
+                                        <div class="demo-card-subtitle">8 proxy transactions</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conductor Panel -->
+        <div class="panel-content" id="conductor">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📷</div>
+                        <div>
+                            <h4>QR Scanner</h4>
+                            <p>Scan and validate passenger tickets</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">👥</div>
+                        <div>
+                            <h4>Passenger List</h4>
+                            <p>View all booked passengers for trip</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💵</div>
+                        <div>
+                            <h4>Cash Collection</h4>
+                            <p>Track cash vs digital payments</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Trip Summary</h4>
+                            <p>End-of-trip collection report</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--conductor">
+                            <h4>🎫 Conductor Panel</h4>
+                            <p class="phone-header-subtitle">Bus #JH-14-1234</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--teal">📷</div>
+                                    <div>
+                                        <div class="demo-card-title">Scan Ticket</div>
+                                        <div class="demo-card-subtitle">Tap to open scanner</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">👥</div>
+                                    <div>
+                                        <div class="demo-card-title">Passengers</div>
+                                        <div class="demo-card-subtitle">18 boarded / 24 expected</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--amber">💵</div>
+                                    <div>
+                                        <div class="demo-card-title">Cash Collected</div>
+                                        <div class="demo-card-subtitle">₹1,240 this trip</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logistics Panel -->
+        <div class="panel-content" id="logistics">
+            <div class="panel-layout">
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon">📦</div>
+                        <div>
+                            <h4>Parcel Hub</h4>
+                            <p>Manage incoming and outgoing parcels</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">🚛</div>
+                        <div>
+                            <h4>Fleet Tracking</h4>
+                            <p>Monitor all vehicles in real-time</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📍</div>
+                        <div>
+                            <h4>Route Optimization</h4>
+                            <p>AI-powered delivery routes</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div>
+                            <h4>Analytics</h4>
+                            <p>Delivery times and efficiency metrics</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-header phone-header--logistics">
+                            <h4>📦 Logistics Hub</h4>
+                            <p class="phone-header-subtitle">Rohtas District Hub</p>
+                        </div>
+                        <div class="phone-body">
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--red">📦</div>
+                                    <div>
+                                        <div class="demo-card-title">Active Shipments</div>
+                                        <div class="demo-card-subtitle">23 in transit</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon">🚛</div>
+                                    <div>
+                                        <div class="demo-card-title">Fleet Status</div>
+                                        <div class="demo-card-subtitle">8/10 vehicles active</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="demo-card">
+                                <div class="demo-card-header">
+                                    <div class="demo-card-icon demo-card-icon--green">✅</div>
+                                    <div>
+                                        <div class="demo-card-title">Delivered Today</div>
+                                        <div class="demo-card-subtitle">45 parcels</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Flow Diagrams -->
+    <section id="flows">
+        <h2 class="section-title">📐 User Flow Diagrams</h2>
+        <p class="section-subtitle">Interactive flow diagrams showing how each feature works</p>
+
+        <div class="diagram-container">
+            <h3>🔐 Authentication Flow</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                participant U as 👤 User
+                participant APP as 📱 App
+                participant AUTH as 🔐 Auth
+                participant DB as 💾 Database
+                U->>APP: Open App
+                APP->>APP: Check Token
+                alt Token Valid
+                APP->>U: Dashboard
+                else Token Invalid
+                APP->>U: Login Screen
+                U->>APP: Phone + OTP
+                APP->>AUTH: Verify OTP
+                AUTH->>DB: Find/Create User
+                DB-->>AUTH: User Data
+                AUTH-->>APP: JWT Token
+                APP->>U: Role Dashboard
+                end
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <h3>🎫 Ticket Booking Flow</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                participant P as 👤 Passenger
+                participant APP as 📱 App
+                participant API as 🖥️ Backend
+                participant PAY as 💳 Payment
+                P->>APP: Select Route
+                APP->>API: Search Vehicles
+                API-->>APP: Available Options
+                P->>APP: Choose Vehicle
+                P->>APP: Add Passengers
+                P->>APP: Select Payment
+                APP->>PAY: Process
+                PAY-->>APP: Success
+                APP->>API: Create Ticket
+                API-->>APP: QR Ticket
+                APP->>P: Show QR Code
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <h3>🍲 Food Order Flow</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                participant C as 👤 Customer
+                participant APP as 📱 App
+                participant V as 🏪 Vendor
+                participant PAY as 💳 Payment
+                C->>APP: Browse FoodLink
+                APP->>C: Nearby Vendors
+                C->>APP: Select Items
+                C->>APP: Place Order
+                APP->>PAY: Payment
+                PAY-->>APP: Success
+                APP->>V: New Order Alert
+                V->>APP: Accept Order
+                V->>APP: Mark Ready
+                APP->>C: Ready Notification
+                C->>V: Show Token
+                V->>APP: Complete
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture">
+        <h2 class="section-title">🏗️ System Architecture</h2>
+        <p class="section-subtitle">Technical overview for team members</p>
+
+        <div class="diagram-container">
+            <h3>⚙️ High-Level Architecture</h3>
+            <div class="mermaid">
+                graph TB
+                subgraph Frontend
+                WEB[🌐 React Web]
+                MOBILE[📱 Flutter App]
+                end
+                subgraph Gateway
+                API[🔀 Express API :3000]
+                end
+                subgraph Services
+                AUTH[🔐 Auth]
+                BOOKING[🎫 Booking]
+                FOOD[🍲 Food]
+                PAY[💳 Payment]
+                end
+                subgraph Data
+                MONGO[(🍃 MongoDB)]
+                REDIS[(⚡ Redis)]
+                end
+                WEB --> API
+                MOBILE --> API
+                API --> AUTH
+                API --> BOOKING
+                API --> FOOD
+                API --> PAY
+                AUTH --> MONGO
+                BOOKING --> MONGO
+                FOOD --> REDIS
+            </div>
+        </div>
+
+        <h3 class="section-heading">🛠️ Tech Stack</h3>
+        <div class="arch-grid">
+            <div class="arch-card">
+                <h4>🌐 Frontend</h4>
+                <span class="tech-badge">React</span>
+                <span class="tech-badge">TypeScript</span>
+                <span class="tech-badge">Vite</span>
+                <span class="tech-badge">TailwindCSS</span>
+            </div>
+            <div class="arch-card">
+                <h4>📱 Mobile</h4>
+                <span class="tech-badge">Flutter</span>
+                <span class="tech-badge">Dart</span>
+                <span class="tech-badge">Capacitor</span>
+            </div>
+            <div class="arch-card">
+                <h4>🖥️ Backend</h4>
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">Express</span>
+                <span class="tech-badge">Socket.io</span>
+            </div>
+            <div class="arch-card">
+                <h4>💾 Database</h4>
+                <span class="tech-badge">MongoDB</span>
+                <span class="tech-badge">PostgreSQL</span>
+                <span class="tech-badge">Redis</span>
+            </div>
+            <div class="arch-card">
+                <h4>💳 Payments</h4>
+                <span class="tech-badge">Razorpay</span>
+                <span class="tech-badge">UPI</span>
+                <span class="tech-badge">Wallet</span>
+            </div>
+            <div class="arch-card">
+                <h4>☁️ Deployment</h4>
+                <span class="tech-badge">Render</span>
+                <span class="tech-badge">Docker</span>
+                <span class="tech-badge">GitHub Actions</span>
+            </div>
+        </div>
+
+        <h3 class="section-heading">📁 Component Structure</h3>
+        <div class="arch-card arch-card--code">
+            <pre>
+📦 VillageLink/
+├── 📂 components/          # 80+ React components
+│   ├── App.tsx            # Main router
+│   ├── PassengerView.tsx  # User interface
+│   ├── DriverView.tsx     # Driver dashboard
+│   ├── KisanApp.tsx       # Farmer module
+│   ├── VendorView.tsx     # Vendor panel
+│   └── ...
+├── 📂 services/            # API services
+├── 📂 backend/             # Express server
+├── 📂 microservices/       # Service workers
+├── 📂 flutter_app/         # Mobile app
+└── 📂 docs/                # Documentation
+            </pre>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-logo">🚐 VillageLink</p>
+        <p>Version 3.5 | Built with ❤️ for Rural India</p>
+        <p class="footer-copyright">© 2026 VillageLink Team</p>
+    </footer>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#94a3b8',
+                secondaryColor: '#1e293b',
+                tertiaryColor: '#0f172a'
+            }
+        });
+
+        // Panel Tab Switching
+        document.querySelectorAll('.panel-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.panel).classList.add('active');
+            });
+        });
+
+        // Scroll Animation
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

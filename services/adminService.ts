@@ -118,3 +118,14 @@ export const updatePricingConfig = async (config: PricingConfig): Promise<boolea
         return res.ok;
     } catch (e) { return false; }
 };
+
+export const searchTicketHistory = async (ticketId: string): Promise<any> => {
+    try {
+        const res = await fetch(`${API_URL}/ticket/${ticketId}`, { headers: getHeaders() });
+        if (!res.ok) throw new Error("Ticket not found");
+        return await res.json();
+    } catch (e) {
+        console.error(e);
+        return null;
+    }
+};

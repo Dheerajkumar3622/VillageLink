@@ -165,24 +165,22 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   };
 
   return (
-    <div className={`relative space-y-2 ${disabled ? 'opacity-60 pointer-events-none' : ''}`} ref={wrapperRef}>
-      <div className="flex justify-between items-center pl-1">
-        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</label>
+    <div className={`relative space-y-1.5 ${disabled ? 'opacity-60 pointer-events-none' : ''}`} ref={wrapperRef}>
+      <div className="flex justify-between items-center px-1">
+        <label className="label-match uppercase">{label}</label>
         {!disabled && (
-          <div className="flex gap-2">
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleAutoDetect(); }}
-              className="text-[10px] flex items-center gap-1 text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-full hover:bg-brand-100 transition-colors"
-            >
-              {isLocating ? <span className="animate-spin">⌛</span> : <Navigation size={10} />}
-              {isLocating ? 'Locating...' : 'Auto-detect'}
-            </button>
-          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleAutoDetect(); }}
+            className="auto-detect-match flex items-center gap-1 shadow-sm"
+          >
+            {isLocating ? <span className="animate-spin text-[8px]">⌛</span> : <Navigation size={9} />}
+            {isLocating ? 'Locating...' : 'Auto-detect'}
+          </button>
         )}
       </div>
       
       <div className="relative group">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-500 dark:text-neon-cyan transition-colors z-10">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#4F46E5] z-10">
           {icon || <MapPin size={18} />}
         </div>
         
@@ -195,20 +193,20 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
              if (!isOpen) setIsOpen(true);
           }}
           onClick={() => !disabled && setIsOpen(true)}
-          className={`w-full pl-12 pr-12 py-4 bg-white/50 dark:bg-slate-900/50 border ${isListening ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-white/60 dark:border-slate-700'} rounded-xl text-lg font-medium shadow-sm focus:border-brand-500 outline-none transition-all backdrop-blur-sm text-slate-900 dark:text-white`}
+          className="w-full pl-12 pr-12 py-3.5 bg-white/40 border border-[#4F46E5]/30 rounded-2xl text-base font-bold shadow-sm focus:bg-white/60 focus:border-[#4F46E5] outline-none transition-all backdrop-blur-md text-black placeholder:text-black/40"
           disabled={disabled}
         />
         
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {searchTerm && !disabled && !isListening && (
-            <button onClick={handleClear} className="p-1 text-slate-400 hover:text-slate-600">
+            <button onClick={handleClear} className="p-1 text-black/60 hover:text-black">
               <X size={16} />
             </button>
           )}
           {!disabled && (
             <button 
               onClick={handleVoiceSearch} 
-              className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-slate-800'}`}
+              className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'text-[#4F46E5]/70 hover:text-[#4F46E5]'}`}
             >
               {isListening ? <MicOff size={16} /> : <Mic size={16} />}
             </button>

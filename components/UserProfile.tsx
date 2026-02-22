@@ -124,7 +124,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                 return (
                     <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="bg-brand-50 dark:bg-brand-900/30 p-2.5 rounded-full text-brand-600 dark:text-brand-400">
+                            <div className="bg-luxe-sienna/10 dark:bg-luxe-sienna/20 p-2.5 rounded-full text-luxe-sienna">
                                 <Bus size={18} />
                             </div>
                             <div>
@@ -169,7 +169,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                 return (
                     <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="bg-indigo-50 dark:bg-indigo-900/30 p-2.5 rounded-full text-indigo-600 dark:text-indigo-400">
+                            <div className="bg-luxe-teal/10 dark:bg-luxe-teal/20 p-2.5 rounded-full text-luxe-teal">
                                 <Car size={18} />
                             </div>
                             <div>
@@ -192,7 +192,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                 return (
                     <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="bg-orange-50 dark:bg-orange-900/30 p-2.5 rounded-full text-orange-600 dark:text-orange-400">
+                            <div className="bg-luxe-gold/10 dark:bg-luxe-gold/20 p-2.5 rounded-full text-luxe-gold">
                                 <Package size={18} />
                             </div>
                             <div>
@@ -226,7 +226,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
 
             <div className="px-4 mb-6">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-brand-500/20">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#BE5103] to-[#FFCE1B] rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-luxe-sienna/20">
                         {user.name.charAt(0)}
                     </div>
                     <div>
@@ -237,7 +237,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                             <span className="font-mono">{user.id}</span>
                         </div>
                         {user.role === 'ADMIN' && onShowAdmin && (
-                            <button onClick={onShowAdmin} className="text-[10px] font-bold bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 active:scale-95 transition-transform">
+                            <button onClick={onShowAdmin} className="text-[10px] font-bold bg-[#BE5103] text-white px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-transform">
                                 <ShieldCheck size={12} /> Admin Panel
                             </button>
                         )}
@@ -266,7 +266,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
 
             {activeTab === 'WALLET' && wallet && (
                 <div className="animate-fade-in space-y-6 px-4">
-                    <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-[32px] p-6 text-white shadow-lg relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#BE5103] to-[#FFCE1B] rounded-[32px] p-6 text-white shadow-lg relative overflow-hidden">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
                         <p className="text-xs font-bold uppercase opacity-80 mb-1 flex items-center gap-1"><Gem size={12} /> GramCoin Balance</p>
                         <h3 className="text-4xl font-bold mb-4">{wallet.balance}</h3>
@@ -302,7 +302,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                             <p className="text-[10px] text-slate-400">{new window.Date(tx.timestamp).toLocaleDateString()}</p>
                                         </div>
                                     </div>
-                                    <span className={`font-bold text-sm ${tx.type === 'EARN' ? 'text-emerald-500' : 'text-slate-500'}`}>
+                                    <span className={`font-bold text-sm ${tx.type === 'EARN' ? 'text-luxe-teal' : 'text-slate-500'}`}>
                                         {tx.type === 'EARN' ? '+' : '-'}{tx.amount}
                                     </span>
                                 </div>
@@ -315,13 +315,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
             {activeTab === 'HISTORY' && (
                 <div className="animate-fade-in px-4">
                     <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                        <button onClick={() => setFilter('ALL')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'ALL' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>All</button>
-                        <button onClick={() => setFilter('TRIPS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'TRIPS' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Trips</button>
-                        <button onClick={() => setFilter('PASSES')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PASSES' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Passes</button>
-                        <button onClick={() => setFilter('PARCELS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PARCELS' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Parcels</button>
+                        <button onClick={() => setFilter('ALL')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'ALL' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>All</button>
+                        <button onClick={() => setFilter('TRIPS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'TRIPS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Trips</button>
+                        <button onClick={() => setFilter('PASSES')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PASSES' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Passes</button>
+                        <button onClick={() => setFilter('PARCELS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PARCELS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Parcels</button>
                         <div className="flex-1"></div>
                         {onShowPayments && (
-                            <button onClick={onShowPayments} className="px-4 py-1.5 rounded-full text-xs font-bold bg-brand-500 text-white shadow-lg shadow-brand-500/20 whitespace-nowrap flex items-center gap-2">
+                            <button onClick={onShowPayments} className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#BE5103] text-white shadow-lg shadow-[#BE5103]/20 whitespace-nowrap flex items-center gap-2">
                                 <CreditCard size={14} /> Payments
                             </button>
                         )}

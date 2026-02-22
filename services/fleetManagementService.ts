@@ -259,10 +259,10 @@ export async function getRoster(date: string): Promise<DigitalRoster | null> {
         const res = await fetch(`${API_BASE_URL}/api/fleet/roster/${date}`, {
             headers: getHeaders()
         });
-        if (!res.ok) return getMockRoster(date);
+        if (!res.ok) return generateLocalRoster(date);
         return await res.json();
     } catch {
-        return getMockRoster(date);
+        return generateLocalRoster(date);
     }
 }
 

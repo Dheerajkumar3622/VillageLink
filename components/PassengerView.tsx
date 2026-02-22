@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Ticket, TicketStatus, PaymentMethod, User, LocationData, Pass, SeatConfig, ChurnRiskAnalysis, RentalVehicle, RentalBooking, ParcelBooking, Wallet as WalletType, GeoLocation, CrowdForecast, DynamicFareResult, MandiRate, JobOpportunity, MarketItem, PilgrimagePackage, NewsItem, Shop, Product, LostItem, LeafDiagnosisResult, BusState } from '../types';
 import { RENTAL_FLEET, TRANSLATIONS } from '../constants';
 import { generateTicketId, generatePassId, generateRentalId, generateParcelId, saveTicket, savePass, getStoredTickets, getMyPasses, bookRental, bookParcel, getAllParcels, getActiveBuses } from '../services/transportService';
-import { calculateDynamicFare, getCrowdForecast, formatCurrency, analyzeChurnRisk, calculateLogisticsCost, getMandiRates, getJobs, getMarketItems, getPackages, verifyGenderBiometrics, diagnoseLeaf, estimateParcelSize, findPoolMatches } from '../services/mlService';
+import { calculateDynamicFare, getCrowdForecast, formatCurrency, analyzeChurnRisk, calculateLogisticsCost, getMandiRates, getJobs, getMarketItems, getPackages, diagnoseLeaf, estimateParcelSize, findPoolMatches } from '../services/mlService';
 import { getWallet, mintPassNFT, createEscrow, earnGramCoin, spendGramCoin } from '../services/blockchainService';
 import { signTransaction, updateLastLocation } from '../services/securityService';
 import { fetchSmartRoute } from '../services/graphService';
@@ -21,7 +21,7 @@ import { RouteMap } from './RouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, ShieldCheck, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Bike, Replace, Mic, Utensils, MapPin } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
 
@@ -73,7 +73,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     const [logisticsPoolFound, setLogisticsPoolFound] = useState(false);
     const [voiceGuideActive, setVoiceGuideActive] = useState(false);
 
-    const [gramSetuMode, setGramSetuMode] = useState(false);
+
 
     // SURAKSHA KAVACH (AUDIO RECORDING) STATE
     const [isAudioShieldActive, setIsAudioShieldActive] = useState(false);
@@ -88,15 +88,10 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
     const [showAR, setShowAR] = useState(false);
     const [mandiRates, setMandiRates] = useState<MandiRate[]>([]);
-    const [didiMode, setDidiMode] = useState(false);
-    const [showChuttaModal, setShowChuttaModal] = useState(false);
-    const [isDidiVerified, setIsDidiVerified] = useState(user.isDidiVerified || false);
-    const [showDidiVerification, setShowDidiVerification] = useState(false);
-    const [verificationStep, setVerificationStep] = useState<'START' | 'VOICE' | 'FACE' | 'PROCESSING' | 'SUCCESS' | 'FAIL'>('START');
+    const [packages, setPackages] = useState<PilgrimagePackage[]>([]);
 
     const [jobs, setJobs] = useState<JobOpportunity[]>([]);
     const [marketItems, setMarketItems] = useState<MarketItem[]>([]);
-    const [packages, setPackages] = useState<PilgrimagePackage[]>([]);
     const [showPayments, setShowPayments] = useState(false);
     const [showVendorMap, setShowVendorMap] = useState(false);
     const [showVendorAdmin, setShowVendorAdmin] = useState(false);
@@ -195,12 +190,12 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
         // If user is on an active trip (BOARDED), start recording if enabled
         const isOnTrip = activeTickets.some(t => t.status === 'BOARDED');
 
-        if (isOnTrip && !isAudioShieldActive && (didiMode || user.gender === 'FEMALE')) {
+        if (isOnTrip && !isAudioShieldActive && user.gender === 'FEMALE') {
             startAudioShield();
         } else if (!isOnTrip && isAudioShieldActive) {
             stopAudioShield();
         }
-    }, [activeTickets, didiMode, user.gender]);
+    }, [activeTickets, user.gender]);
 
     const startAudioShield = async () => {
         try {
@@ -260,26 +255,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     const subsidy = isHighTrafficRoute ? 5 : 0;
                     setCargoSubsidy(subsidy);
 
-                    let basePricing = 0;
-                    if (gramSetuMode) {
-                        basePricing = routeData.distance <= 5 ? 10 : 10 + ((routeData.distance - 5) * 15);
-                    } else {
-                        const df = await calculateDynamicFare(routeData.distance, Date.now());
-                        basePricing = df.totalFare;
-                        setFareDetails(df);
-                    }
-
-                    if (gramSetuMode) {
-                        setFareDetails({
-                            totalFare: basePricing,
-                            baseFare: basePricing,
-                            surgeAmount: 0,
-                            discountAmount: 0,
-                            isRushHour: false,
-                            isHappyHour: false,
-                            message: "Feeder Rate"
-                        });
-                    }
+                    const df = await calculateDynamicFare(routeData.distance, Date.now());
+                    let basePricing = df.totalFare;
+                    setFareDetails(df);
 
                     let monthly = basePricing * 20;
                     if (seatConfig === 'STANDING') monthly = monthly * 0.80;
@@ -310,7 +288,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
         updateRoute();
 
-    }, [fromLocation, toLocation, seatConfig, isBuyingPass, churnAnalysis, currentView, selectedVehicle, tripType, logisticsWeight, logisticsItemType, passType, marketBooking, gramSetuMode]);
+    }, [fromLocation, toLocation, seatConfig, isBuyingPass, churnAnalysis, currentView, selectedVehicle, tripType, logisticsWeight, logisticsItemType, passType, marketBooking]);
 
     const speak = (text: string) => {
         if (!voiceGuideActive) return;
@@ -356,48 +334,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
         alert(`Confirm delivery for ${product.name}. Please select your Drop location.`);
     };
 
-    const handleDidiToggle = () => {
-        speak(didiMode ? "Didi Rath Disabled" : "Didi Rath Enabled");
-        if (didiMode) {
-            setDidiMode(false);
-            return;
-        }
-        if (!isDidiVerified) {
-            setVerificationStep('START');
-            setShowDidiVerification(true);
-        } else {
-            setDidiMode(true);
-        }
-    };
-
-    const handleGramSetuToggle = () => {
-        setGramSetuMode(!gramSetuMode);
-        speak(gramSetuMode ? "Switching to Main Bus Mode" : "Gram Setu Feeder Mode Active");
-        if (!gramSetuMode) {
-            // If activating, hint user to find nearest hub
-            alert("Gram-Setu Active: Locating nearest E-Rickshaws for last-mile connectivity.");
-        }
-    };
 
 
-    const processBiometricCheck = async () => {
-        setVerificationStep('PROCESSING');
-
-        const voiceResult = await verifyGenderBiometrics('VOICE');
-        if (!voiceResult.verified) {
-            setVerificationStep('FAIL');
-            return;
-        }
-
-        const faceResult = await verifyGenderBiometrics('FACE');
-        if (!faceResult.verified) {
-            setVerificationStep('FAIL');
-            return;
-        }
-
-        setIsDidiVerified(true);
-        setVerificationStep('SUCCESS');
-    };
 
     const handleLeafScan = async () => {
         setIsScanningLeaf(true);
@@ -454,7 +392,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 totalPrice: totalCost,
                 routePath: calculatedPath,
                 seatNumber: selectedSeat || undefined,
-                isDidiRath: didiMode,
                 hasLivestock,
                 hasInsurance,
                 recipientPhone: isGift ? recipientPhone : undefined,
@@ -575,7 +512,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 routePath: calculatedPath,
                 digitalSignature: signature,
                 seatNumber: selectedSeat || undefined,
-                isDidiRath: didiMode,
                 hasLivestock,
                 hasInsurance,
                 recipientPhone: isGift ? recipientPhone : undefined,
@@ -667,7 +603,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     {activeTab === 'PASSES' && (
                         <div className="px-4 py-6 space-y-6">
                             <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                                <TicketIcon className="text-brand-500" /> My Passes
+                                <TicketIcon className="text-luxe-sienna" /> My Passes
                             </h2>
                             {myPasses.length === 0 ? (
                                 <div className="text-center py-10 bg-slate-100 dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700">
@@ -688,7 +624,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                 <div className="mb-8">
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest mb-1">{pass.type} PASS</p>
+                                                            <p className="text-[10px] font-bold text-luxe-sienna uppercase tracking-widest mb-1">{pass.type} PASS</p>
                                                             <h3 className="text-xl font-bold text-slate-800 dark:text-white">{pass.from} <span className="text-slate-300 mx-1">↔</span> {pass.to}</h3>
                                                         </div>
                                                         <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
@@ -707,7 +643,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                     </div>
                                                     <button
                                                         onClick={() => handleShowQR(pass.id)}
-                                                        className="bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-brand-500/20 hover:scale-105 transition-transform"
+                                                        className="bg-luxe-sienna text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-luxe-sienna/20 hover:scale-105 transition-transform"
                                                     >
                                                         Open QR
                                                     </button>
@@ -725,7 +661,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                             <div className="flex items-center gap-3 mb-4">
                                 <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} aria-label="Go Back" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><ArrowLeft size={20} /></button>
                                 <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                                    <div className="bg-orange-500 p-1.5 rounded-lg text-white shadow-lg shadow-orange-500/20"><Package size={20} /></div>
+                                    <div className="bg-luxe-teal p-1.5 rounded-lg text-white shadow-lg shadow-luxe-teal/20"><Package size={20} /></div>
                                     CargoLink
                                 </h2>
                             </div>
@@ -742,9 +678,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Load Capacity</label>
                                         <div className="grid grid-cols-3 gap-3">
                                             {[
-                                                { id: 'BOX_SMALL', label: 'Mini Van', cap: '50kg', icon: Package, color: 'text-orange-600' },
-                                                { id: 'SACK_GRAIN', label: 'E-Rickshaw', cap: '200kg', icon: Bike, color: 'text-yellow-600' },
-                                                { id: 'HEAVY_LORRY', label: 'Truck', cap: '2000kg', icon: Bus, color: 'text-blue-600' }
+                                                { id: 'BOX_SMALL', label: 'Mini Van', cap: '50kg', icon: Package, color: 'text-luxe-teal' },
+                                                { id: 'SACK_GRAIN', label: 'E-Rickshaw', cap: '200kg', icon: Bike, color: 'text-luxe-gold' },
+                                                { id: 'HEAVY_LORRY', label: 'Truck', cap: '2000kg', icon: Bus, color: 'text-luxe-sienna' }
                                             ].map((v) => (
                                                 <button
                                                     key={v.id}
@@ -753,8 +689,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                         setLogisticsWeight(v.id === 'BOX_SMALL' ? 5 : (v.id === 'SACK_GRAIN' ? 50 : 500));
                                                     }}
                                                     className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all duration-300 ${logisticsItemType === v.id
-                                                        ? 'bg-orange-50 border-orange-500 shadow-lg -translate-y-1'
-                                                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-orange-200'
+                                                        ? 'bg-luxe-teal/10 border-luxe-teal shadow-lg -translate-y-1'
+                                                        : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-luxe-teal/20'
                                                         }`}
                                                 >
                                                     <div className={`p-2 rounded-xl scale-125 mb-1 ${v.color}`}>
@@ -773,7 +709,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                         <div className="flex justify-between items-center mb-3">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Load Weight</label>
-                                            <span className="text-sm font-bold text-orange-600">{logisticsWeight} kg</span>
+                                            <span className="text-sm font-bold text-luxe-teal">{logisticsWeight} kg</span>
                                         </div>
                                         <input
                                             type="range"
@@ -782,7 +718,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             max={logisticsItemType === 'HEAVY_LORRY' ? 2000 : 500}
                                             value={logisticsWeight}
                                             onChange={(e) => setLogisticsWeight(parseInt(e.target.value))}
-                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-luxe-teal"
                                         />
                                         <div className="flex justify-between mt-2">
                                             <span className="text-[8px] font-bold text-slate-400 capitalize">Min Load</span>
@@ -805,7 +741,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Estimated Fare</p>
                                             <p className="text-2xl font-bold text-slate-800 dark:text-white">₹{logisticsPoolFound ? (logisticsPrice * 0.7).toFixed(0) : logisticsPrice}</p>
                                         </div>
-                                        <Button onClick={initiateBook} className="px-8 super-rounded bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-500/20" disabled={!fromLocation || !toLocation}>
+                                        <Button onClick={initiateBook} className="px-8 super-rounded bg-luxe-teal hover:bg-luxe-teal/80 shadow-lg shadow-luxe-teal/20" disabled={!fromLocation || !toLocation}>
                                             Book Parcel
                                         </Button>
                                     </div>
@@ -818,7 +754,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                     {myParcels.map(p => (
                                         <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-orange-50 dark:bg-orange-900/30 p-2.5 rounded-full text-orange-600">
+                                                <div className="bg-luxe-teal/10 dark:bg-luxe-teal/20 p-2.5 rounded-full text-luxe-teal">
                                                     <Package size={18} />
                                                 </div>
                                                 <div>
@@ -901,18 +837,6 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                         <>
                             {activeTab === 'HOME' && currentView === 'DASHBOARD' && (
                                 <div className="space-y-6">
-                                    <div className="flex justify-end gap-2 -mt-2 mb-2 overflow-x-auto scrollbar-hide">
-                                        {/* Gram-Setu Toggle */}
-                                        <button onClick={handleGramSetuToggle} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border shadow-sm ${gramSetuMode ? 'bg-yellow-100 border-yellow-500 text-yellow-700 shadow-yellow-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}>
-                                            <Bike size={12} className={gramSetuMode ? "text-yellow-600" : ""} />
-                                            {gramSetuMode ? 'Gram-Setu Active' : 'Feeder Mode'}
-                                        </button>
-
-                                        <button onClick={handleDidiToggle} className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border shadow-sm ${didiMode ? 'bg-pink-100 border-pink-500 text-pink-700 shadow-pink-200 ring-2 ring-pink-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}>
-                                            <ShieldCheck size={12} className={didiMode ? "text-pink-600 animate-pulse" : ""} />
-                                            {didiMode ? 'Didi Rath Active' : 'Didi Rath'}
-                                        </button>
-                                    </div>
 
                                     {/* REDESIGNED ACTIVE TRIP CARD (Whisk 2.0 Ticket Stub) */}
                                     {activeTickets.length > 0 && (
@@ -961,43 +885,53 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                                     {/* ... (Rest of existing dashboard UI) ... */}
                                     {/* Removed overflow-hidden to allow dropdown to display */}
-                                    <div className="glass-panel p-6 rounded-t-[40px] shadow-[0_-10px_40px_rgba(0,0,0,0.3)] border-t border-white/20 relative animate-slide-up backdrop-blur-xl -mt-6">
-                                        {/* Floating Pull Handle */}
-                                        <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6"></div>
-
-                                        {/* V5 AI Suggestion Banner */}
-                                        <div className="v5-ai-suggestion">
-                                            <span className="text-2xl">🤖</span>
-                                            <div className="v5-ai-suggestion-text">
-                                                <span>Sahayak AI:</span> It's {new Date().getHours()}:00. Your usual commute pulse detected. {gramSetuMode ? "E-Rickshaw" : "Village Bus"} available in <span>3 mins</span>.
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-4 mb-6">
-                                            <div className="flex justify-between items-center">
-                                                <h3 className="text-xl font-black flex items-center gap-2 text-white">
-                                                    {gramSetuMode ? <Bike className="text-yellow-400" /> : <Bus className="text-brand-400" />}
-                                                    {gramSetuMode ? 'Village Feeder' : 'Plan Your Journey'}
+                                    {/* DASHBOARD SECTION MATCHING REFERENCE IMAGE */}
+                                    <div className="journey-card-reference animate-slide-up -mt-4 mx-[-10px]">
+                                        <div className="flex flex-col gap-5">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="whitespace-pre-line">
+                                                    Plan Your {"\n"}
+                                                    Journey
                                                 </h3>
-                                                <div className="flex bg-black/30 p-1 rounded-xl backdrop-blur-md">
-                                                    <button onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${!isBuyingPass ? 'bg-brand-600 shadow-glow-sm text-white' : 'text-slate-400'}`}>Ticket</button>
-                                                    <button onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${isBuyingPass ? 'bg-brand-600 shadow-glow-sm text-white' : 'text-slate-400'}`}>Pass</button>
+                                                <div className="toggle-ticket-match">
+                                                    <button 
+                                                        onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} 
+                                                        className={!isBuyingPass ? 'active' : 'text-white/70'}
+                                                    >
+                                                        Ticket
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} 
+                                                        className={isBuyingPass ? 'active' : 'text-white/70'}
+                                                    >
+                                                        Pass
+                                                    </button>
                                                 </div>
                                             </div>
 
                                             {/* Whisk 2.0: Trip Type Toggle */}
                                             {!isBuyingPass && (
-                                                <div className="flex bg-black/30 p-1 rounded-xl w-fit backdrop-blur-md">
-                                                    <button onClick={() => setTripType('ONE_WAY')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white/10 shadow text-brand-300' : 'text-slate-500'}`}>One-Way</button>
-                                                    <button onClick={() => setTripType('ROUND_TRIP')} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white/10 shadow text-brand-300' : 'text-slate-500'}`}>Round-Trip</button>
+                                                <div className="flex bg-black/20 p-1 rounded-xl w-fit backdrop-blur-md">
+                                                    <button 
+                                                        onClick={() => setTripType('ONE_WAY')} 
+                                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${tripType === 'ONE_WAY' ? 'bg-[#9333EA]/30 text-white' : 'text-white/50'}`}
+                                                    >
+                                                        One-Way
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setTripType('ROUND_TRIP')} 
+                                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${tripType === 'ROUND_TRIP' ? 'bg-[#9333EA]/30 text-white' : 'text-white/50'}`}
+                                                    >
+                                                        Round-Trip
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="space-y-4 relative z-10">
                                             <LocationSelector
-                                                label={gramSetuMode ? "FROM (VILLAGE)" : "FROM"}
-                                                icon={<div className={`w-3 h-3 rounded-full ${gramSetuMode ? 'bg-yellow-500 shadow-[0_0_10px_#eab308]' : 'bg-brand-500 shadow-[0_0_10px_#6366f1]'}`}></div>}
+                                                label="FROM"
+                                                icon={<div className="w-4 h-4 rounded-full bg-[#4F46E5] shadow-[0_0_10px_rgba(79,70,229,0.5)] border-2 border-white"></div>}
                                                 onSelect={setFromLocation}
                                             />
 
@@ -1015,16 +949,16 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <div className="absolute left-[29px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-500/50 to-emerald-500/50 -z-10"></div>
 
                                             <LocationSelector
-                                                label={gramSetuMode ? "TO (HIGHWAY HUB)" : "TO"}
-                                                icon={<div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>}
+                                                label="TO"
+                                                icon={<div className="w-4 h-4 rounded-full bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.5)] border-2 border-white"></div>}
                                                 onSelect={setToLocation}
                                             />
                                         </div>
 
                                         {calculatedPath.length > 0 && (
-                                            <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 ${gramSetuMode ? 'bg-yellow-900/10' : 'bg-brand-900/10'}`}>
+                                            <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 bg-brand-900/10`}>
                                                 <div className="flex justify-between items-end mb-3">
-                                                    <label className={`text-xs font-bold uppercase tracking-wider ${gramSetuMode ? 'text-yellow-500' : 'text-brand-300'}`}>Route Landmarks ({calculatedPath.length})</label>
+                                                    <label className={`text-xs font-bold uppercase tracking-wider text-brand-300`}>Route Landmarks ({calculatedPath.length})</label>
                                                     {tripDistance !== null && (
                                                         <span className="text-xs font-bold bg-brand-500/20 text-brand-300 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-brand-500/30">
                                                             <Route size={12} /> {tripDistance.toFixed(1)} km
@@ -1034,7 +968,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                                                     {calculatedPath.map((stop, i) => (
                                                         <div key={i} className="min-w-[60px] flex flex-col items-center gap-2">
-                                                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-bold shadow-sm backdrop-blur-md ${gramSetuMode ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' : 'bg-brand-500/10 border-brand-500/30 text-brand-400'}`}>{stop.substring(0, 2).toUpperCase()}</div>
+                                                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-bold shadow-sm backdrop-blur-md bg-brand-500/10 border-brand-500/30 text-brand-400`}>{stop.substring(0, 2).toUpperCase()}</div>
                                                             <span className="text-[9px] text-slate-400 truncate w-full text-center">{stop}</span>
                                                         </div>
                                                     ))}
@@ -1087,7 +1021,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                                     ].map((ride) => (
                                                         <div
                                                             key={ride.id}
-                                                            className={`v5-ride-option ${(!gramSetuMode && ride.id === 'BUS') || (gramSetuMode && ride.id === 'RICKSHAW') ? 'active' : ''}`}
+                                                            className={`v5-ride-option ${ride.id === 'BUS' ? 'active' : ''}`}
                                                         >
                                                             <span className="v5-ride-icon">{ride.icon}</span>
                                                             <div className="v5-ride-name">{ride.name}</div>
@@ -1112,8 +1046,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                                         {fareDetails && (
                                             <div className="mt-6">
-                                                <Button onClick={initiateBook} fullWidth disabled={!toLocation} className={`py-4 shadow-xl ${gramSetuMode ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'shadow-brand-500/20'}`}>
-                                                    <div className="flex items-center justify-between w-full"><span>{gramSetuMode ? 'Hail E-Rickshaw' : (isBuyingPass ? `Buy ${passType.replace('_', ' ')} Pass` : 'Book Ticket')}</span><span className="bg-white/20 px-2 py-1 rounded text-sm">{formatCurrency(isBuyingPass ? passPrice : fareDetails.totalFare * passengerCount)}</span></div>
+                                                <Button onClick={initiateBook} fullWidth disabled={!toLocation} className={`py-4 shadow-xl shadow-brand-500/20`}>
+                                                    <div className="flex items-center justify-between w-full"><span>{isBuyingPass ? `Buy ${passType.replace('_', ' ')} Pass` : 'Book Ticket'}</span><span className="bg-white/20 px-2 py-1 rounded text-sm">{formatCurrency(isBuyingPass ? passPrice : fareDetails.totalFare * passengerCount)}</span></div>
                                                 </Button>
                                                 {fareDetails.message && <p className="text-center text-[10px] text-slate-400 mt-2">{fareDetails.message}</p>}
                                             </div>
@@ -1196,51 +1130,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                 </div>
             </Modal>
 
-            <Modal isOpen={showChuttaModal} onClose={() => setShowChuttaModal(false)} onConfirm={() => setShowChuttaModal(false)} title="Digital Chutta" confirmLabel="Done">
-                <div className="text-center space-y-4">
-                    <div className="text-4xl">🪙</div>
-                    <h3 className="font-bold dark:text-white">Balance: ₹12</h3>
-                    <p className="text-sm text-slate-500">Don't have change? Use your digital chutta wallet for small payments.</p>
-                    <Button fullWidth onClick={() => alert("Added ₹10 via UPI")}>Add Money</Button>
-                </div>
-            </Modal>
 
 
-            <Modal isOpen={showDidiVerification} onClose={() => { setShowDidiVerification(false); setVerificationStep('START'); }} onConfirm={() => { }} title="Didi Rath Verification" confirmLabel="" hideFooter={true}>
-                <div className="text-center space-y-6">
-                    {verificationStep === 'START' && (
-                        <div className="animate-fade-in">
-                            <div className="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4"><ShieldCheck size={40} className="text-pink-600" /></div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Women Safety Mode</h3>
-                            <p className="text-sm text-slate-500 mb-6">To enable Didi Rath (Pink Bus), we need to verify your identity using Voice & Face biometrics.</p>
-                            <Button fullWidth onClick={processBiometricCheck} className="bg-pink-600 hover:bg-pink-700 text-white">Start Verification</Button>
-                        </div>
-                    )}
-                    {verificationStep === 'PROCESSING' && (
-                        <div className="py-8 animate-fade-in">
-                            <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Verifying Biometrics...</p>
-                            <p className="text-xs text-slate-400 mt-2">Analyzing voice pitch and facial features...</p>
-                        </div>
-                    )}
-                    {verificationStep === 'SUCCESS' && (
-                        <div className="py-4 animate-fade-in">
-                            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><Check size={40} className="text-emerald-600" /></div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Verified Successfully!</h3>
-                            <p className="text-sm text-slate-500 mt-2">Didi Rath mode is now active.</p>
-                            <Button fullWidth onClick={() => { setShowDidiVerification(false); setDidiMode(true); }} className="mt-6 bg-emerald-600">Continue</Button>
-                        </div>
-                    )}
-                    {verificationStep === 'FAIL' && (
-                        <div className="py-4 animate-fade-in">
-                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"><AlertOctagon size={40} className="text-red-600" /></div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Verification Failed</h3>
-                            <p className="text-sm text-slate-500 mt-2">We could not verify your gender biometrics. Please try again in a quiet environment.</p>
-                            <div className="flex gap-2 mt-6"><Button variant="secondary" onClick={() => setShowDidiVerification(false)} fullWidth>Cancel</Button><Button onClick={() => setVerificationStep('START')} fullWidth className="bg-pink-600">Retry</Button></div>
-                        </div>
-                    )}
-                </div>
-            </Modal>
 
             {showToast && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
@@ -1249,33 +1140,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     </div>
                 </div>
             )}
-            {/* VILLAGE SOS - PREMIUM SAFETY OVERLAY */}
-            <button
-                className="fixed bottom-28 left-4 w-14 h-14 bg-rose-600 rounded-full flex flex-col items-center justify-center text-white shadow-glow-rose z-[150] v5-sos-pulse group active:scale-95 transition-all"
-                onClick={() => {
-                    const confirmSOS = window.confirm("🚨 CRITICAL: Activate Village SOS? This will alert nearby Hero Drivers and Local Security.");
-                    if (confirmSOS) {
-                        alert("SOS Activated. Broadcast sent to Nasirganj Hub & Community Shield.");
-                    }
-                }}
-            >
-                <AlertOctagon size={24} className="group-hover:scale-110 transition-transform" />
-                <span className="text-[8px] font-black uppercase tracking-tighter">SOS</span>
-            </button>
 
-            <style>{`
-                    .shadow-glow-rose {
-                        box-shadow: 0 0 20px rgba(225, 29, 72, 0.4), 0 0 40px rgba(225, 29, 72, 0.2);
-                    }
-                    .v5-sos-pulse {
-                        animation: v5-sos-ripple 2s infinite ease-out;
-                    }
-                    @keyframes v5-sos-ripple {
-                        0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
-                        70% { box-shadow: 0 0 0 15px rgba(225, 29, 72, 0); }
-                        100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
-                    }
-                `}</style>
+
+
         </>
     );
 };

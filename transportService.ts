@@ -1,15 +1,13 @@
 
-import { Ticket, TicketStatus, PaymentMethod, BusState, User, RentalBooking, ParcelBooking } from '../types';
+import { Ticket, TicketStatus, PaymentMethod, BusState, User, RentalBooking, ParcelBooking } from './types';
 import { io } from 'socket.io-client';
-import { getAuthToken } from './authService';
+import { getAuthToken } from './services/authService';
+import { API_BASE_URL } from './config';
 
 const STORAGE_KEY = 'villagelink_tickets_cache'; // Renamed cache to avoid conflict
 
 // --- CONFIGURATION ---
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname.match(/^192\.168\./);
-const SERVER_URL = isLocal 
-  ? `http://${window.location.hostname}:3001` 
-  : window.location.origin;
+const SERVER_URL = API_BASE_URL;
 
 let socket: any = null;
 let localTickets: Ticket[] = [];
@@ -39,7 +37,7 @@ export const initSocketConnection = () => {
     console.error("Socket Auth Error:", err.message);
     if (err.message.includes("Authentication")) {
       // Force logout if session is invalid (e.g. logged in elsewhere)
-      window.dispatchEvent(new Event('auth_error')); 
+      window.dispatchEvent(new Event('auth_error'));
     }
   });
 
@@ -79,7 +77,7 @@ const attachListeners = () => {
 };
 
 export const subscribeToUpdates = (
-  onTickets: (t?: Ticket[]) => void, 
+  onTickets: (t?: Ticket[]) => void,
   onBuses: (buses: BusState[]) => void
 ) => {
   listeners = { onTickets, onBuses };
@@ -142,4 +140,20 @@ export const bookRental = async (rental: RentalBooking): Promise<boolean> => {
 export const bookParcel = async (parcel: ParcelBooking): Promise<boolean> => {
   // Mock implementation for offline service compatibility
   return true;
+};
+
+export const getDriverHistory = async (): Promise<any> => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/driver/history`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': getAuthToken() || ''
+      }
+    });
+    if (!res.ok) throw new Error("Failed to fetch driver history");
+    return await res.json();
+  } catch (e) {
+    console.error(e);
+    return { success: false, tickets: [], parcels: [], transactions: [] };
+  }
 };

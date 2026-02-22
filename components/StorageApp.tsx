@@ -299,9 +299,6 @@ export const StorageApp: React.FC = () => {
                     <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                         <div
                             ref={progressRef}
-                            aria-valuenow="0"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
                             aria-label="Storage capacity utilization"
                             role="progressbar"
                             className={`h-full rounded-full transition-all duration-1000 admin-progress-bar ${occupancyPercentage > 85 ? 'bg-red-500 shadow-glow-sm' : occupancyPercentage > 65 ? 'bg-amber-500' : 'bg-cyan-500'}`}

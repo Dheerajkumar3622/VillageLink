@@ -584,19 +584,20 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
           align-items: center;
           gap: 6px;
           padding: 8px 12px;
-          background: var(--bg-glass);
-          -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
-          border: 1px solid var(--border-subtle);
+          background: rgba(0, 0, 0, 0.6);
+          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 20px;
           color: white;
           font-size: 0.875rem;
           cursor: pointer;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .product-tag .price {
-          color: var(--accent-primary);
-          font-weight: 600;
+          color: #FFCE1B;
+          font-weight: 900;
         }
 
         .reel-overlay {
@@ -619,12 +620,13 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-hot));
+          background: linear-gradient(135deg, #BE5103, #FFCE1B);
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
           font-weight: 600;
+          box-shadow: 0 0 15px rgba(190, 81, 3, 0.4);
         }
 
         .creator-details {
@@ -647,12 +649,20 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
 
         .follow-btn {
           padding: 6px 16px;
-          background: transparent;
-          border: 1px solid white;
+          background: #BE5103;
+          border: none;
           border-radius: 6px;
           color: white;
-          font-weight: 500;
+          font-weight: 700;
+          text-transform: uppercase;
+          font-size: 10px;
+          letter-spacing: 0.05em;
           cursor: pointer;
+          transition: all 0.2s;
+        }
+        .follow-btn:hover {
+          background: #b7410E;
+          transform: scale(1.05);
         }
 
         .caption {
@@ -670,8 +680,9 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         }
 
         .hashtag {
-          color: #93c5fd;
+          color: #FFCE1B;
           font-size: 0.875rem;
+          font-weight: 600;
         }
 
         .music-info {

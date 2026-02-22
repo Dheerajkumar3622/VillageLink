@@ -26,7 +26,7 @@ const OrganicToggle: React.FC<{ organic: boolean, onChange: (val: boolean) => vo
         <button
             ref={ref}
             onClick={() => onChange(!organic)}
-            className={`w-12 h-6 rounded-full transition-all ${organic ? 'bg-green-500' : 'bg-slate-300'}`}
+            className={`w-12 h-6 rounded-full transition-all ${organic ? 'bg-luxe-teal' : 'bg-slate-300'}`}
             role="switch"
             aria-checked="false"
             aria-label="Toggle organic produce"
@@ -78,7 +78,7 @@ interface Order {
 
 export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) => {
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<ViewType>('HOME');
+    const [view, setView] = useState<ViewType>('CONSUMER_SHOP');
     const [userRole, setUserRole] = useState<UserRole>('CONSUMER');
 
     // Data states
@@ -112,7 +112,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
 
     useEffect(() => {
         // V5 Parity: Consumers land directly in the shop
-        if (user.role === 'CONSUMER') {
+        if (user.role === 'CONSUMER' as any) {
             setView('CONSUMER_SHOP');
         }
         fetchData();
@@ -235,7 +235,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
     if (view === 'CREATE_LISTING') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 pt-6">
+                <div className="bg-gradient-to-r from-luxe-teal to-luxe-teal/80 text-white p-4 pt-6">
                     <button onClick={() => setView('FARMER_DASHBOARD')} className="flex items-center gap-2 mb-4" aria-label="Go Back">
                         <ArrowLeft size={20} /> Back
                     </button>
@@ -294,7 +294,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                         <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300"><Leaf className="text-green-500" size={18} /> Organic Produce?</span>
                         <OrganicToggle organic={newListing.organic} onChange={(val) => setNewListing({ ...newListing, organic: val })} />
                     </div>
-                    <Button onClick={createListing} className="w-full bg-green-600 hover:bg-green-700" disabled={!newListing.crop || !newListing.quantity || !newListing.pricePerUnit}>
+                    <Button onClick={createListing} className="w-full bg-luxe-teal hover:bg-luxe-teal/80" disabled={!newListing.crop || !newListing.quantity || !newListing.pricePerUnit}>
                         <Plus size={18} /> Create Listing
                     </Button>
                 </div>
@@ -306,12 +306,12 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
     if (view === 'FARMER_DASHBOARD') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-                <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 pt-6">
+                <div className="bg-gradient-to-r from-luxe-teal to-luxe-teal/80 text-white p-4 pt-6">
                     <button onClick={() => setView('HOME')} className="flex items-center gap-2 mb-4">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">👨‍🌾 Farmer Dashboard</h1>
-                    <p className="text-green-100 text-sm">Sell your produce directly</p>
+                    <p className="text-luxe-teal/10 text-sm">Sell your produce directly</p>
                 </div>
 
                 {/* Stats */}
@@ -372,12 +372,12 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
     if (view === 'CONSUMER_SHOP') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
-                <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 pt-6 pb-8 rounded-b-3xl">
+                <div className="bg-gradient-to-r from-luxe-sienna to-luxe-gold text-white p-4 pt-6 pb-8 rounded-b-3xl">
                     <button onClick={() => setView('HOME')} className="flex items-center gap-2 mb-4">
                         <ArrowLeft size={20} /> Back
                     </button>
                     <h1 className="text-xl font-bold">🛒 Fresh from Farm</h1>
-                    <p className="text-orange-100 text-sm">Direct from farmers, no middlemen</p>
+                    <p className="text-luxe-gold/80 text-sm">Direct from farmers, no middlemen</p>
 
                     {/* Search */}
                     <div className="relative mt-4">
@@ -395,7 +395,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                         { value: 'GRAIN', label: 'Grains', emoji: '🌾' },
                         { value: 'DAIRY', label: 'Dairy', emoji: '🥛' }
                     ].map(cat => (
-                        <button key={cat.value} onClick={() => setCategoryFilter(cat.value)} className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${categoryFilter === cat.value ? 'bg-orange-500 text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'}`}>
+                        <button key={cat.value} onClick={() => setCategoryFilter(cat.value)} className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${categoryFilter === cat.value ? 'bg-luxe-sienna text-white' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400'}`}>
                             {cat.emoji} {cat.label}
                         </button>
                     ))}
@@ -434,7 +434,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                                 </div>
                                 <div className="v5-combo-savings inline-block">Save ₹15</div>
                             </div>
-                            <button className="px-6 py-2.5 bg-orange-500 text-white text-[11px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all">Add Combo</button>
+                            <button className="px-6 py-2.5 bg-luxe-sienna text-white text-[11px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-all">Add Combo</button>
                         </div>
                     </div>
                 </div>
@@ -474,9 +474,9 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
 
                                 <div className="flex items-center justify-between mt-3">
                                     <div>
-                                        <p className="text-base font-black text-[var(--accent-warm)] font-mono">₹{listing.pricePerUnit}<span className="text-[10px] text-[var(--text-muted)]">/{listing.unit}</span></p>
+                                        <p className="text-base font-black text-luxe-gold font-mono">₹{listing.pricePerUnit}<span className="text-[10px] text-[var(--text-muted)]">/{listing.unit}</span></p>
                                     </div>
-                                    <button onClick={() => addToCart(listing)} className="w-10 h-10 bg-[var(--accent-warm)] hover:bg-[var(--accent-hot)] text-white rounded-xl shadow-lg transition-all active:scale-90 flex items-center justify-center" aria-label="Add to Cart">
+                                    <button onClick={() => addToCart(listing)} className="w-10 h-10 bg-luxe-sienna hover:bg-luxe-rust text-white rounded-xl shadow-lg transition-all active:scale-90 flex items-center justify-center" aria-label="Add to Cart">
                                         <Plus size={18} />
                                     </button>
                                 </div>
@@ -527,12 +527,12 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
 
                 {/* Cart Footer */}
                 {cart.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-orange-500 text-white p-4 flex justify-between items-center shadow-lg">
+                    <div className="fixed bottom-0 left-0 right-0 bg-luxe-sienna text-white p-4 flex justify-between items-center shadow-lg">
                         <div>
                             <p className="font-bold">{cart.reduce((s, c) => s + c.quantity, 0)} items</p>
-                            <p className="text-orange-100 text-sm">₹{cartTotal} + ₹30 delivery</p>
+                            <p className="text-luxe-gold text-sm">₹{cartTotal} + ₹30 delivery</p>
                         </div>
-                        <Button onClick={placeOrder} className="bg-white text-orange-500 hover:bg-orange-50">
+                        <Button onClick={placeOrder} className="bg-white text-luxe-sienna hover:bg-luxe-gold">
                             Place Order <ChevronRight size={16} />
                         </Button>
                     </div>
@@ -646,8 +646,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                         <ArrowLeft size={20} /> Back
                     </button>
                 )}
-                <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">🌾 <span className="v5-gradient-text">GramMandi</span></h1>
-                <p className="text-[var(--text-muted)] font-medium">Farm to Kitchen Marketplace</p>
+                <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">🌾 <span className="v5-gradient-text">Fresh Produce</span></h1>
             </div>
 
             {/* V5 Quick Stats */}
@@ -665,43 +664,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                 ))}
             </div>
 
-            {/* V5 Role Selection Bento Grid */}
-            <div className="p-4 relative z-10">
-                <h2 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-xs">👤</span>
-                    I am a...
-                </h2>
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => setView('FARMER_DASHBOARD')} className="v5-bento-card p-4 text-left group">
-                        <div className="w-10 h-10 v5-icon-emerald rounded-xl flex items-center justify-center text-white mb-3">
-                            <Wheat size={22} />
-                        </div>
-                        <h3 className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">Farmer</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Sell crops, dairy, produce</p>
-                    </button>
-                    <button onClick={() => setView('CONSUMER_SHOP')} className="v5-bento-card p-4 text-left group">
-                        <div className="w-10 h-10 v5-icon-warm rounded-xl flex items-center justify-center text-white mb-3">
-                            <ShoppingCart size={22} />
-                        </div>
-                        <h3 className="font-bold text-[var(--text-primary)] group-hover:text-[var(--accent-warm)] transition-colors">Consumer</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Buy fresh from farms</p>
-                    </button>
-                    <button className="v5-bento-card p-4 text-left group">
-                        <div className="w-10 h-10 v5-icon-cyan rounded-xl flex items-center justify-center text-white mb-3">
-                            <Package size={22} />
-                        </div>
-                        <h3 className="font-bold text-[var(--text-primary)]">Vendor</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Wholesale buying</p>
-                    </button>
-                    <button className="v5-bento-card p-4 text-left group">
-                        <div className="w-10 h-10 v5-icon-purple rounded-xl flex items-center justify-center text-white mb-3">
-                            <Warehouse size={22} />
-                        </div>
-                        <h3 className="font-bold text-[var(--text-primary)]">Cold Storage</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Rent storage space</p>
-                    </button>
-                </div>
-            </div>
+
 
             {/* V5 Featured Produce */}
             <div className="px-4 relative z-10">
@@ -725,29 +688,7 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                 </div>
             </div>
 
-            {/* V5 How It Works */}
-            <div className="px-4 mt-4 relative z-10">
-                <h2 className="font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-[var(--bg-elevated)] rounded-lg flex items-center justify-center text-xs">📋</span>
-                    How It Works
-                </h2>
-                <div className="v5-card rounded-2xl p-4 space-y-3">
-                    {[
-                        { icon: '👨‍🌾', title: 'Farmer Lists', desc: 'Post your harvest with price' },
-                        { icon: '🛒', title: 'Buyer Orders', desc: 'Consumers/vendors place orders' },
-                        { icon: '🚛', title: 'We Deliver', desc: 'Direct farm pickup & delivery' },
-                        { icon: '💰', title: 'Farmer Earns', desc: '70-80% of sale price' }
-                    ].map((step, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center text-lg">{step.icon}</div>
-                            <div>
-                                <h3 className="font-medium text-[var(--text-primary)] text-sm">{step.title}</h3>
-                                <p className="text-xs text-[var(--text-muted)]">{step.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+
 
             {/* V5 Mandi Khabar */}
             {news.length > 0 && (

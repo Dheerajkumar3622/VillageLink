@@ -1,6 +1,6 @@
 
-import { OfflineAction } from '../types';
-import { saveTicket, bookRental, bookParcel } from './transportService';
+import { OfflineAction } from './types';
+import { saveTicket, bookRental, bookParcel } from './services/transportService';
 
 const QUEUE_KEY = 'villagelink_offline_queue';
 
@@ -10,7 +10,7 @@ export const queueAction = (action: Omit<OfflineAction, 'id' | 'timestamp'>) => 
   const queue = getQueue();
   const newAction: OfflineAction = {
     ...action,
-    id: `OFF-${Date.now()}-${Math.random().toString(36).substr(2,5)}`,
+    id: `OFF-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
     timestamp: Date.now()
   };
   queue.push(newAction);
@@ -29,7 +29,7 @@ export const clearQueue = () => {
 
 export const syncOfflineActions = async (): Promise<number> => {
   if (!isOnline()) return 0;
-  
+
   const queue = getQueue();
   if (queue.length === 0) return 0;
 

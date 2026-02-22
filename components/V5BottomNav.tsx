@@ -1,87 +1,67 @@
 /**
  * V5BottomNav - Premium Bottom Navigation Component
- * Features glassmorphic design with floating center action button
+ * Features glassmorphic design and integrated quick actions
  */
 
 import React from 'react';
-import { Home, Film, ShoppingBag, User, Camera } from 'lucide-react';
+import { Home, Bus, Sprout, Utensils, Film, Camera, User } from 'lucide-react';
+
+export type TabType = 'home' | 'rides' | 'haat' | 'food' | 'reels' | 'scan' | 'profile';
 
 interface NavItemProps {
     icon: React.ReactNode;
     label: string;
     active: boolean;
     onClick: () => void;
-    badge?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick, badge }) => (
-    <button className={`v5-nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-        <div className="relative">
-            <span className={`text-xl ${active ? 'opacity-100' : 'opacity-50'}`}>{icon}</span>
-            {badge && badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center text-white">
-                    {badge > 9 ? '9+' : badge}
-                </span>
-            )}
+const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => (
+    <button 
+        className={`flex-shrink-0 flex flex-col items-center justify-center min-w-[75px] h-full transition-all duration-300 relative group`} 
+        onClick={onClick}
+    >
+        <div className={`w-14 h-11 rounded-xl flex items-center justify-center transition-all duration-500 ${active ? 'nav-active-pill text-[#BE5103]' : 'text-white/60'}`}>
+            <div className={`${active ? 'scale-110' : 'scale-100'} transition-transform duration-300`}>
+                {icon}
+            </div>
         </div>
-        <span className={`text-[10px] font-semibold ${active ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'}`}>
+        <span className={`text-[9px] font-[900] mt-1.5 uppercase tracking-wider transition-all duration-300 ${active ? 'text-white opacity-100' : 'text-white/50'}`}>
             {label}
         </span>
     </button>
 );
 
-export type TabType = 'home' | 'reels' | 'haat' | 'chat' | 'profile';
-
 interface V5BottomNavProps {
     activeTab: TabType;
     onTabChange: (tab: TabType) => void;
-    onCenterAction?: () => void;
-    notificationBadge?: number;  // Badge count for notifications on Profile tab
 }
 
 export const V5BottomNav: React.FC<V5BottomNavProps> = ({
     activeTab,
-    onTabChange,
-    onCenterAction,
-    notificationBadge = 0
+    onTabChange
 }) => {
     return (
-        <nav className="v5-bottom-nav">
-            <NavItem
-                icon={<Home size={22} />}
-                label="Home"
-                active={activeTab === 'home'}
-                onClick={() => onTabChange('home')}
-            />
-            <NavItem
-                icon={<Film size={22} />}
-                label="Reels"
-                active={activeTab === 'reels'}
-                onClick={() => onTabChange('reels')}
-            />
-
-            {/* Center Floating Action */}
-            <button
-                className="v5-nav-center"
-                onClick={onCenterAction}
-                aria-label="Quick Action"
-            >
-                <Camera size={24} />
-            </button>
-
-            <NavItem
-                icon={<ShoppingBag size={22} />}
-                label="Mandi"
-                active={activeTab === 'haat'}
-                onClick={() => onTabChange('haat')}
-            />
-            <NavItem
-                icon={<User size={22} />}
-                label="Profile"
-                active={activeTab === 'profile'}
-                onClick={() => onTabChange('profile')}
-                badge={notificationBadge}
-            />
+        <nav className="v5-bottom-nav fixed bottom-0 left-0 right-0 px-4 py-2 pb-6 h-22 flex items-center justify-center z-[100]">
+            <div className="flex items-center justify-around w-full max-w-lg">
+                <NavItem
+                    icon={<Home size={22} />}
+                    label="Home"
+                    active={activeTab === 'home'}
+                    onClick={() => onTabChange('home')}
+                />
+                <NavItem
+                    icon={<Film size={22} />}
+                    label="Reels"
+                    active={activeTab === 'reels'}
+                    onClick={() => onTabChange('reels')}
+                />
+                <NavItem
+                    icon={<Camera size={22} />}
+                    label="Pay"
+                    active={activeTab === 'scan'}
+                    onClick={() => onTabChange('scan')}
+                />
+            </div>
         </nav>
     );
 };

@@ -171,8 +171,8 @@ const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) => {
             {transactions.slice(0, 5).map(txn => (
               <div key={txn.id} className="vm-txn-item">
                 <div className="vm-txn-icon">
-                  {txn.transactionType === 'TICKET' && <Ticket className="w-5 h-5" />}
-                  {txn.transactionType === 'PARCEL' && <Package className="w-5 h-5" />}
+                  {txn.transactionType === 'TICKET_BOOKING' && <Ticket className="w-5 h-5" />}
+                  {txn.transactionType === 'PARCEL_BOOKING' && <Package className="w-5 h-5" />}
                   {txn.transactionType === 'MESS_BOOKING' && <UtensilsCrossed className="w-5 h-5" />}
                 </div>
                 <div className="vm-txn-info">

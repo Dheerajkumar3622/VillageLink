@@ -192,10 +192,10 @@ export const VyapariApp: React.FC = () => {
     // ==================== AUTH VIEW ====================
     if (viewState === 'AUTH') {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-slate-950 dark:to-purple-950 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gradient-to-br from-midnight-950 to-luxe-sienna/20 dark:from-slate-950 dark:to-midnight-deep flex items-center justify-center p-4">
                 <div className="w-full max-w-md">
                     <div className="text-center mb-8">
-                        <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                        <div className="w-20 h-20 bg-gradient-to-r from-luxe-sienna to-luxe-gold rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-gold-luxe">
                             <Store className="text-white" size={40} />
                         </div>
                         <h1 className="text-2xl font-bold text-slate-800 dark:text-white">VyapariApp</h1>
@@ -209,11 +209,11 @@ export const VyapariApp: React.FC = () => {
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone / Email" required />
                                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
-                                <Button type="submit" fullWidth disabled={loading} className="bg-purple-600 hover:bg-purple-700">
+                                <Button type="submit" fullWidth disabled={loading} className="bg-luxe-sienna hover:bg-luxe-sienna/80">
                                     {loading ? <Loader2 className="animate-spin" /> : 'Login'}
                                 </Button>
                                 <p className="text-center text-sm text-slate-500">
-                                    New vendor? <button type="button" onClick={() => setAuthMode('REGISTER')} className="text-purple-600 font-bold">Register</button>
+                                    New vendor? <button type="button" onClick={() => setAuthMode('REGISTER')} className="text-luxe-sienna font-bold">Register</button>
                                 </p>
                             </form>
                         ) : (
@@ -223,11 +223,11 @@ export const VyapariApp: React.FC = () => {
                                 <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Phone Number" required />
                                 <input type="text" value={regGSTN} onChange={e => setRegGSTN(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="GSTN (Optional)" />
                                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" placeholder="Password" required />
-                                <Button type="submit" fullWidth disabled={loading} className="bg-purple-600 hover:bg-purple-700">
+                                <Button type="submit" fullWidth disabled={loading} className="bg-luxe-sienna hover:bg-luxe-sienna/80">
                                     {loading ? <Loader2 className="animate-spin" /> : 'Register as Vendor'}
                                 </Button>
                                 <p className="text-center text-sm text-slate-500">
-                                    Already registered? <button type="button" onClick={() => setAuthMode('LOGIN')} className="text-purple-600 font-bold">Login</button>
+                                    Already registered? <button type="button" onClick={() => setAuthMode('LOGIN')} className="text-luxe-sienna font-bold">Login</button>
                                 </p>
                             </form>
                         )}
@@ -244,12 +244,12 @@ export const VyapariApp: React.FC = () => {
                 <div className="animated-bg opacity-30"></div>
 
                 {/* Header */}
-                <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-purple-500/20">
+                <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-luxe-gold/20">
                     <div className="flex items-center justify-between">
                         <button onClick={() => setViewState('DASHBOARD')} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full" aria-label="Go Back">
                             <ChevronRight className="rotate-180" size={20} />
                         </button>
-                        <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">Wholesale Market</h1>
+                        <h1 className="text-xl font-black text-white uppercase tracking-wider">Wholesale Market</h1>
                         <button className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full" aria-label="Filter">
                             <Filter size={20} />
                         </button>
@@ -265,16 +265,16 @@ export const VyapariApp: React.FC = () => {
                         </div>
                     ) : (
                         listings.map(listing => (
-                            <div key={listing.id} className="premium-card p-5 group hover:border-purple-500/50 transition-all">
+                            <div key={listing.id} className="premium-card p-5 group hover:border-luxe-gold/50 transition-all">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
+                                    <div className="w-16 h-16 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-2xl flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform">
                                         {getCropEmoji(listing.crop)}
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="font-black dark:text-white text-lg">{listing.crop} - {listing.variety}</h3>
-                                                <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">{listing.grade} Grade Quality</p>
+                                                <p className="text-[10px] font-black text-luxe-sienna dark:text-luxe-gold uppercase tracking-widest">{listing.grade} Grade Quality</p>
                                             </div>
                                             <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-black text-slate-500 uppercase tracking-tight">#{listing.id.slice(-4)}</span>
                                         </div>
@@ -290,7 +290,7 @@ export const VyapariApp: React.FC = () => {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Asking Price</p>
-                                        <p className="text-xl font-black text-purple-600">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
+                                        <p className="text-xl font-black text-luxe-sienna">₹{listing.pricePerUnit}<span className="text-xs text-slate-400">/{listing.unit}</span></p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Bids</p>
@@ -306,7 +306,7 @@ export const VyapariApp: React.FC = () => {
                                             value={bidAmount[listing.id] || ''}
                                             onChange={e => setBidAmount({ ...bidAmount, [listing.id]: parseFloat(e.target.value) })}
                                             placeholder="Your Bid"
-                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-purple-500 transition-all font-bold text-sm"
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-luxe-sienna transition-all font-bold text-sm"
                                         />
                                     </div>
                                     <button onClick={() => placeBid(listing.id)} className="btn-cta !px-6 !py-3 flex items-center gap-2">
@@ -329,14 +329,14 @@ export const VyapariApp: React.FC = () => {
             <div className="animated-bg opacity-40"></div>
 
             {/* Header - Glassmorphism */}
-            <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-purple-500/20">
+            <div className="glass-panel sticky top-0 z-30 px-4 py-4 rounded-b-3xl border-b-luxe-gold/20">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
+                        <div className="w-12 h-12 bg-gradient-to-br from-luxe-sienna to-luxe-gold rounded-full flex items-center justify-center text-white font-bold shadow-glow-sm">
                             <Store size={24} />
                         </div>
                         <div>
-                            <p className="text-purple-600 dark:text-purple-400 text-xs font-bold uppercase tracking-wider">{user?.businessName || 'Wholesale Member'}</p>
+                            <p className="text-luxe-sienna dark:text-luxe-gold text-xs font-bold uppercase tracking-wider">{user?.businessName || 'Wholesale Member'}</p>
                             <h1 className="font-bold text-slate-800 dark:text-white text-lg">{user?.name || 'Vyapari'}</h1>
                         </div>
                     </div>
@@ -349,13 +349,13 @@ export const VyapariApp: React.FC = () => {
             {/* Main Content Area */}
             <div className="px-4 mt-6 animate-fadeInUp">
                 <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-                    <TrendingUp className="text-purple-500" /> Vyapari Dashboard
+                    <TrendingUp className="text-luxe-sienna" /> Vyapari Dashboard
                 </h2>
 
                 {/* Stats Grid - Premium Cards */}
                 <div className="grid grid-cols-2 gap-4 mb-8">
                     <div className="premium-card p-4 hover:shadow-glow-sm hover:-translate-y-1 transition-all">
-                        <Gavel className="text-purple-500 mb-2" size={24} />
+                        <Gavel className="text-luxe-sienna mb-2" size={24} />
                         <p className="text-2xl font-black dark:text-white">{stats.activeBids}</p>
                         <p className="text-xs font-bold text-slate-500 uppercase tracking-tight">Active Bids</p>
                     </div>
@@ -398,7 +398,7 @@ export const VyapariApp: React.FC = () => {
                 {/* Recent Activity Section */}
                 <div className="mb-4 flex justify-between items-center">
                     <h2 className="text-xl font-black text-slate-800 dark:text-white">Recent Activity</h2>
-                    <button onClick={() => setViewState('MY_BIDS')} className="text-purple-600 text-sm font-black uppercase tracking-widest">
+                    <button onClick={() => setViewState('MY_BIDS')} className="text-luxe-sienna text-sm font-black uppercase tracking-widest">
                         MY BIDS <ChevronRight size={16} className="inline ml-1" />
                     </button>
                 </div>

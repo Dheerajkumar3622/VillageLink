@@ -13,8 +13,9 @@ import {
     Camera, Calendar, Check, Clock, Sun, Cloud, CloudRain
 } from 'lucide-react';
 import { getWeatherData, getNewsData } from '../services/mlService';
+import AeroDashboard from './aero/AeroDashboard';
 
-type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS';
+type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS' | 'AEROPONICS';
 
 interface KisanUser {
     id: string;
@@ -348,6 +349,22 @@ export const KisanApp: React.FC = () => {
                             </div>
                             <ChevronRight className="opacity-50" />
                         </button>
+
+                        <button
+                            onClick={() => setViewState('AEROPONICS')}
+                            className="btn-primary w-full flex items-center justify-between !bg-gradient-to-r !from-green-500 !to-teal-600 border-none"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-xl">
+                                    <Leaf size={24} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-lg">मेरा एरोपोनिक्स</p>
+                                    <p className="text-xs text-emerald-100 font-medium">Smart Aeroponics System</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="opacity-50" />
+                        </button>
                     </div>
 
                     {/* Weather Advice - Glassy */}
@@ -547,6 +564,16 @@ export const KisanApp: React.FC = () => {
                     </form>
                 </div>
             </div>
+        );
+    }
+
+    // Aeroponics Smart Farming View
+    if (viewState === 'AEROPONICS') {
+        return (
+            <AeroDashboard
+                userId={user?.id || ''}
+                onBack={() => setViewState('DASHBOARD')}
+            />
         );
     }
 
