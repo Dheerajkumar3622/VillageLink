@@ -70,7 +70,7 @@
     "@capacitor/ios": "^8.0.2",
     "@types/google.maps": "^3.55.2",
     "@types/mapbox-gl": "^3.4.1",
-    "@vitejs/plugin-basic-ssl": "^2.1.4",
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
     "osm-pbf-parser": "^2.3.0",
