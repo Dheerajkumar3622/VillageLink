@@ -233,13 +233,26 @@
    REFERENCE DASHBOARD - Orange Journey Card
    ======================================== */
 .journey-card-reference {
-  background: linear-gradient(180deg, #BE5103 0%, #b7410E 100%);
-  border-radius: 40px;
+  background: linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-top: none;
+  border-radius: 0 0 40px 40px;
   padding: 30px;
   min-height: 400px;
-  box-shadow: 0 15px 45px rgba(183, 65, 14, 0.35);
+  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
   position: relative;
   overflow: hidden;
+}
+
+.journey-card-reference::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to right, #069494, #818cf8, #FFCE1B);
+  z-index: 0;
 }
 
 .journey-card-reference h3 {
@@ -252,25 +265,48 @@
 }
 
 .toggle-ticket-match {
-  background: #A06400;
-  /* Darker haldi */
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
 }
 
 .toggle-ticket-match button {
-  padding: 6px 16px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 12px;
   font-size: 11px;
   font-weight: 800;
+  transition: all 0.3s ease;
+  color: #94a3b8;
 }
 
 .toggle-ticket-match button.active {
-  background: #FFCE1B;
-  color: #2D1401;
-  box-shadow: 0 4px 15px rgba(255, 206, 27, 0.4);
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
 }
+
+.whisk-trip-card {
+  background: linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.whisk-trip-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to right, #069494, #818cf8, #FFCE1B);
+  z-index: 0;
+}
+
 
 .input-container-match {
   background: rgba(255, 255, 255, 0.4);
@@ -680,7 +716,6 @@ body,
 
 .ticket-stub {
   position: relative;
-  background: white;
 }
 
 .ticket-stub::after {
@@ -690,7 +725,7 @@ body,
   left: -10px;
   right: -10px;
   height: 20px;
-  background: radial-gradient(circle at center, transparent 8px, white 8px);
+  background: radial-gradient(circle at center, transparent 8px, transparent 8px);
   background-size: 20px 20px;
   transform: translateY(-50%);
   z-index: 10;
@@ -2409,4 +2444,44 @@ body,
 /* --- QR SCANNER STYLES --- */
 .result-icon-dynamic {
   background: var(--qr-color) !important;
+}
+
+/* --- LIGHT MODE SPECIFIC OVERRIDES --- */
+/* User requested: .bg-slate-950 in rgba effect for light mode, all text visible */
+html:not(.dark) .bg-slate-950,
+body:not(.dark) .bg-slate-950 {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  /* Light Glass Effect */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  /* Ensure overall text visibility on this light glass background */
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Ensure headings and common text elements are forced to be dark and visible 
+   inside the .bg-slate-950 glass panel in light mode */
+html:not(.dark) .bg-slate-950 h1,
+html:not(.dark) .bg-slate-950 h2,
+html:not(.dark) .bg-slate-950 h3,
+html:not(.dark) .bg-slate-950 h4,
+html:not(.dark) .bg-slate-950 h5,
+html:not(.dark) .bg-slate-950 h6,
+html:not(.dark) .bg-slate-950 p,
+html:not(.dark) .bg-slate-950 span,
+html:not(.dark) .bg-slate-950 div,
+html:not(.dark) .bg-slate-950 a,
+html:not(.dark) .bg-slate-950 button {
+  color: #0f172a;
+}
+
+/* Any previously white/gray text should become darker for contrast */
+html:not(.dark) .bg-slate-950 .text-white,
+html:not(.dark) .bg-slate-950 .text-slate-50,
+html:not(.dark) .bg-slate-950 .text-slate-100,
+html:not(.dark) .bg-slate-950 .text-slate-200,
+html:not(.dark) .bg-slate-950 .text-slate-300,
+html:not(.dark) .bg-slate-950 .text-slate-400 {
+  color: #1e293b !important;
 }

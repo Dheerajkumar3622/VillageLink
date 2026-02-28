@@ -44,11 +44,24 @@ export const V5BottomNav: React.FC<V5BottomNavProps> = ({
         <nav className="v5-bottom-nav fixed bottom-0 left-0 right-0 px-4 py-2 pb-6 h-22 flex items-center justify-center z-[100]">
             <div className="flex items-center justify-around w-full max-w-lg">
                 <NavItem
-                    icon={<Home size={22} />}
-                    label="Home"
-                    active={activeTab === 'home'}
-                    onClick={() => onTabChange('home')}
+                    icon={<Bus size={22} />}
+                    label="Rides"
+                    active={activeTab === 'rides'}
+                    onClick={() => onTabChange('rides')}
                 />
+                <NavItem
+                    icon={<Sprout size={22} />}
+                    label="Mandi"
+                    active={activeTab === 'haat'}
+                    onClick={() => onTabChange('haat')}
+                />
+                <NavItem
+                    icon={<Utensils size={22} />}
+                    label="Food"
+                    active={activeTab === 'food'}
+                    onClick={() => onTabChange('food')}
+                />
+                {/* Temporarily hidden 
                 <NavItem
                     icon={<Film size={22} />}
                     label="Reels"
@@ -61,6 +74,7 @@ export const V5BottomNav: React.FC<V5BottomNavProps> = ({
                     active={activeTab === 'scan'}
                     onClick={() => onTabChange('scan')}
                 />
+                */}
             </div>
         </nav>
     );

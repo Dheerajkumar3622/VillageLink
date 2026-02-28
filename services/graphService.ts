@@ -1,6 +1,7 @@
 
 import { API_BASE_URL } from '../config';
 import { RouteDefinition, LocationData } from '../types';
+import { defaultRoutingService } from './RoutingService';
 
 let UNIVERSAL_ROUTES: RouteDefinition[] = [];
 
@@ -18,20 +19,18 @@ export const findDetailedPath = (startName: string, endName: string): string[] =
 // NEW: Smart Route using Server-Side Analysis
 export const fetchSmartRoute = async (start: LocationData, end: LocationData): Promise<{ path: string[], distance: number, pathDetails: {name: string, lat: number, lng: number}[] }> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/routes/analyze`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, end })
-        });
+        const routeResponse = await defaultRoutingService.getRoute(start, end);
         
-        if (!response.ok) throw new Error("Route analysis failed");
+        // Ensure start and end names are always in the path array
+        const path = [start.name];
         
-        const data = await response.json();
-        
+        // Add random intermediate villages if desired or just keep start/end
+        path.push(end.name);
+
         return { 
-            path: data.path, // The server now returns the accurate list of villages intersecting the route
-            distance: data.distance,
-            pathDetails: data.pathDetails || [] // Actual coords
+            path,
+            distance: routeResponse.distance / 1000, // Return km
+            pathDetails: routeResponse.pathDetails.map((p) => ({ name: 'Waypoint', lat: p.lat, lng: p.lng }))
         };
 
     } catch (error) {

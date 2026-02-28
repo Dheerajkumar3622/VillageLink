@@ -53,6 +53,50 @@ export const loginUser = async (loginId: string, password: string): Promise<Auth
   }
 };
 
+export const loginViaFirebase = async (idToken: string): Promise<AuthResponse> => {
+  try {
+    const res = await fetch(`${API_URL}/login-firebase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      return data;
+    } else {
+      return { success: false, message: data.error || "Firebase Login Failed" };
+    }
+  } catch (e: any) {
+    return { success: false, message: e.message || "Network Error: Unable to reach server." };
+  }
+};
+
+export const registerViaFirebase = async (idToken: string, name: string, role: UserRole, email?: string, vehicleCapacity?: number, vehicleType?: VehicleType, address?: string, pincode?: string): Promise<AuthResponse> => {
+  try {
+    const res = await fetch(`${API_URL}/register-firebase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, name, role, email, vehicleCapacity, vehicleType, address, pincode })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      return data;
+    } else {
+      return { success: false, message: data.error || "Firebase Registration Failed" };
+    }
+  } catch (e: any) {
+    return { success: false, message: e.message || "Network Error: Unable to reach server." };
+  }
+};
+
 export const logoutUser = async () => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {

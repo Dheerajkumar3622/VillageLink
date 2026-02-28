@@ -12,8 +12,8 @@ interface FloatingVehicleProps {
 }
 
 export const FloatingVehicle: React.FC<FloatingVehicleProps> = ({ className = '', size = '200px' }) => {
-    // Using the absolute path to the generated matched-background image
-    const vehicleImagePath = 'file:///C:/Users/DELL/.gemini/antigravity/brain/4f393f6c-07b5-4b6c-95e2-d919a31053a4/vehicle_matched_bg_v2_1769027665284.png';
+    // Using a reliable local relative asset path
+    const vehicleImagePath = '/assets/hero-bus-icon.png';
 
     const vehicleRef = React.useRef<HTMLImageElement>(null);
 

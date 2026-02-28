@@ -214,10 +214,10 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
 
                                     return (
                                         <div key={stop} className="flex flex-col items-center gap-2 w-20 text-center">
-                                            <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors duration-500 ${isPassed ? 'bg-emerald-600 border-emerald-600' : (isNext ? 'bg-white border-emerald-500 animate-pulse' : 'bg-white border-slate-300 dark:border-slate-600 dark:bg-slate-800')}`}></div>
+                                            <div className={`w-2.5 h-2.5 rounded-full border-2 transition-colors duration-500 ${isPassed ? 'bg-emerald-600 border-emerald-600' : (isNext ? 'bg-white border-emerald-500 animate-pulse' : 'border-slate-500 bg-slate-700')}`}></div>
                                             <div>
-                                                <p className={`text-[10px] leading-tight font-bold ${isPassed ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{stop}</p>
-                                                <p className="text-[9px] text-slate-400 font-mono mt-0.5">{index === 0 ? 'Start' : (isPassed ? <span className="text-emerald-600">Failed</span> : getETA(index))}</p>
+                                                <p className="text-[10px] leading-tight font-bold" style={{color: isPassed ? '#ffffff' : '#94a3b8'}}>{stop}</p>
+                                                <p className="text-[9px] font-mono mt-0.5" style={{color: '#94a3b8'}}>{index === 0 ? 'Start' : (isPassed ? <span style={{color: '#34d399'}}>Passed</span> : getETA(index))}</p>
                                             </div>
                                         </div>
                                     );

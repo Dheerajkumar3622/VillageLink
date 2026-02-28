@@ -242,7 +242,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         if (!reel) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/reels/${reel.id}/like`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
@@ -266,7 +266,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         if (!reel) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/reels/${reel.id}/save`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
@@ -321,7 +321,7 @@ const ReelsSection: React.FC<ReelsSectionProps> = ({ user, isCreator }) => {
         if (!reel) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/reels/${reel.id}/comment`, {
                 method: 'POST',
                 headers: {

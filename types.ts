@@ -25,6 +25,7 @@ export interface TelemetryData {
 
 export enum TicketStatus {
   PENDING = 'PENDING',
+  PROVISIONAL = 'PROVISIONAL', // Phase 1.5: Ultrasonic matched, waiting for kinematic lock
   PAID = 'PAID',
   BOARDED = 'BOARDED',
   COMPLETED = 'COMPLETED'
@@ -104,6 +105,10 @@ export interface Ticket {
   scannedByDriverId?: string; // Driver who scanned
   distanceKm?: number;      // Calculated road distance
   vehicleType?: string;     // Vehicle type for fare
+
+  // --- KINEMATIC LOCK FIELDS (Phase 1.5) ---
+  provisionalTimestamp?: number; // Time when ultrasonic ping was heard
+  speedMatchStart?: number; // Time when matching >10kmph speed was first detected
 }
 
 // --- NEW PASS TYPES (v10.0 + v12.0 NFT) ---

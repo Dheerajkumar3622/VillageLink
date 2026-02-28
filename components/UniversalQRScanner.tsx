@@ -117,7 +117,7 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
 
     const loadScanHistory = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/qr/scan-history`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -154,7 +154,7 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
             if (payload.app === 'villagelink' || payload.id?.startsWith('QR-')) {
                 const qrId = payload.id || qrData;
 
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('villagelink_token');
                 const res = await fetch(`${API_BASE_URL}/api/qr/${qrId}/scan`, {
                     method: 'POST',
                     headers: {
@@ -200,7 +200,7 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
         setProcessing(true);
         try {
             // Process payment
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/payments/quick-pay`, {
                 method: 'POST',
                 headers: {

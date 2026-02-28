@@ -5,8 +5,9 @@
 
 import express from 'express';
 import crypto from 'crypto';
-import { Ticket, User, Route, DriverLocation, StopDemand, SystemSetting } from '../models.js';
+import { Ticket, User, Route, DriverLocation, StopDemand, SystemSetting, Transaction } from '../models.js';
 import * as Auth from '../auth.js';
+import { sendPushNotification } from '../firebaseAdmin.js';
 
 const router = express.Router();
 
@@ -122,10 +123,52 @@ router.post('/book', Auth.authenticate, async (req, res) => {
       { upsert: true }
     );
 
-    const user = await User.findOne({ id: userId }).lean();
+    const user = await User.findOne({ id: userId });
+    
+    // --- 1000x: GRAMCOIN / UDHAAR LEDGER LOGIC ---
+    if (payment === 'GRAMCOIN') {
+      const availableBalance = (user.walletBalance || 0) + (user.creditLimit || 500); // Allow Udhaar up to credit limit
+      
+      if (availableBalance < totalPrice) {
+        return res.status(400).json({ error: "Insufficient GramCoin balance and Udhaar (Credit) limit exceeded." });
+      }
+
+      user.walletBalance -= totalPrice;
+      await user.save();
+
+      const txn = new Transaction({
+        id: `TXN-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        userId: user.id,
+        amount: totalPrice,
+        type: 'SPEND',
+        desc: `Ticket Booking: ${from} to ${to}`,
+        timestamp: Date.now(),
+        relatedEntityId: ticketId
+      });
+      await txn.save();
+      console.log(`🪙 GramCoin Deducted: ₹${totalPrice}. New Balance: ₹${user.walletBalance}`);
+    }
+
     console.log(`🎟️ Ticket booked: ${ticketId} | ${user?.name} | ${from} → ${to} | ₹${totalPrice} ${payment}`);
 
     const liveVehicles = await DriverLocation.find({ activeRouteId: route.id, isOnline: true }).lean();
+
+    // 1000x FCM PUSH NOTIFICATION
+    liveVehicles.forEach(async (v) => {
+      try {
+        const driver = await User.findOne({ id: v.driverId }).lean();
+        if (driver && driver.fcmToken) {
+          sendPushNotification(
+            driver.fcmToken,
+            "New Passenger Booking! 🚌",
+            `${passengers} waiting at ${from} for ${to}.`,
+            { ticketId, from, to, passengers: passengers.toString() }
+          );
+        }
+      } catch (err) {
+        console.error("FCM Send Error inside loop:", err);
+      }
+    });
 
     res.json({
       success: true,

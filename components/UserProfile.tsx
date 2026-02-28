@@ -252,13 +252,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
 
             <div className="px-4 mb-6">
                 <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                    <button onClick={() => setActiveTab('HISTORY')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'HISTORY' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('HISTORY')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'HISTORY' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'HISTORY' ? '#475569' : undefined }}>
                         <History size={14} /> Activity
                     </button>
-                    <button onClick={() => setActiveTab('WALLET')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'WALLET' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('WALLET')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'WALLET' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'WALLET' ? '#475569' : undefined }}>
                         <WalletIcon size={14} /> Wallet
                     </button>
-                    <button onClick={() => setActiveTab('REFERRAL')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'REFERRAL' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                    <button onClick={() => setActiveTab('REFERRAL')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'REFERRAL' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'REFERRAL' ? '#475569' : undefined }}>
                         <Users size={14} /> Invite
                     </button>
                 </div>
@@ -283,7 +283,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                             <p className="text-2xl font-bold dark:text-white">{gramScore} <span className="text-xs font-normal text-slate-400">/ 900</span></p>
                         </div>
                         <div className="text-right">
-                            <div className="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded font-bold mb-1">Excellent</div>
+                            <div className="text-[10px] bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 px-2 py-1 rounded font-bold mb-1">Excellent</div>
                             <p className="text-[10px] text-slate-400">Credit Limit: ₹{user.creditLimit}</p>
                         </div>
                     </div>
@@ -315,10 +315,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
             {activeTab === 'HISTORY' && (
                 <div className="animate-fade-in px-4">
                     <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                        <button onClick={() => setFilter('ALL')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'ALL' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>All</button>
-                        <button onClick={() => setFilter('TRIPS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'TRIPS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Trips</button>
-                        <button onClick={() => setFilter('PASSES')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PASSES' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Passes</button>
-                        <button onClick={() => setFilter('PARCELS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PARCELS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700'}`}>Parcels</button>
+                        <button onClick={() => setFilter('ALL')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'ALL' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'ALL' ? '#475569' : undefined }}>All</button>
+                        <button onClick={() => setFilter('TRIPS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'TRIPS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'TRIPS' ? '#475569' : undefined }}>Trips</button>
+                        <button onClick={() => setFilter('PASSES')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PASSES' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'PASSES' ? '#475569' : undefined }}>Passes</button>
+                        <button onClick={() => setFilter('PARCELS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PARCELS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'PARCELS' ? '#475569' : undefined }}>Parcels</button>
                         <div className="flex-1"></div>
                         {onShowPayments && (
                             <button onClick={onShowPayments} className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#BE5103] text-white shadow-lg shadow-[#BE5103]/20 whitespace-nowrap flex items-center gap-2">

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole, VehicleType } from '../types';
-import { loginUser, registerUser, requestPasswordReset, resetPassword, resetPasswordViaFirebase } from '../services/authService';
+import { loginUser, registerUser, requestPasswordReset, resetPassword, resetPasswordViaFirebase, loginViaFirebase, registerViaFirebase } from '../services/authService';
 import { auth } from './firebaseConfig';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { Button } from './Button';
@@ -15,7 +15,7 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) => {
   const t = (key: keyof typeof TRANSLATIONS.EN) => TRANSLATIONS[lang][key] || TRANSLATIONS.EN[key];
-  const [viewState, setViewState] = useState<'LOGIN' | 'REGISTER' | 'FORGOT' | 'RESET'>('LOGIN');
+  const [viewState, setViewState] = useState<'LOGIN' | 'REGISTER' | 'FORGOT' | 'RESET' | 'LOGIN_VERIFY' | 'REGISTER_VERIFY'>('LOGIN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
@@ -25,6 +25,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
   // Login State
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [loginOtp, setLoginOtp] = useState('');
 
   // Register State
   const [regName, setRegName] = useState('');
@@ -36,12 +37,60 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
   const [regVehicleType, setRegVehicleType] = useState<VehicleType>('BUS');
   const [regAddress, setRegAddress] = useState('');
   const [regPincode, setRegPincode] = useState('');
+  const [regOtp, setRegOtp] = useState('');
 
   // Reset State
   const [resetIdentifier, setResetIdentifier] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
+  const handleLoginWithOtp = async () => {
+    if (!loginId || (!/^\+?[0-9]{10,13}$/.test(loginId) && !/^[0-9]{10}$/.test(loginId))) {
+      setError("Please enter a valid 10-digit phone number for auto-OTP login.");
+      return;
+    }
+    setLoading(true); setError(null);
+    try {
+      if ((window as any).recaptchaVerifier) {
+        try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
+      }
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-login', {
+        'size': 'invisible'
+      });
+      const phoneNumber = loginId.startsWith('+') ? loginId : `+91${loginId}`;
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, (window as any).recaptchaVerifier);
+      setConfirmationResult(confirmation);
+      setViewState('LOGIN_VERIFY');
+      setInfoMsg(`OTP sent to ${phoneNumber}`);
+    } catch (err: any) {
+      setError("Failed to send OTP: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyLoginOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmationResult || !loginOtp) return;
+    setLoading(true); setError(null);
+    try {
+      await confirmationResult.confirm(loginOtp);
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("No ID Token available");
+      
+      const res = await loginViaFirebase(idToken);
+      if (res.success && res.user) {
+        onSuccess(res.user);
+      } else {
+        setError(res.message);
+      }
+    } catch (err: any) {
+      setError("Invalid OTP: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,16 +166,62 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
       return;
     }
     setLoading(true); setError(null);
-    const capacity = regRole === 'DRIVER' ? parseInt(regCapacity) : undefined;
-
-    const res = await registerUser(regName, regRole, regPass, regEmail, regPhone, capacity, regVehicleType, regAddress, regPincode);
-    setLoading(false);
-    if (res.success && res.user) {
-      alert(`Account Created! User ID: ${res.user.id}`);
-      setViewState('LOGIN');
-      setLoginId(res.user.id);
+    if (regPhone) {
+      try {
+        if ((window as any).recaptchaVerifier) {
+          try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
+        }
+        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-reg', {
+          'size': 'invisible'
+        });
+        const phoneNumber = regPhone.startsWith('+') ? regPhone : `+91${regPhone}`;
+        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, (window as any).recaptchaVerifier);
+        setConfirmationResult(confirmation);
+        setViewState('REGISTER_VERIFY');
+        setInfoMsg(`OTP sent to ${phoneNumber} for secure registration`);
+      } catch (err: any) {
+        setError("Failed to send Registration OTP: " + err.message);
+      } finally {
+        setLoading(false);
+      }
     } else {
-      setError(res.message || "Registration failed");
+      // Legacy Flow without phone
+      const capacity = regRole === 'DRIVER' ? parseInt(regCapacity) : undefined;
+      const res = await registerUser(regName, regRole, regPass, regEmail, regPhone, capacity, regVehicleType, regAddress, regPincode);
+      setLoading(false);
+      if (res.success && res.user) {
+        alert(`Account Created! User ID: ${res.user.id}`);
+        setViewState('LOGIN');
+        setLoginId(res.user.id);
+      } else {
+        setError(res.message || "Registration failed");
+      }
+    }
+  };
+
+  const verifyRegOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!confirmationResult || !regOtp) return;
+    setLoading(true); setError(null);
+    try {
+      await confirmationResult.confirm(regOtp);
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) throw new Error("No ID Token available");
+      
+      const capacity = regRole === 'DRIVER' ? parseInt(regCapacity) : undefined;
+      const res = await registerViaFirebase(idToken, regName, regRole, regEmail, capacity, regVehicleType, regAddress, regPincode);
+      
+      if (res.success && res.user) {
+        alert("Account verified and created successfully!");
+        setViewState('LOGIN');
+        setLoginId(res.user?.id || regPhone);
+      } else {
+        setError(res.message || "Registration failed on server.");
+      }
+    } catch (err: any) {
+      setError("Registration verification failed: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -249,7 +344,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
 
         <div className="relative z-10 text-center mb-8">
           <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">
-            {viewState === 'LOGIN' ? t('welcome') : (viewState === 'REGISTER' ? t('register') : 'Reset Password')}
+            {viewState.includes('LOGIN') ? t('welcome') : (viewState.includes('REGISTER') ? t('register') : 'Reset Password')}
           </h2>
           <p className="text-luxe-gold mt-2 text-sm font-medium tracking-wide">
             VillageLink V6 Luxe
@@ -310,13 +405,24 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-4 bg-luxe-sienna hover:bg-luxe-rust text-white font-black rounded-xl shadow-[0_0_20px_rgba(190,81,3,0.4)] hover:shadow-[0_0_30px_rgba(183,65,14,0.6)] transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : <>{t('login')} <ArrowRight size={18} /></>}
-                </button>
+                <div className="flex gap-2 w-full">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 py-4 bg-luxe-sienna hover:bg-luxe-rust text-white font-black rounded-xl shadow-[0_0_20px_rgba(190,81,3,0.4)] hover:shadow-[0_0_30px_rgba(183,65,14,0.6)] transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : <>{t('login')} <Lock size={16} /></>}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLoginWithOtp}
+                    disabled={loading}
+                    className="flex-1 py-4 bg-brand-600 hover:bg-brand-700 text-white font-black rounded-xl shadow-lg transition-all transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : <>OTP <ArrowRight size={16} /></>}
+                  </button>
+                </div>
+                <div id="recaptcha-login"></div>
 
                 <div className="relative flex py-2 items-center opacity-50">
                   <div className="flex-grow border-t border-white/10"></div>
@@ -388,8 +494,31 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN' }) =>
 
             <input type="password" name="new-password" value={regPass} onChange={e => setRegPass(e.target.value)} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white" placeholder="Password" autoComplete="new-password" required />
 
+            <div id="recaptcha-reg"></div>
             <Button type="submit" fullWidth disabled={loading}>{loading ? <Loader2 className="animate-spin" /> : t('register')}</Button>
             <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Back to Login</button>
+          </form>
+        )}
+
+        {viewState === 'LOGIN_VERIFY' && (
+          <form onSubmit={verifyLoginOtp} className="space-y-4">
+            <div className="bg-brand-50 dark:bg-brand-900/30 p-3 rounded-lg text-center text-xs text-brand-700 dark:text-brand-300">
+              Enter the OTP sent to <b>{loginId}</b> for Secure Login
+            </div>
+            <div className="relative"><Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" value={loginOtp} onChange={e => setLoginOtp(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white text-center tracking-[0.5em] font-bold text-xl" placeholder="XXXXXX" maxLength={6} required /></div>
+            <Button type="submit" fullWidth disabled={loading}>Verify & Login</Button>
+            <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Cancel</button>
+          </form>
+        )}
+
+        {viewState === 'REGISTER_VERIFY' && (
+          <form onSubmit={verifyRegOtp} className="space-y-4">
+            <div className="bg-brand-50 dark:bg-brand-900/30 p-3 rounded-lg text-center text-xs text-brand-700 dark:text-brand-300">
+              Enter the OTP sent to <b>{regPhone}</b> to Complete Registration
+            </div>
+            <div className="relative"><Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input type="text" value={regOtp} onChange={e => setRegOtp(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none dark:text-white text-center tracking-[0.5em] font-bold text-xl" placeholder="XXXXXX" maxLength={6} required /></div>
+            <Button type="submit" fullWidth disabled={loading}>Verify & Register</Button>
+            <button type="button" onClick={() => setViewState('LOGIN')} className="w-full text-center text-sm font-bold text-slate-400 mt-2">Cancel</button>
           </form>
         )}
 

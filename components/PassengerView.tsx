@@ -8,6 +8,7 @@ import { getWallet, mintPassNFT, createEscrow, earnGramCoin, spendGramCoin } fro
 import { signTransaction, updateLastLocation } from '../services/securityService';
 import { fetchSmartRoute } from '../services/graphService';
 import { isOnline, queueAction } from '../services/offlineService';
+import { broadcastUltrasonicTicket } from '../services/UltrasonicVerificationService';
 import { Button } from './Button';
 import { LiveTracker } from './LiveTracker';
 import { LocationSelector } from './LocationSelector';
@@ -17,20 +18,65 @@ import { ARFinder } from './ARFinder';
 import { UserProfile } from './UserProfile';
 import { MarketingView } from './MarketingView';
 import { FoodLinkHome } from './FoodLinkHome';
-import { RouteMap } from './RouteMap';
+import { VectorRouteMap as RouteMap } from './VectorRouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
+import { FlashPass } from './FlashPass';
+
+// Animated Wave Component for Ultrasonic Status
+const AnimatedWave = ({ isBroadcasting, isError = false }: { isBroadcasting: boolean, isError?: boolean }) => {
+    if (isError) {
+        return (
+            <div className="flex items-center gap-1 h-3 mt-1" title="Ultrasonic Broadcast Failed/Disabled">
+                <div className="w-16 h-0.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+            </div>
+        );
+    }
+
+    if (!isBroadcasting) {
+        return (
+            <div className="flex items-center gap-1 h-3 mt-1" title="Ultrasonic Broadcast Standby">
+                <div className="w-16 h-0.5 bg-emerald-500/30 rounded-full"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-end gap-0.5 h-3 mt-1" title="Broadcasting Ultrasonic Ticket">
+            {[...Array(12)].map((_, i) => (
+                <div
+                    key={i}
+                    className="w-[3px] bg-emerald-400 rounded-t-sm shadow-[0_0_5px_rgba(52,211,153,0.8)]"
+                    style={{
+                        animation: `waveform 1s ease-in-out infinite`,
+                        animationDelay: `${i * 0.1}s`,
+                        height: '20%' // Base height, CSS animation will take over
+                    }}
+                ></div>
+            ))}
+            {/* Embedded CSS just for the waveform if not in index.css */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes waveform {
+                    0%, 100% { height: 20%; }
+                    50% { height: 100%; }
+                }
+            `}} />
+        </div>
+    );
+};
 
 interface PassengerViewProps {
     user: User;
     lang: 'EN' | 'HI';
+    isScrolled?: boolean;
 }
 
-export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
+export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false }) => {
     const t = (key: any) => (TRANSLATIONS[lang] as any)[key] || (TRANSLATIONS.EN as any)[key];
 
     const [appMode, setAppMode] = useState<'TRANSPORT' | 'MARKET' | 'FOOD'>('TRANSPORT');
@@ -52,6 +98,10 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     const [showToast, setShowToast] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [isBooking, setIsBooking] = useState(false);
+    
+    // Ultrasonic Audio state
+    const [isBroadcastingAudio, setIsBroadcastingAudio] = useState(false);
+    const [audioBroadcastError, setAudioBroadcastError] = useState(false);
 
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
 
@@ -62,6 +112,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     // QR Modal
     const [showQRModal, setShowQRModal] = useState(false);
     const [qrData, setQrData] = useState<string>('');
+    const [showFlashPassModal, setShowFlashPassModal] = useState<Ticket | null>(null);
 
     // New Feature State
     const [hasLivestock, setHasLivestock] = useState(false);
@@ -177,13 +228,50 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
             fetchWallet();
             fetchParcels();
             filterUpcomingBuses();
-        }, 5000);
+        }, 60000);
         return () => {
             clearInterval(interval);
             window.removeEventListener('online', () => setIsOfflineMode(false));
             window.removeEventListener('offline', () => setIsOfflineMode(true));
         };
     }, [user.id, fromLocation]);
+
+    // ULTRASONIC AUDIO BROADCAST LOGIC
+    useEffect(() => {
+        let broadcastTimer: NodeJS.Timeout;
+        let isActive = true;
+
+        const startLoop = async () => {
+            if (activeTickets.length > 0 && ['PENDING', 'BOARDED'].includes(activeTickets[0].status)) {
+                setIsBroadcastingAudio(true);
+                setAudioBroadcastError(false);
+                
+                const broadcast = async () => {
+                    if (!isActive || document.hidden) return;
+                    try {
+                        console.log("[Acoustic TX] Emitting Ticket:", activeTickets[0].id);
+                        await broadcastUltrasonicTicket(activeTickets[0].id);
+                    } catch (e) {
+                        console.error("Audio Broadcast Exception:", e);
+                        setAudioBroadcastError(true);
+                    }
+                    if (isActive) broadcastTimer = setTimeout(broadcast, 4000); // 4 sec interval
+                };
+                
+                broadcast();
+            } else {
+                setIsBroadcastingAudio(false);
+            }
+        };
+
+        startLoop();
+
+        return () => {
+            isActive = false;
+            setIsBroadcastingAudio(false);
+            if (broadcastTimer) clearTimeout(broadcastTimer);
+        };
+    }, [activeTickets]);
 
     // SURAKSHA KAVACH: Automatic Recording on Trip Start
     useEffect(() => {
@@ -303,6 +391,22 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
     const handleShowQR = (id: string) => {
         setQrData(id);
         setShowQRModal(true);
+    };
+    
+    const handleBroadcastAcoustic = async (id: string) => {
+        setIsBroadcastingAudio(true);
+        try {
+            await broadcastUltrasonicTicket(`TK|${id}|${user.id}`);
+            alert("Acoustic Handshake Complete.");
+        } catch (e) {
+            console.error("Audio broadcast failed", e);
+            alert("Ensure media volume is up for acoustic handshake.");
+        }
+        setIsBroadcastingAudio(false);
+    };
+
+    const handleShowFlashPass = (ticket: Ticket) => {
+        setShowFlashPassModal(ticket);
     };
 
     const initiateBook = () => {
@@ -727,11 +831,11 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                     </div>
 
                                     {logisticsPoolFound && (
-                                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl flex items-center gap-3 border border-emerald-100 dark:border-emerald-800 animate-pulse">
-                                            <Users size={18} className="text-emerald-600" />
+                                        <div className="bg-emerald-50 dark:bg-emerald-900/40 p-3 rounded-2xl flex items-center gap-3 border border-emerald-200 dark:border-emerald-700 animate-pulse">
+                                            <Users size={18} className="text-emerald-600 dark:text-emerald-400" />
                                             <div>
-                                                <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">POOLING ACTIVE</p>
-                                                <p className="text-[9px] text-emerald-600 dark:text-emerald-500 mt-0.5">30% discount applied for shared route.</p>
+                                                <p className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300">POOLING ACTIVE</p>
+                                                <p className="text-[9px] text-emerald-700 dark:text-emerald-400 mt-0.5">30% discount applied for shared route.</p>
                                             </div>
                                         </div>
                                     )}
@@ -750,19 +854,19 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
 
                             {myParcels.length > 0 && (
                                 <div className="space-y-3">
-                                    <h3 className="font-bold text-slate-500 text-sm uppercase">Active Parcels</h3>
+                                    <h3 className="font-bold text-slate-600 dark:text-slate-400 text-sm uppercase">Active Parcels</h3>
                                     {myParcels.map(p => (
-                                        <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center">
+                                        <div key={p.id} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center">
                                             <div className="flex items-center gap-3">
                                                 <div className="bg-luxe-teal/10 dark:bg-luxe-teal/20 p-2.5 rounded-full text-luxe-teal">
                                                     <Package size={18} />
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-bold text-slate-800 dark:text-white">{p.from} → {p.to}</p>
-                                                    <p className="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">{p.status}</p>
+                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">{p.status}</p>
                                                 </div>
                                             </div>
-                                            <button className="text-[10px] bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full font-bold text-slate-600 hover:bg-slate-200">Track</button>
+                                            <button className="text-[10px] bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-full font-bold text-slate-800 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-600">Track</button>
                                         </div>
                                     ))}
                                 </div>
@@ -838,45 +942,52 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                             {activeTab === 'HOME' && currentView === 'DASHBOARD' && (
                                 <div className="space-y-6">
 
-                                    {/* REDESIGNED ACTIVE TRIP CARD (Whisk 2.0 Ticket Stub) */}
+                                    {/* REDESIGNED ACTIVE Trip CARD (Whisk 2.0 Ticket Stub) */}
                                     {activeTickets.length > 0 && (
-                                        <div className="ticket-stub relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-whisk-float super-rounded mb-6">
-                                            {/* Top Perforation Area */}
-                                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-400 via-indigo-500 to-brand-600"></div>
+                                        <div className="ticket-stub relative overflow-hidden bg-gradient-to-br from-slate-900 via-brand-900 to-slate-900 border border-brand-500/30 shadow-2xl shadow-brand-500/20 super-rounded mb-6">
+                                            {/* Top Highlight Area */}
+                                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-luxe-teal via-brand-400 to-luxe-gold"></div>
 
                                             <div className="p-5 relative z-10">
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">{t('active_trip')}</span>
+                                                        <div className="flex flex-col gap-1 mb-1.5 px-3 py-1.5 bg-emerald-500/10 w-max rounded-xl border border-emerald-500/20">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${audioBroadcastError ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]'}`}></span>
+                                                                <span className="text-[10px] font-black uppercase tracking-widest" style={{color: audioBroadcastError ? '#ef4444' : '#6ee7b7'}}>
+                                                                    {audioBroadcastError ? 'BROADCAST ERR' : t('active_trip')}
+                                                                </span>
+                                                            </div>
+                                                            <AnimatedWave isBroadcasting={isBroadcastingAudio && !audioBroadcastError} isError={audioBroadcastError} />
                                                         </div>
-                                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white leading-tight">
-                                                            {activeTickets[0].from} <span className="text-slate-300 mx-1">→</span> {activeTickets[0].to}
+                                                        <h3 className="text-xl font-black leading-tight mt-1 flex items-center gap-2" style={{color: '#ffffff'}}>
+                                                            <span>{activeTickets[0].from}</span>
+                                                            <span style={{color: '#a5b4fc'}} className="mx-0.5">→</span>
+                                                            <span>{activeTickets[0].to}</span>
                                                         </h3>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bus 404</p>
-                                                        <p className="text-xs font-bold text-brand-600 dark:text-brand-400 mt-0.5">₹{activeTickets[0].totalPrice}</p>
+                                                    <div className="text-right px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)'}}>
+                                                        <p className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Seat</p>
+                                                        <p className="text-sm font-black" style={{color: '#a5b4fc'}}>{activeTickets[0].seatNumber || 'STAND'}</p>
                                                     </div>
                                                 </div>
 
                                                 {/* Live Tracker Integration */}
-                                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
+                                                <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 mb-6 ring-1 ring-white/10 shadow-inner">
                                                     <LiveTracker desiredPath={activeTickets[0].routePath} layout="HORIZONTAL" showHeader={false} />
                                                 </div>
 
-                                                <div className="flex justify-between items-center border-t border-dashed border-slate-200 dark:border-slate-700 pt-4">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[9px] text-slate-400 uppercase font-bold">Ticket ID</span>
-                                                        <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">#{activeTickets[0].id.slice(-6).toUpperCase()}</span>
+                                                <div className="flex justify-between items-center border-t border-dashed pt-4" style={{borderColor: 'rgba(255,255,255,0.15)'}}>
+                                                    <div className="flex flex-col px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)'}}>
+                                                        <span className="text-[8px] uppercase font-black tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Ticket ID</span>
+                                                        <span className="text-[11px] font-mono font-black" style={{color: '#ffffff'}}>#{activeTickets[0].id.slice(-6).toUpperCase()}</span>
                                                     </div>
                                                     <button
-                                                        onClick={() => handleShowQR(activeTickets[0].id)}
-                                                        className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-800 transition-colors flex items-center gap-2"
+                                                        onClick={() => handleShowFlashPass(activeTickets[0])}
+                                                        className="bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors flex items-center gap-2 transform hover:scale-105"
                                                     >
-                                                        <QrCode size={14} />
-                                                        Show Ticket
+                                                        <Zap size={14} className="fill-white" />
+                                                        Flash Pass
                                                     </button>
                                                 </div>
                                             </div>
@@ -886,53 +997,50 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                     {/* ... (Rest of existing dashboard UI) ... */}
                                     {/* Removed overflow-hidden to allow dropdown to display */}
                                     {/* DASHBOARD SECTION MATCHING REFERENCE IMAGE */}
-                                    <div className="journey-card-reference animate-slide-up -mt-4 mx-[-10px]">
+                                    <div className={`journey-card-reference transition-all duration-500 ease-in-out ${isScrolled ? '![border-radius:50%_50%_0_0/24px_24px_0_0] shadow-2xl mt-4 mx-0' : `![border-radius:0_0_32px_32px] !border-t-0 shadow-xl ${activeTickets.length > 0 ? 'mt-4' : '-mt-[2px] z-10'} mx-0`}`}>
                                         <div className="flex flex-col gap-5">
-                                            <div className="flex justify-between items-start">
-                                                <h3 className="whitespace-pre-line">
-                                                    Plan Your {"\n"}
-                                                    Journey
-                                                </h3>
-                                                <div className="toggle-ticket-match">
+                                            <div className="flex justify-between items-stretch gap-3">
+                                                <div className="toggle-ticket-match flex-1 m-0">
                                                     <button 
                                                         onClick={() => { setIsBuyingPass(false); setSeatConfig('SEAT'); }} 
-                                                        className={!isBuyingPass ? 'active' : 'text-white/70'}
+                                                        className={!isBuyingPass ? 'active flex-1' : 'text-slate-500 flex-1'}
                                                     >
                                                         Ticket
                                                     </button>
                                                     <button 
                                                         onClick={() => { setIsBuyingPass(true); setSeatConfig('SEAT'); }} 
-                                                        className={isBuyingPass ? 'active' : 'text-white/70'}
+                                                        className={isBuyingPass ? 'active flex-1' : 'text-slate-500 flex-1'}
                                                     >
                                                         Pass
                                                     </button>
                                                 </div>
-                                            </div>
 
-                                            {/* Whisk 2.0: Trip Type Toggle */}
-                                            {!isBuyingPass && (
-                                                <div className="flex bg-black/20 p-1 rounded-xl w-fit backdrop-blur-md">
-                                                    <button 
-                                                        onClick={() => setTripType('ONE_WAY')} 
-                                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${tripType === 'ONE_WAY' ? 'bg-[#9333EA]/30 text-white' : 'text-white/50'}`}
-                                                    >
-                                                        One-Way
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setTripType('ROUND_TRIP')} 
-                                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${tripType === 'ROUND_TRIP' ? 'bg-[#9333EA]/30 text-white' : 'text-white/50'}`}
-                                                    >
-                                                        Round-Trip
-                                                    </button>
-                                                </div>
-                                            )}
+                                                {/* Whisk 2.0: Trip Type Toggle */}
+                                                {!isBuyingPass && (
+                                                    <div className="toggle-ticket-match flex-1 m-0">
+                                                        <button 
+                                                            onClick={() => setTripType('ONE_WAY')} 
+                                                            className={tripType === 'ONE_WAY' ? 'active flex-1' : 'text-slate-500 flex-1'}
+                                                        >
+                                                            One-Way
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setTripType('ROUND_TRIP')} 
+                                                            className={tripType === 'ROUND_TRIP' ? 'active flex-1' : 'text-slate-500 flex-1'}
+                                                        >
+                                                            Round-Trip
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        <div className="space-y-4 relative z-10">
+                                        <div className="space-y-4 relative z-10 mt-6">
                                             <LocationSelector
-                                                label="FROM"
-                                                icon={<div className="w-4 h-4 rounded-full bg-[#4F46E5] shadow-[0_0_10px_rgba(79,70,229,0.5)] border-2 border-white"></div>}
+                                                label="Pickup Point"
+                                                defaultAutoDetect={true}
                                                 onSelect={setFromLocation}
+                                                placeholder="Start"
                                             />
 
                                             {upcomingBuses.length > 0 && fromLocation && (
@@ -949,9 +1057,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             <div className="absolute left-[29px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-500/50 to-emerald-500/50 -z-10"></div>
 
                                             <LocationSelector
-                                                label="TO"
-                                                icon={<div className="w-4 h-4 rounded-full bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.5)] border-2 border-white"></div>}
+                                                label="Destination"
                                                 onSelect={setToLocation}
+                                                placeholder="End"
                                             />
                                         </div>
 
@@ -999,11 +1107,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                             </div>
                                         )}
 
-                                        <div className="mt-6 flex items-center justify-between p-3 bg-brand-50 dark:bg-brand-900/20 rounded-xl border border-brand-100 dark:border-brand-900/50">
-                                            <div className="flex items-center gap-2"><Gift size={16} className="text-brand-500" /><span className="text-sm font-bold text-brand-800 dark:text-brand-200">Gift Ticket to a friend?</span></div>
-                                            <div onClick={() => setIsGift(!isGift)} className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${isGift ? 'bg-brand-500' : 'bg-slate-300'}`}><div className={`absolute top-1 bottom-1 w-3 bg-white rounded-full transition-all ${isGift ? 'left-6' : 'left-1'}`}></div></div>
-                                        </div>
-                                        {isGift && (<div className="mt-2 animate-fade-in"><input type="tel" placeholder="Enter Friend's Phone Number" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-brand-200 dark:border-brand-800 outline-none text-sm" /></div>)}
+
 
                                         {/* Whisk 3.0: Ultimate Ride Selector (Inspired by Demo) */}
                                         {fareDetails && (
@@ -1055,11 +1159,11 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 mb-2">
-                                        <button onClick={() => setCurrentView('BOOK_RENTAL')} className="bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
-                                            <div className="bg-indigo-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Car size={16} /></div><span className="text-xs font-bold text-indigo-800 dark:text-indigo-200">Book Charter</span>
+                                        <button onClick={() => setCurrentView('BOOK_RENTAL')} className="bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
+                                            <div className="bg-indigo-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Car size={16} /></div><span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Book Charter</span>
                                         </button>
-                                        <button onClick={() => { setActiveTab('LOGISTICS'); setCurrentView('BOOK_PARCEL'); }} className="bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 border border-orange-200 dark:border-orange-800 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
-                                            <div className="bg-orange-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Package size={16} /></div><span className="text-xs font-bold text-orange-800 dark:text-orange-200">Send Parcel</span>
+                                        <button onClick={() => { setActiveTab('LOGISTICS'); setCurrentView('BOOK_PARCEL'); }} className="bg-orange-50 dark:bg-orange-900/40 hover:bg-orange-100 border border-orange-200 dark:border-orange-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
+                                            <div className="bg-orange-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Package size={16} /></div><span className="text-xs font-bold text-orange-900 dark:text-orange-200">Send Parcel</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1087,8 +1191,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                             <div className="flex items-center gap-3">
                                 <div className="bg-brand-100 dark:bg-brand-900/50 p-2 rounded-full text-brand-600"><CreditCard size={18} /></div>
                                 <div>
-                                    <p className="text-sm font-bold dark:text-white">Online Payment</p>
-                                    <p className="text-[10px] text-slate-500">UPI, Cards, Netbanking</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">Online Payment</p>
+                                    <p className="text-[10px] text-slate-600 dark:text-slate-400">UPI, Cards, Netbanking</p>
                                 </div>
                             </div>
                             <div className={`w-4 h-4 rounded-full border-2 ${paymentMethod === PaymentMethod.ONLINE ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}></div>
@@ -1102,8 +1206,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                             <div className="flex items-center gap-3">
                                 <div className="bg-slate-200 dark:bg-slate-800 p-2 rounded-full text-slate-600"><Banknote size={18} /></div>
                                 <div>
-                                    <p className="text-sm font-bold dark:text-white">Pay Cash to Driver</p>
-                                    <p className="text-[10px] text-slate-500">Driver verifies & collects cash</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">Pay Cash to Driver</p>
+                                    <p className="text-[10px] text-slate-600 dark:text-slate-400">Driver verifies & collects cash</p>
                                 </div>
                             </div>
                             <div className={`w-4 h-4 rounded-full border-2 ${paymentMethod === PaymentMethod.CASH ? 'border-brand-500 bg-brand-500' : 'border-slate-300'}`}></div>
@@ -1129,6 +1233,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang }) => {
                     <p className="text-sm font-bold mt-2 dark:text-white">Show to Conductor</p>
                 </div>
             </Modal>
+
+            {/* NEW FLASH PASS VERIFICATION SYSTEM */}
+            <FlashPass
+                isOpen={!!showFlashPassModal}
+                onClose={() => setShowFlashPassModal(null)}
+                ticket={showFlashPassModal}
+                userName={user.name}
+            />
 
 
 

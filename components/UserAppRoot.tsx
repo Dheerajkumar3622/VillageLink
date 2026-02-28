@@ -16,6 +16,22 @@ const UserAppRoot: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
     const [lang, setLang] = useState<'EN' | 'HI'>('EN');
+    const [darkMode, setDarkMode] = useState<boolean>(() => {
+        const saved = localStorage.getItem('vl_theme');
+        return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    });
+
+    useEffect(() => {
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('vl_theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('vl_theme', 'light');
+        }
+    }, [darkMode]);
+
+    const toggleTheme = () => setDarkMode(prev => !prev);
 
     useEffect(() => {
         // Check auth state from localStorage
@@ -74,7 +90,7 @@ const UserAppRoot: React.FC = () => {
         return <UserAuthView onSuccess={handleLoginSuccess} lang={lang} />;
     }
 
-    return <UserApp user={user} onLogout={handleLogout} lang={lang} />;
+    return <UserApp user={user} onLogout={handleLogout} lang={lang} darkMode={darkMode} toggleTheme={toggleTheme} />;
 };
 
 export default UserAppRoot;

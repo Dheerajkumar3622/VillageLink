@@ -192,7 +192,7 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({ user, onComplete, onCancel 
         setError(null);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
 
             // Upload documents first
             const uploadedDocs: { docType: string; url: string }[] = [];

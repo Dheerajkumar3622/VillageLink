@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../config';
 // ==================== HELPER ====================
 
 const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('villagelink_token');
     return {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`

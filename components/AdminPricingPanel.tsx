@@ -96,7 +96,7 @@ const AdminPricingPanel: React.FC<AdminPricingPanelProps> = ({ user }) => {
         setErrorMessage(null);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/pricing/${vehicleType}`, {
                 method: 'PUT',
                 headers: {

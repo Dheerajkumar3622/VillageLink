@@ -27,7 +27,7 @@ export const GramSahayakBubble: React.FC<GramSahayakBubbleProps> = ({ user, onOp
 
     const fetchInsight = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/ai/insights`, {
                 headers: { Authorization: `Bearer ${token}` }
             });

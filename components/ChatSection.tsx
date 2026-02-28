@@ -86,7 +86,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user, isAIAssistant = false }
 
     const fetchConversations = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/chat/conversations`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -139,7 +139,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user, isAIAssistant = false }
     const fetchMessages = async (conversationId: string) => {
         setLoadingMessages(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/chat/conversation/${conversationId}/messages`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -232,7 +232,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({ user, isAIAssistant = false }
         setNewMessage('');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const endpoint = isAIAssistant
                 ? `${API_BASE_URL}/api/ai/chat`
                 : `${API_BASE_URL}/api/chat/conversation/${activeConversation?.id}/message`;

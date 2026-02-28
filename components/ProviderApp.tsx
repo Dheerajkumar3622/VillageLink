@@ -89,7 +89,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
 
     const loadUserRoles = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/user/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -124,7 +124,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
 
         // Save to server
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             await fetch(`${API_BASE_URL}/api/user/active-role`, {
                 method: 'POST',
                 headers: {

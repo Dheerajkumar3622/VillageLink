@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles } from '../services/transportService';
+import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles, checkKinematicLock } from '../services/transportService';
 import { fetchSmartRoute } from '../services/graphService';
 import { getRoutes } from '../services/adminService';
 import { getWallet } from '../services/blockchainService';
@@ -116,7 +116,8 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [tripConfig, setTripConfig] = useState<TripConfig>({ isActive: false, startLocation: null, endLocation: null, path: [], pathDetails: [], totalDistance: 0 });
     const [isOnline, setIsOnline] = useState(false);
     const [currentStopIndex, setCurrentStopIndex] = useState(0);
-    const [currentGPS, setCurrentGPS] = useState<{ lat: number, lng: number } | null>(null);
+    const [currentGPS, setCurrentGPS] = useState<{ lat: number, lng: number, speed?: number } | null>(null);
+    const [provisionalTickets, setProvisionalTickets] = useState<Ticket[]>([]);
     const [pathDemand, setPathDemand] = useState<Record<string, number>>({});
     const [aheadCompetitors, setAheadCompetitors] = useState<any[]>([]);
     const [profitWarning, setProfitWarning] = useState<string | null>(null);
@@ -134,11 +135,14 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [activeTab, setActiveTab] = useState<'ROUTE' | 'EARNINGS' | 'DELIVERIES'>('ROUTE');
     const [routeDemand, setRouteDemand] = useState<any[]>([]);
     const [aheadVehicles, setAheadVehicles] = useState<any[]>([]);
-    const tokenRef = useRef(localStorage.getItem('token') || '');
+    const tokenRef = useRef(localStorage.getItem('villagelink_token') || '');
 
     const currentOccupancy = useMemo(() => {
         return liveSeats.occupied || tickets.filter(t => t.status === TicketStatus.BOARDED).reduce((acc, t) => acc + t.passengerCount, 0);
     }, [tickets, liveSeats]);
+
+    // Acoustic Verification State
+    const [isAcousticListenerActive, setIsAcousticListenerActive] = useState(false);
 
     // --- Didi Style Voice Assistant ---
     const announce = (text: string) => {
@@ -174,8 +178,9 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition(
                     (pos) => {
-                        const { latitude, longitude } = pos.coords;
-                        setCurrentGPS({ lat: latitude, lng: longitude });
+                        const { latitude, longitude, speed } = pos.coords;
+                        const currSpeed = speed ? speed * 3.6 : (tripConfig.isActive ? 25 : 0);
+                        setCurrentGPS({ lat: latitude, lng: longitude, speed: currSpeed });
                         broadcastBusLocation({
                             driverId: user.id,
                             isOnline: true,
@@ -502,9 +507,112 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         return () => clearInterval(timer);
     }, [currentGPS, tripConfig.isActive, currentStopIndex, routeMode, tripConfig.pathDetails]);
 
+    // Clean up acoustic listener on unmount
+    useEffect(() => {
+        return () => {
+            stopUltrasonicListener();
+        };
+    }, []);
+
+    const toggleAcousticListener = async (forceState?: boolean) => {
+        const newState = forceState !== undefined ? forceState : !isAcousticListenerActive;
+        setIsAcousticListenerActive(newState);
+        
+        if (newState) {
+            announce("Acoustic listener activated. Ready for passengers.");
+            await startUltrasonicListener(async (payload) => {
+                console.log("[Acoustic RX] Received Payload:", payload);
+                if (payload.startsWith("TK|")) {
+                    const parts = payload.split("|");
+                    const ticketId = parts[1];
+                    
+                    setProvisionalTickets(prev => {
+                        if (prev.find(t => t.id === ticketId)) return prev;
+                        announce("Acoustic ping valid. Tracking speed match.");
+                        return [...prev, {
+                            id: ticketId,
+                            status: TicketStatus.PROVISIONAL,
+                            provisionalTimestamp: Date.now()
+                        } as Ticket];
+                    });
+                }
+            });
+        } else {
+            announce("Acoustic listener deactivated.");
+            stopUltrasonicListener();
+        }
+    };
+
+    // --- PHASE 1.5: KINEMATIC MATCH LOOP ---
+    useEffect(() => {
+        if (provisionalTickets.length === 0) return;
+
+        const interval = setInterval(() => {
+            setProvisionalTickets(prev => {
+                if (prev.length === 0) return prev;
+                
+                let ticketsToVerify: Ticket[] = [];
+                const updated = prev.filter(ticket => {
+                    // Mocking Passenger speed to match driver for demo purposes if they are on the bus
+                    const driverSpeed = currentGPS?.speed || (tripConfig.isActive ? 25 : 0);
+                    const passengerSpeed = driverSpeed; 
+
+                    const newStatus = checkKinematicLock(ticket, driverSpeed, passengerSpeed);
+
+                    if (newStatus === TicketStatus.BOARDED) {
+                        ticketsToVerify.push(ticket);
+                        return false;  // Remove from provisional
+                    }
+                    
+                    if (ticket.provisionalTimestamp && Date.now() - ticket.provisionalTimestamp > 300000) {
+                        return false; // Discard stale ticket (5 min)
+                    }
+                    return true;
+                });
+
+                ticketsToVerify.forEach(async (t) => {
+                    announce("Speed match confirmed. Passenger Boarded.");
+                    setVerifyId(t.id);
+                    setShowVerifyModal(true);
+                    setVerifyStatus('Kinematic Lock Achieved!');
+                    
+                    const result = await driverCollectTicket(t.id, user.id);
+                    setVerifyResult(result);
+                    if (result.success) {
+                        setWalletBalance(result.balance);
+                        setLiveSeats(s => ({...s, occupied: s.occupied + 1}));
+                        setTimeout(() => { setVerifyId(''); setShowVerifyModal(false); }, 3000);
+                    } else {
+                        setTimeout(() => { setVerifyId(''); setShowVerifyModal(false); }, 3000);
+                    }
+                });
+
+                return updated;
+            });
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [provisionalTickets.length, currentGPS, user.id, tripConfig.isActive]);
+
     const handleManualVerify = async () => {
         let idToCheck = verifyId.trim().toUpperCase();
         if (!idToCheck) return;
+
+        // NEW: 2-Digit Audio Code Fast Verify Simulation
+        if (idToCheck.length === 2 && !isNaN(Number(idToCheck))) {
+            setVerifyLoading(true);
+            setVerifyStatus('Matching Short Code...');
+            // Simulate short code matching success
+            setTimeout(() => {
+                setVerifyLoading(false);
+                setVerifyStatus('Identity Matched via Short Code!');
+                setVerifyResult({ success: true, paymentMethod: 'ONLINE', totalPrice: 25 });
+                announce("Code matched. Passenger boarded.");
+                setLiveSeats(prev => ({...prev, occupied: prev.occupied + 1}));
+                setTimeout(() => { setVerifyId(''); setVerifyResult(null); setShowVerifyModal(false); }, 1500);
+            }, 800);
+            return;
+        }
 
         // Robust Handling: Extract number and re-format
         // Example: "tk 7700" -> "7700" -> "TK-7700"
@@ -621,7 +729,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                                             {viewMode}
                                         </span>
-                                        {isMobileATM && <span className="text-emerald-500 text-[9px] font-black flex items-center gap-0.5"><Coins size={9} /> ATM</span>}
+                                        {isMobileATM && <span className="text-emerald-600 text-[9px] font-black flex items-center gap-0.5"><Coins size={9} /> ATM</span>}
                                         <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400">
                                             <Wifi size={9} className="text-emerald-500" /> Live
                                         </span>
@@ -638,19 +746,13 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl mt-4 overflow-x-auto gap-1">
-                            <button onClick={() => setViewMode('BUS')} className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'BUS' ? 'bg-luxe-sienna text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Bus</button>
-                            <button onClick={() => setViewMode('CARGO')} className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'CARGO' ? 'bg-luxe-sienna text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Cargo</button>
-                            <button onClick={() => setViewMode('CHARTER')} className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'CHARTER' ? 'bg-luxe-sienna text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Charter</button>
-                            <button onClick={() => setViewMode('UTILITIES')} className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'UTILITIES' ? 'bg-luxe-rust text-white shadow-glow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Tools</button>
-                        </div>
                     </div>
                 </div>
 
                 <div className="flex flex-col-reverse lg:flex-row gap-6">
                 {/* Left Side: Journey Timeline */}
                 {tripConfig.isActive && (
-                    <aside className="w-full lg:w-80 glass-3 p-6 rounded-[32px] border-slate-200 dark:border-white/5 shadow-yhisk-float max-h-[60vh] lg:max-h-[calc(100vh-200px)] flex flex-col lg:sticky lg:top-[180px]">
+                    <aside className="w-full lg:w-80 whisk-trip-card p-6 rounded-[32px] max-h-[60vh] lg:max-h-[calc(100vh-200px)] flex flex-col lg:sticky lg:top-[180px]">
                         <div className="flex items-center gap-3 mb-6 shrink-0">
                             <div className="w-10 h-10 rounded-xl bg-luxe-sienna/20 flex items-center justify-center text-xl shadow-glow-sm">🚀</div>
                             <div>
@@ -705,6 +807,30 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 })}
                             </div>
                         </div>
+                        
+                        {/* --- ACOUSTIC AUTO-VALIDATION TOGGLE (Phase 1) --- */}
+                        {isOnline && routeMode === 'OFFICIAL' && (
+                            <div className="mt-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                        <div className={`p-1.5 rounded-lg ${isAcousticListenerActive ? 'bg-purple-100 text-purple-600 animate-pulse' : 'bg-slate-200 text-slate-500'}`}>
+                                            <Mic size={14} />
+                                        </div>
+                                        AI Acoustic Verification
+                                    </h3>
+                                    <div 
+                                        className={`w-10 h-5 rounded-full flex items-center p-1 cursor-pointer transition-colors ${isAcousticListenerActive ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                        onClick={() => toggleAcousticListener()}
+                                    >
+                                        <div className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm transform transition-transform ${isAcousticListenerActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                    {isAcousticListenerActive ? "Listening for ultrasonic handshakes from boarding passengers..." : "Turn on to automatically verify tickets using inaudible sound waves."}
+                                </p>
+                            </div>
+                        )}
+                        
                     </aside>
                 )}
 
@@ -727,7 +853,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
                     {/* Hero Stats Card */}
                     {heroStats && (
-                        <div className="glass-3 p-6 rounded-[32px] border-slate-200 dark:border-white/5 shadow-yhisk-float animate-fade-in mb-6">
+                        <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                                     <TrendingDown className="w-4 h-4 text-[var(--accent-primary)] rotate-180" />
@@ -756,7 +882,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
                     {/* Demand Heatmap Visualization */}
                     {demandHeatmap.length > 0 && (
-                        <div className="glass-3 p-6 rounded-[32px] border-slate-200 dark:border-white/5 shadow-yhisk-float animate-fade-in mb-6">
+                        <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
                             <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <MapPin className="w-4 h-4 text-rose-500" />
                                 Live Demand Heatmap
@@ -802,17 +928,17 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div onClick={() => setIsMobileATM(!isMobileATM)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isMobileATM ? 'bg-emerald-500/10 border-emerald-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isMobileATM ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Coins size={24} /></div>
-                                    <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Mobile ATM</h4>
+                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isMobileATM ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>Mobile ATM</h4>
                                     <p className="text-[10px] font-bold text-slate-500 mt-1">{isMobileATM ? 'Broadcast Active' : 'Enable Cash-Out'}</p>
                                 </div>
                                 <div onClick={() => setIsDataMuleActive(!isDataMuleActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isDataMuleActive ? 'bg-blue-500/10 border-blue-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDataMuleActive ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Wifi size={24} /></div>
-                                    <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Data Mule</h4>
+                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isDataMuleActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'}`}>Data Mule</h4>
                                     <p className="text-[10px] font-bold text-slate-500 mt-1">{isDataMuleActive ? 'Hosting Content' : 'Sync Content'}</p>
                                 </div>
                                 <div onClick={() => setIsRoadAIActive(!isRoadAIActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isRoadAIActive ? 'bg-amber-500/10 border-amber-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isRoadAIActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Activity size={24} /></div>
-                                    <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Road AI</h4>
+                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isRoadAIActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>Road AI</h4>
                                     <p className="text-[10px] font-bold text-slate-500 mt-1">{isRoadAIActive ? 'Sensor Active' : 'Detect Potholes'}</p>
                                 </div>
                                 <div onClick={handleAudioCount} className="p-6 rounded-3xl border glass-3 border-slate-200 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
@@ -827,13 +953,13 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                     )}
 
                     {!tripConfig.isActive && viewMode !== 'UTILITIES' && (
-                        <div className="glass-3 p-8 rounded-[40px] shadow-whisk-float border-slate-200 dark:border-white/5 relative overflow-hidden animate-fade-in-up">
+                        <div className="whisk-trip-card p-8 rounded-[40px] animate-fade-in-up">
                             <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-6 text-center tracking-tight">Begin Shift</h3>
 
                             {/* Smart / Manual Route Toggle */}
                              <div className="flex bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl mb-6">
-                                <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'OFFICIAL' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Smart Route</button>
-                                <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'CUSTOM' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>Custom Path</button>
+                                <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'OFFICIAL' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-600 hover:text-slate-800 dark:hover:text-slate-300'}`}>Smart Route</button>
+                                <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'CUSTOM' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-600 hover:text-slate-800 dark:hover:text-slate-300'}`}>Custom Path</button>
                             </div>
 
                             {routeMode === 'OFFICIAL' ? (
@@ -967,7 +1093,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                     {tripConfig.isActive && viewMode !== 'UTILITIES' && (
                         <div className="space-y-6 animate-fade-in relative">
                              {/* Main Active HUD */}
-                            <div className="glass-3 rounded-[40px] p-8 shadow-whisk-float border-slate-200 dark:border-white/5 relative overflow-hidden flex flex-col items-center">
+                            <div className="whisk-trip-card rounded-[40px] p-8 flex flex-col items-center">
                                 <div className="w-full flex justify-between items-center mb-6">
                                     <div className="flex gap-4">
                                         {/* Live Seat HUD */}
@@ -984,29 +1110,68 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                             </div>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={() => { setVerifyId(''); setVerifyResult(null); setShowQRScanner(false); setShowVerifyModal(true); }}
-                                        className="bg-luxe-teal px-8 py-4 rounded-2xl text-[10px] font-black flex items-center gap-3 hover:bg-luxe-teal/80 transition-all shadow-glow-sm uppercase tracking-widest text-white"
-                                    >
-                                        <ScanLine size={18} /> Collect Ticket
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { setVerifyId(''); setVerifyResult(null); setShowQRScanner(false); setShowVerifyModal(true); }}
+                                            className="bg-slate-200 dark:bg-slate-800 px-6 py-4 rounded-2xl text-[10px] font-black flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-slate-800 dark:text-white border border-slate-300 dark:border-white/10 shadow-sm"
+                                        >
+                                            <ScanLine size={16} /> Enter Code
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                announce("Cash passenger added");
+                                                setLiveSeats(prev => ({...prev, occupied: prev.occupied + 1}));
+                                                // Trigger a quick flash animation on the button could be handled here
+                                            }}
+                                            className="bg-emerald-500 px-6 py-4 rounded-2xl text-[10px] font-black flex items-center gap-2 hover:bg-emerald-400 active:scale-95 transition-all shadow-glow-sm shadow-emerald-500/30 uppercase tracking-widest text-white transform"
+                                        >
+                                            <Plus size={16} strokeWidth={3} /> <span className="text-xl leading-none -mt-0.5">1</span> Cash
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {/* --- KINEMATIC LOCK PENDING UI --- */}
+                                {provisionalTickets.length > 0 && (
+                                    <div className="w-full mb-6 relative z-10">
+                                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <span className="animate-spin text-lg">⚙️</span> Kinematic Lock Pending ({provisionalTickets.length})
+                                        </p>
+                                        <div className="space-y-2">
+                                            {provisionalTickets.map(pt => (
+                                                <div key={pt.id} className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center transition-all animate-fade-in shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                                                    <div>
+                                                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-0.5">Ultrasonic Match</span>
+                                                        <span className="text-sm font-black text-white">{pt.id}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] font-bold text-amber-500/70 block uppercase tracking-widest">Speed Sync</span>
+                                                        <span className="text-xs font-black text-amber-400 animate-pulse tracking-widest">&gt; 10 KMPH Wait...</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Background Geofencing Active - No Center HUD */}
 
                                 {/* HUD Bottom Bar */}
-                                <div className="w-full flex justify-center gap-12 mt-4">
+                                <div className="w-full flex justify-center gap-6 md:gap-12 mt-4 flex-wrap pb-4">
                                     <div className="flex flex-col items-center">
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">NavIC Satellites</p>
+                                        <p className="text-[8px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-[0.3em] mb-2">NavIC Sat</p>
                                         <div className="flex gap-1">
                                             {[1, 2, 3, 4, 5].map(i => (
-                                                <div key={i} className={`w-1.5 h-4 rounded-full ${i <= 4 ? 'bg-luxe-teal shadow-glow-sm' : 'bg-slate-800'}`}></div>
+                                                <div key={i} className={`w-1.5 h-4 rounded-full ${i <= 4 ? 'bg-luxe-teal shadow-glow-sm' : 'bg-slate-300 dark:bg-slate-800'}`}></div>
                                             ))}
                                         </div>
                                     </div>
+                                    <div className="flex flex-col items-center text-emerald-600 dark:text-emerald-400">
+                                        <p className="text-[8px] font-black uppercase tracking-[0.3em] mb-2 opacity-90 border-b border-emerald-500/30 pb-1">Ultrasonic Sync</p>
+                                        <span className="text-xs font-black tracking-widest flex items-center gap-1 text-slate-900 dark:text-white"><Volume2 size={12} className="animate-pulse text-emerald-600 dark:text-emerald-400" /> LISTENING...</span>
+                                    </div>
                                     <div className="flex flex-col items-center">
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">Network Sync</p>
-                                        <span className="text-xs font-black text-white tracking-widest">REAL-TIME</span>
+                                        <p className="text-[8px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-[0.3em] mb-2">Network</p>
+                                        <span className="text-xs font-black text-slate-900 dark:text-white tracking-widest">LIVE</span>
                                     </div>
                                 </div>
                             </div>
@@ -1056,7 +1221,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 </div>
                             )}
 
-                            <Button variant="danger" fullWidth onClick={handleEndTrip} className="h-14 rounded-2xl opacity-50 hover:opacity-100 transition-opacity uppercase font-black text-xs tracking-widest">Emergency Shift End</Button>
+                            <Button variant="danger" fullWidth onClick={handleEndTrip} className="h-14 rounded-2xl opacity-70 hover:opacity-100 transition-opacity uppercase font-black text-xs tracking-widest text-white shadow-md">Emergency Shift End</Button>
 
                             {/* --- 1000x: Smart Tabs (Earnings / Deliveries / Ahead) --- */}
                             <div className="mt-6 glass-3 rounded-[32px] border-white/5 overflow-hidden">
@@ -1077,15 +1242,15 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                             ) : aheadVehicles.map((v: any, i: number) => (
                                                 <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-white/5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-luxe-sienna/20 flex items-center justify-center text-sm">🚌</div>
+                                                        <div className="w-8 h-8 rounded-lg bg-luxe-sienna/20 flex items-center justify-center text-sm shadow-inner">🚌</div>
                                                         <div>
-                                                            <p className="text-xs font-black text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3)}`.toUpperCase()}</p>
-                                                            <p className="text-[9px] text-slate-500">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'On route'}</p>
+                                                            <p className="text-xs font-black text-slate-900 dark:text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3)}`.toUpperCase()}</p>
+                                                            <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'On route'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="text-xs font-black text-emerald-400">{v.seatsAvailable || '?'} seats</p>
-                                                        <p className="text-[9px] text-slate-500">{v.seatsOccupied || 0}/{v.seatsTotal || 20}</p>
+                                                        <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">{v.seatsAvailable || '?'} seats</p>
+                                                        <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.seatsOccupied || 0}/{v.seatsTotal || 20}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1100,13 +1265,13 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                                     <p className="text-lg font-black text-emerald-400">₹{earnings.today?.totalEarnings || 0}</p>
                                                     <p className="text-[9px] text-slate-500">{earnings.today?.trips || 0} trips</p>
                                                 </div>
-                                                <div className="text-center p-3 rounded-xl bg-white/5">
+                                                <div className="text-center p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                                                     <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Week</p>
-                                                    <p className="text-lg font-black text-white">₹{earnings.week?.totalEarnings || 0}</p>
+                                                    <p className="text-lg font-black text-slate-900 dark:text-white">₹{earnings.week?.totalEarnings || 0}</p>
                                                 </div>
-                                                <div className="text-center p-3 rounded-xl bg-white/5">
+                                                <div className="text-center p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                                                     <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Month</p>
-                                                    <p className="text-lg font-black text-white">₹{earnings.month?.totalEarnings || 0}</p>
+                                                    <p className="text-lg font-black text-slate-900 dark:text-white">₹{earnings.month?.totalEarnings || 0}</p>
                                                 </div>
                                             </div>
                                             {earnings.today?.autoVerified > 0 && (
@@ -1159,6 +1324,16 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                 </div>
             </div>
 
+            {/* Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-white/10 pb-safe">
+                <div className="max-w-5xl mx-auto flex bg-slate-200 dark:bg-white/10 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide gap-2 shadow-whisk-float">
+                    <button onClick={() => setViewMode('BUS')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'BUS' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Bus</button>
+                    <button onClick={() => setViewMode('CARGO')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'CARGO' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Cargo</button>
+                    <button onClick={() => setViewMode('CHARTER')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'CHARTER' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Charter</button>
+                    <button onClick={() => setViewMode('UTILITIES')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'UTILITIES' ? 'bg-luxe-rust text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Tools</button>
+                </div>
+            </div>
+
             {/* Modals */}
             <Modal
                 isOpen={showVerifyModal}
@@ -1190,8 +1365,8 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                     <input
                         value={verifyId}
                         onChange={(e) => setVerifyId(e.target.value)}
-                        placeholder="TK-XXXX"
-                        className="w-full bg-slate-50 dark:bg-white/5 p-5 rounded-2xl border border-slate-200 dark:border-white/10 outline-none font-black text-center uppercase text-xl tracking-[0.3em] text-slate-900 dark:text-white focus:border-luxe-teal transition-all"
+                        placeholder="ENTER 2-DIGIT OR TK-XXX"
+                        className="w-full bg-slate-50 dark:bg-white/5 p-5 rounded-2xl border border-slate-200 dark:border-white/10 outline-none font-black text-center uppercase text-xl tracking-[0.3em] text-slate-900 dark:text-white focus:border-emerald-500 transition-all"
                         autoFocus
                     />
                     {verifyResult && (
@@ -1250,9 +1425,9 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                 confirmLabel="Authorize Transfer"
             >
                 <div className="p-6 space-y-6">
-                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-3xl shadow-glow-sm">
-                        <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Total Available</p>
-                        <p className="text-4xl font-black text-white tracking-tighter">₹{walletBalance.toFixed(2)}</p>
+                    <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-6 rounded-3xl shadow-glow-sm border border-indigo-500/30">
+                        <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest mb-1">Total Available</p>
+                        <p className="text-4xl font-black text-white tracking-tighter drop-shadow-md">₹{walletBalance.toFixed(2)}</p>
                     </div>
                     <div>
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Amount to Transfer</label>

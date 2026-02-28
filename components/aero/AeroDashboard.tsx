@@ -208,7 +208,7 @@ const AeroDashboard: React.FC<AeroDashboardProps> = ({ userId, onBack }) => {
             const res = await fetch(`/api/aero/tower/${selectedTower.id}/plant`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${localStorage.getItem('villagelink_token')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ presetId: preset.id })

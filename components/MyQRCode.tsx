@@ -45,7 +45,7 @@ const MyQRCode: React.FC<MyQRCodeProps> = ({ user, role, onClose }) => {
 
     const loadMyQRCodes = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/qr/my-codes`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -70,7 +70,7 @@ const MyQRCode: React.FC<MyQRCodeProps> = ({ user, role, onClose }) => {
     const generateQRCode = async (type: QRType) => {
         setGenerating(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/qr/generate`, {
                 method: 'POST',
                 headers: {

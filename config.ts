@@ -2,7 +2,7 @@
 // --- APP CONFIGURATION ---
 
 // Production backend URL
-const PRODUCTION_BACKEND = 'https://villagelink-jh20.onrender.com';
+const PRODUCTION_BACKEND = 'https://backendlink-0xjs.onrender.com';
 
 const getBaseUrl = () => {
     // If VITE_API_URL is explicitly set, use it
@@ -18,7 +18,7 @@ const getBaseUrl = () => {
     }
 
     // Default to production
-    return 'https://villagelink-jh20.onrender.com';
+    return 'https://backendlink-0xjs.onrender.com';
 };
 
 export const API_BASE_URL = getBaseUrl();

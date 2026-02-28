@@ -6,6 +6,7 @@ const { User, Shop } = Models;
 import crypto from 'crypto';
 import https from 'https';
 import EmailService from './services/emailService.js';
+import { getFirebaseAdmin } from './firebaseAdmin.js';
 const { sendEmail } = EmailService;
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
@@ -415,6 +416,108 @@ export const resetPasswordViaFirebase = async (req, res) => {
   }
 };
 
+export const loginViaFirebase = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const admin = getFirebaseAdmin();
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const phoneNumber = decodedToken.phone_number;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: "Token matched no phone number" });
+    }
+
+    const normalizedPhone = phoneNumber.replace('+91', '').replace('+', '');
+
+    const user = await User.findOne({
+      $or: [{ phone: normalizedPhone }, { phone: phoneNumber }]
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not registered.", phone: normalizedPhone });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "Account Suspended by Administrator" });
+    }
+
+    const panelType = user.panelType || (user.role === 'PASSENGER' ? 'USER' : 'PROVIDER');
+    const token = jwt.sign({ id: user.id, role: user.role, panelType }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...safeUser } = user.toObject();
+
+    res.json({ success: true, user: safeUser, token, panelType });
+  } catch (e) {
+    console.error("Firebase Login Error:", e);
+    res.status(401).json({ error: "Invalid or expired Firebase token." });
+  }
+};
+
+export const registerViaFirebase = async (req, res) => {
+  try {
+    const { idToken, name, role, email, vehicleCapacity, vehicleType, address, pincode } = req.body;
+    const admin = getFirebaseAdmin();
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    let phoneNumber = decodedToken.phone_number;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: "Token matched no phone number" });
+    }
+    const normalizedPhone = phoneNumber.replace('+91', '').replace('+', '');
+
+    const existing = await User.findOne({
+      $or: [{ phone: normalizedPhone }, { phone: phoneNumber }]
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: "User already registered with this phone number." });
+    }
+
+    const id = `USR-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isVerified = role === 'PASSENGER';
+    const panelType = role === 'PASSENGER' ? 'USER' : 'PROVIDER';
+
+    const user = new User({
+        id,
+        name,
+        role: role || 'PASSENGER',
+        panelType,
+        isVerified,
+        phone: normalizedPhone,
+        email,
+        vehicleCapacity,
+        vehicleType,
+        address,
+        pincode,
+        password: crypto.randomBytes(8).toString('hex') // Dummy password
+    });
+    
+    if (role === 'MESS_MANAGER') {
+      const shop = new Shop({
+        id: `SHP-${Math.floor(1000 + Math.random() * 9000)}`,
+        ownerId: user.id,
+        name,
+        category: 'MESS',
+        location: address,
+        pincode: pincode,
+        rating: 4.0,
+        isOpen: true,
+        themeColor: 'purple'
+      });
+      await shop.save();
+    }
+
+    await user.save();
+
+    const token = jwt.sign({ id: user.id, role: user.role, panelType }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...safeUser } = user.toObject();
+
+    res.json({ success: true, user: safeUser, token, panelType });
+  } catch (e) {
+    console.error("Firebase Register Error:", e);
+    res.status(401).json({ error: "Invalid or expired Firebase token." });
+  }
+};
+
 // Default export for CJS compatibility
 export default {
   register,
@@ -423,5 +526,10 @@ export default {
   resetPassword,
   resetPasswordViaFirebase,
   authenticate,
-  requireAdmin
+  requireAdmin,
+  registerUser,
+  registerProvider,
+  updateFCMToken,
+  loginViaFirebase,
+  registerViaFirebase
 };

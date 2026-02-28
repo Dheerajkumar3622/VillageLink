@@ -1,4 +1,5 @@
 
+// Vite restart trigger 1
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
@@ -11,12 +12,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: 'https://backendlink-0xjs.onrender.com',
         ws: true,
         changeOrigin: true
       },
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'https://backendlink-0xjs.onrender.com',
         changeOrigin: true
       }
     }

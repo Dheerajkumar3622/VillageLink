@@ -55,6 +55,8 @@ import kisanRoutes from './backend/routes/kisanRoutes.js';
 import dashboardRoutes from './backend/routes/dashboardRoutes.js';
 import { initializeSpeedMatchEngine, updateSpeedBuffer, clearSpeedBuffer, checkAlighting } from './backend/services/speedMatchEngine.js';
 import { initializeSeatTracking } from './backend/services/seatTrackingService.js';
+import { initializeTrajectoryMatcher, registerTrajectory, updateDriverPosition, removeTrajectory, findMatchingVehicles, getActiveTrajectoryCount } from './backend/services/trajectoryMatcher.js';
+import { harvestTrajectoryData } from './backend/services/AISmartRoutingService.js';
 
 import EmailService from './backend/services/emailService.js';
 const { sendEmail } = EmailService;
@@ -225,10 +227,12 @@ app.post('/api/auth/register', Auth.register);              // Legacy
 app.post('/api/auth/register/user', Auth.registerUser);      // 1000x: User panel
 app.post('/api/auth/register/provider', Auth.registerProvider); // 1000x: Provider panel
 app.post('/api/auth/login', Auth.login);
+app.post('/api/auth/login-firebase', Auth.loginViaFirebase);
 app.post('/api/auth/logout', (req, res) => res.json({ success: true }));
 app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
 app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
+app.post('/api/auth/register-firebase', Auth.registerViaFirebase);
 app.post('/api/auth/update-fcm-token', Auth.authenticate, Auth.updateFCMToken); // 1000x: FCM
 
 // --- GRAMMANDI ROUTES (Food Ecosystem) ---
@@ -660,6 +664,31 @@ app.post('/api/routes/analyze', async (req, res) => {
     }
 });
 
+// --- PHASE 5: TRAJECTORY MATCHING API ---
+app.post('/api/routes/find-vehicles', async (req, res) => {
+    try {
+        const { startLat, startLng, endLat, endLng, maxSnapKm } = req.body;
+        if (!startLat || !startLng || !endLat || !endLng) {
+            return res.status(400).json({ error: 'Start and End coordinates required' });
+        }
+        
+        const vehicles = findMatchingVehicles(
+            parseFloat(startLat), parseFloat(startLng),
+            parseFloat(endLat), parseFloat(endLng),
+            parseFloat(maxSnapKm) || 1.5
+        );
+        
+        res.json({
+            count: vehicles.length,
+            activeDriversTotal: getActiveTrajectoryCount(),
+            vehicles
+        });
+    } catch (e) {
+        console.error('Vehicle matching error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.get('/api/user/wallet', Auth.authenticate, async (req, res) => {
     try {
         const user = await User.findOne({ id: req.user.id });
@@ -860,6 +889,9 @@ io.on('connection', (socket) => {
                 heading: data.heading,
                 speed: data.speed
             }]);
+
+            // Phase 5: Snap driver position on their active trajectory
+            updateDriverPosition(data.driverId, data.lat, data.lng);
         } catch (e) {
             console.error('Location stream error:', e);
         }
@@ -901,6 +933,99 @@ io.on('connection', (socket) => {
 
     socket.on('leave_route', (routeId) => {
         socket.leave(`route_${routeId}`);
+    });
+
+    // --- PHASE 5: TRAJECTORY MATCHING SOCKET EVENTS ---
+    
+    // Driver starts a trip and registers their trajectory polyline
+    socket.on('driver_start_trip', async (data) => {
+        try {
+            // data = { driverId, startLat, startLng, endLat, endLng, vehicleType, driverName }
+            const routeData = await Logic.getRealRoadPath(data.startLat, data.startLng, data.endLat, data.endLng);
+            
+            if (routeData && routeData.pathDetails && routeData.pathDetails.length > 0) {
+                registerTrajectory(data.driverId, routeData.pathDetails, {
+                    driverName: data.driverName || 'Driver',
+                    vehicleType: data.vehicleType || 'AUTO',
+                    startName: data.startName || '',
+                    endName: data.endName || '',
+                    distanceKm: routeData.distance,
+                    durationMin: routeData.duration
+                });
+                
+                socket.emit('trip_trajectory_ready', {
+                    success: true,
+                    pointCount: routeData.pathDetails.length,
+                    distanceKm: routeData.distance,
+                    durationMin: routeData.duration
+                });
+                
+                console.log(`🛣️ Trip started: ${data.driverId} (${routeData.pathDetails.length} pts, ${routeData.distance.toFixed(1)}km)`);
+            } else {
+                socket.emit('trip_trajectory_ready', { success: false, error: 'Could not calculate route' });
+            }
+        } catch (e) {
+            console.error('Trip start error:', e);
+            socket.emit('trip_trajectory_ready', { success: false, error: e.message });
+        }
+    });
+    
+    // Driver ends their trip
+    socket.on('driver_end_trip', async (data) => {
+        // Phase 5: HMM Map Matching & Shadow Logging
+        // data should contain { driverId, vehicleType, startNode, endNode }
+        // We retrieve their raw trajectory from the matcher before removing it
+        try {
+            const { activeDrivers } = await import('./backend/services/trajectoryMatcher.js').catch(() => ({}));
+            // NOTE: activeDrivers is internal to trajectoryMatcher, so we should instead
+            // either expose a getter or pass the raw trip ping array directly in the socket payload.
+            // For now, if the client sends rawPings back:
+            if (data.rawPings && data.rawPings.length > 5) {
+                harvestTrajectoryData({
+                    driverId: data.driverId,
+                    vehicleType: data.vehicleType || 'AUTO',
+                    startNode: data.startNode || 'Unknown Start',
+                    endNode: data.endNode || 'Unknown End',
+                    rawPings: data.rawPings
+                });
+            }
+        } catch(e) { console.error('Trajectory Harvest Err:', e); }
+
+        removeTrajectory(data.driverId);
+        console.log(`🏁 Trip ended: ${data.driverId}`);
+    });
+    
+    // Passenger searches for vehicles on their route
+    socket.on('find_vehicles_on_route', (data) => {
+        // data = { startLat, startLng, endLat, endLng, passengerId }
+        const vehicles = findMatchingVehicles(
+            data.startLat, data.startLng,
+            data.endLat, data.endLng,
+            data.maxSnapKm || 1.5
+        );
+        
+        socket.emit('vehicles_on_route', {
+            count: vehicles.length,
+            vehicles,
+            searchedAt: Date.now()
+        });
+        
+        // Auto-subscribe passenger to matching drivers for live tracking
+        for (const v of vehicles) {
+            socket.join(`tracking_${v.driverId}`);
+        }
+        
+        // Notify matched drivers about waiting passenger
+        for (const v of vehicles) {
+            io.to(`driver_${v.driverId}`).emit('passenger_waiting_ahead', {
+                passengerId: data.passengerId,
+                pickupName: data.startName || 'Pickup',
+                dropoffName: data.endName || 'Dropoff',
+                pickupLat: data.startLat,
+                pickupLng: data.startLng,
+                etaMinutes: v.etaMinutes
+            });
+        }
     });
 
     // Request ride - find nearby driver
@@ -1042,6 +1167,10 @@ io.on('connection', (socket) => {
         if (socket.passengerId) {
             clearSpeedBuffer(socket.passengerId); // 1000x: Clean up passenger buffer
         }
+        // Phase 5: Clean up trajectory on disconnect
+        if (socket.driverId) {
+            removeTrajectory(socket.driverId);
+        }
         console.log(`🔌 Socket disconnected: ${socket.id}`);
     });
 
@@ -1076,6 +1205,9 @@ server.listen(PORT, () => {
     // 1000x: Initialize Speed Match Engine & Seat Tracking
     initializeSpeedMatchEngine(io);
     initializeSeatTracking(io);
+    
+    // Phase 5: Initialize Trajectory Matcher
+    initializeTrajectoryMatcher(io);
     
     // Start Keep-Alive service to prevent server sleep
     startKeepAlive();

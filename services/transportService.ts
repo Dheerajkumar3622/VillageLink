@@ -209,7 +209,9 @@ export const savePass = async (pass: Pass & { recipientPhone?: string }): Promis
 
 export const getMyPasses = async (userId: string): Promise<Pass[]> => {
     try {
-        const res = await fetch(`${SERVER_URL}/api/passes/list?userId=${userId}`);
+        const res = await fetch(`${SERVER_URL}/api/passes/list?userId=${userId}`, {
+            headers: getHeaders()
+        });
         if (!res.ok) throw new Error("API Error");
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -283,7 +285,9 @@ export const bookRental = async (rental: RentalBooking): Promise<boolean> => {
 
 export const getRentalRequests = async (): Promise<RentalBooking[]> => {
     try {
-        const res = await fetch(`${SERVER_URL}/api/rentals/requests`);
+        const res = await fetch(`${SERVER_URL}/api/rentals/requests`, {
+            headers: getHeaders()
+        });
         if (!res.ok) return [];
         return await res.json();
     } catch (e) {
@@ -318,7 +322,9 @@ export const bookParcel = async (parcel: ParcelBooking): Promise<boolean> => {
 
 export const getAllParcels = async (): Promise<ParcelBooking[]> => {
     try {
-        const res = await fetch(`${SERVER_URL}/api/logistics/all`);
+        const res = await fetch(`${SERVER_URL}/api/logistics/all`, {
+            headers: getHeaders()
+        });
         if (!res.ok) return [];
         return await res.json();
     } catch (e) { return []; }
@@ -399,4 +405,54 @@ export const generateRentalId = (): string => {
 
 export const generateParcelId = (): string => {
     return `PKG-${Math.floor(10000 + Math.random() * 90000)}`;
+};
+
+// --- PHASE 1.5: KINEMATIC LOCK ALGORITHM ---
+/**
+ * Evaluates the Kinematic Lock condition.
+ * If Driver and Passenger speeds match >10kmph for a sustained duration, it locks the ticket.
+ */
+export const checkKinematicLock = (ticket: Ticket, driverSpeed: number, passengerSpeed: number): TicketStatus => {
+    // 1. Only process PROVISIONAL tickets
+    if (ticket.status !== TicketStatus.PROVISIONAL) return ticket.status;
+
+    // 2. Both must be moving > 10 kmph
+    if (driverSpeed < 10 || passengerSpeed < 10) {
+        // Wait for movement, reset timer if stopped
+        if (ticket.speedMatchStart) ticket.speedMatchStart = undefined; 
+        return TicketStatus.PROVISIONAL;
+    }
+
+    // 3. Speeds must match within 15% tolerance
+    const diff = Math.abs(driverSpeed - passengerSpeed);
+    const avg = (driverSpeed + passengerSpeed) / 2;
+    const isMatching = (diff / avg) <= 0.15;
+
+    if (!isMatching) {
+        // They are moving but at different speeds. Passenger might be in a different vehicle.
+        // Reset the timer due to speed mismatch.
+        ticket.speedMatchStart = undefined;
+        return TicketStatus.PROVISIONAL;
+    }
+
+    // 4. They are matching! Start or check timer
+    const now = Date.now();
+    if (!ticket.speedMatchStart) {
+        // First time they matched, start the clock
+        ticket.speedMatchStart = now;
+        return TicketStatus.PROVISIONAL;
+    }
+
+    // 5. Timer is running. Has the sustained time passed?
+    // Using 15 seconds for demo/UX purposes so the user isn't stuck waiting forever testing it.
+    // In actual prod, this would be 60000 (1 minute).
+    const MATCH_DURATION_MS = 15000; 
+    
+    if (now - ticket.speedMatchStart >= MATCH_DURATION_MS) {
+        // SUCCESS! Kinematic Lock Achieved.
+        console.log(`[Kinematic Match] Lock Achieved for Ticket ${ticket.id}`);
+        return TicketStatus.BOARDED;
+    }
+
+    return TicketStatus.PROVISIONAL;
 };

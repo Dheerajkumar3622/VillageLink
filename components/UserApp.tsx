@@ -46,6 +46,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     const [showScratchCard, setShowScratchCard] = useState(false);
     const [gramSetuMode, setGramSetuMode] = useState(false);
     const [didiMode, setDidiMode] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -65,7 +66,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
 
     const fetchUnreadCount = async (signal?: AbortSignal) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('villagelink_token');
             const res = await fetch(`${API_BASE_URL}/api/chat/unread-count`, {
                 headers: { Authorization: `Bearer ${token}` },
                 signal
@@ -92,22 +93,35 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
         );
     };
 
-    const renderHomeContent = () => (
-        <div className="v5-home-content animate-fade-in px-5 bg-white min-h-screen" style={{ color: '#1A1035' }}>
+    const [isScrolled, setIsScrolled] = useState(false);
 
-            {/* Quick Actions Row */}
-            <div className="flex gap-4 pb-4 mb-2 pt-4 overflow-x-auto scrollbar-hide px-2">
-                <BentoCard icon="🚌" title="Book Ride" onClick={() => setActiveTab('rides')} />
-                <BentoCard icon="🌾" title="Gram Mandi" onClick={() => setActiveTab('haat')} />
-                <BentoCard icon="🍽️" title="Mess Master" onClick={() => setActiveTab('food')} />
-                <BentoCard icon="📦" title="CargoLink" onClick={() => setActiveTab('cargo')} />
-            </div>
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollContainer = document.querySelector('.v5-main-content');
+            if (scrollContainer && scrollContainer.scrollTop > 10) {
+                setIsScrolled(true);
+            } else {
+                setIsScrolled(false);
+            }
+        };
+
+        const scrollContainer = document.querySelector('.v5-main-content');
+        if (scrollContainer) {
+            scrollContainer.addEventListener('scroll', handleScroll);
+            return () => scrollContainer.removeEventListener('scroll', handleScroll);
+        }
+    }, [activeTab]);
+
+    const renderHomeContent = () => (
+        <div className="v5-home-content animate-fade-in px-5 bg-transparent min-h-screen" style={{ color: '#1A1035' }}>
+
+            {/* Quick Actions Row (Empty) */}
 
             {/* Reference Spacer Line - Harvest Gold matching theme */}
-            <div className="h-[2px] w-full bg-[#FFCE1B]/20 rounded-full mb-6 mx-2"></div>
+            <div className={`h-[2px] w-full bg-[#FFCE1B]/20 rounded-full mx-2 transition-all duration-300 ${isScrolled ? 'mb-2 opacity-0' : 'mb-6 opacity-100'}`}></div>
 
             {/* Support Pill Buttons - Right Aligned as per image */}
-            <div className="flex justify-end gap-2 mb-8 px-2 pr-4">
+            <div className={`flex justify-end gap-2 px-2 pr-4 transition-all duration-300 overflow-hidden ${isScrolled ? 'max-h-0 mb-0 opacity-0' : 'max-h-20 mb-8 opacity-100'}`}>
                 <button 
                     onClick={() => setGramSetuMode(!gramSetuMode)}
                     className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-[9px] font-[900] uppercase tracking-wider transition-all shadow-sm ${gramSetuMode ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white text-slate-500 border-slate-200'}`}
@@ -125,19 +139,18 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </div>
 
             {/* Passenger View Content */}
-            <PassengerView user={user!} lang={lang} />
+            <PassengerView user={user!} lang={lang} isScrolled={isScrolled} />
         </div>
     );
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'home': return renderHomeContent();
-            case 'rides': return <PassengerView user={user!} lang={lang} />;
+            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} />;
             case 'reels': return <ReelsSection user={user!} />;
-            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('home')} />;
-            case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('home')} />;
+            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />;
+            case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />;
             case 'cargo': return <LogisticsApp />;
-            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('home')} />;
+            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('rides')} />;
             default: return null;
         }
     };
@@ -161,8 +174,8 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </div>
 
             {/* V5 Header */}
-            <header className="v5-header glass-panel rounded-b-3xl px-6 py-4 flex items-center justify-between z-50 transition-all duration-500">
-                <div className="flex items-center gap-3">
+            <header className={`v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto ${isScrolled ? '![border-radius:0_0_50%_50%/0_0_24px_24px] !shadow-lg border-b-border-subtle backdrop-blur-2xl' : '![border-radius:32px_32px_0_0] !border-b-transparent !shadow-none'}`}>
+                <div className="flex items-center gap-3 animate-[pulseGlow_3s_ease-in-out_infinite] rounded-full transition-all duration-500">
                     {/* V5 Holographic Prism Logo */}
                     <div className="v5-logo-holographic">
                         <span className="v5-logo-sparkle"></span>
@@ -194,10 +207,48 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                     <div className="v5-header-divider"></div>
                     
                     {/* Notification Orb */}
-                    <button className="v5-notification-orb" aria-label="Notifications">
-                        <Bell size={16} />
-                        <span className="v5-notification-badge">3</span>
-                    </button>
+                    <div className="relative">
+                        <button 
+                            className="v5-notification-orb" 
+                            aria-label="Notifications"
+                            onClick={() => setShowNotifications(!showNotifications)}
+                        >
+                            <Bell size={16} />
+                            {unreadMessages > 0 && <span className="v5-notification-badge">{unreadMessages}</span>}
+                        </button>
+                        
+                        {showNotifications && (
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 z-[100] animate-fade-in overflow-hidden">
+                                <div className="p-3 border-b flex justify-between items-center dark:border-slate-800">
+                                    <h3 className="font-bold text-sm">Notifications</h3>
+                                    <button onClick={() => setShowNotifications(false)}><X size={14}/></button>
+                                </div>
+                                <div className="max-h-64 overflow-y-auto">
+                                    {contextualAdvice ? (
+                                        <div className="p-3 border-b dark:border-slate-800 text-xs flex gap-2 items-start bg-blue-50/50 dark:bg-blue-900/20">
+                                            <span className="text-xl">{contextualAdvice.icon}</span>
+                                            <div>
+                                                <p className="font-medium">System Alert</p>
+                                                <p className="text-slate-500 dark:text-slate-400 mt-0.5">{contextualAdvice.text}</p>
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div className="p-3 border-b dark:border-slate-800 text-xs flex gap-2 items-start">
+                                        <div className="w-8 h-8 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                                            <Sparkles size={14} />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">Welcome to VillageLink v5</p>
+                                            <p className="text-slate-500 dark:text-slate-400 mt-0.5">Explore the new unified Super App!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-2 text-center border-t dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                                    <button className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Mark all as read</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     
                     {/* Eclipse Theme Toggle */}
                     <button 
@@ -212,7 +263,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </header>
 
             {/* Scrollable Content */}
-            <main className="v5-scroll-view v5-main-content pb-24">
+            <main className="v5-scroll-view v5-main-content pb-24 overflow-y-auto h-screen" style={{ scrollBehavior: 'smooth' }}>
                 {renderContent()}
             </main>
 

@@ -19,7 +19,7 @@ interface VillageManagerViewProps {
 
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: `Bearer ${localStorage.getItem('token')}`
+  Authorization: `Bearer ${localStorage.getItem('villagelink_token')}`
 });
 
 const VillageManagerView: React.FC<VillageManagerViewProps> = ({ user }) => {
