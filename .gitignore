@@ -44,3 +44,7 @@ min_*.js
 check-all-db-connectivity.js
 test-db-connection.js
 test-razorpay.js
+
+# Android APK and Keystore
+*.apk
+*.keystore

@@ -128,7 +128,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                 <Bus size={18} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-sm dark:text-white flex items-center gap-1">
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1">
                                     {item.from} <ArrowLeft size={10} className="rotate-180 text-slate-400" /> {item.to}
                                 </h4>
                                 <p className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
@@ -173,7 +173,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                 <Car size={18} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-sm dark:text-white">{item.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'} Charter</h4>
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white">{item.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'} Charter</h4>
                                 <p className="text-[10px] text-slate-500 mt-0.5">
                                     {item.from} → {item.to}
                                 </p>
@@ -196,7 +196,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                 <Package size={18} />
                             </div>
                             <div>
-                                <h4 className="font-bold text-sm dark:text-white">Logistics: {item.weightKg}kg</h4>
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white">Logistics: {item.weightKg}kg</h4>
                                 <p className="text-[10px] text-slate-500 mt-0.5">
                                     {item.from} → {item.to}
                                 </p>
@@ -217,40 +217,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
 
     return (
         <div className="animate-fade-in pb-20 min-h-screen bg-slate-50 dark:bg-black">
-            <div className="flex items-center gap-4 mb-6 sticky top-0 bg-slate-50/90 dark:bg-black/90 backdrop-blur-md p-4 z-20 border-b border-slate-200/50 dark:border-slate-800">
-                <button onClick={onBack} className="p-2 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
-                    <ArrowLeft size={20} className="dark:text-white" />
-                </button>
-                <h2 className="text-xl font-bold dark:text-white">Profile & Activity</h2>
-            </div>
-
-            <div className="px-4 mb-6">
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#BE5103] to-[#FFCE1B] rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-luxe-sienna/20">
-                        {user.name.charAt(0)}
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold dark:text-white">{user.name}</h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-medium">{user.role}</span>
-                            <span>•</span>
-                            <span className="font-mono">{user.id}</span>
-                        </div>
-                        {user.role === 'ADMIN' && onShowAdmin && (
-                            <button onClick={onShowAdmin} className="text-[10px] font-bold bg-[#BE5103] text-white px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-transform">
-                                <ShieldCheck size={12} /> Admin Panel
-                            </button>
-                        )}
-                        {onLogout && (
-                            <button onClick={onLogout} className="logout-portal">
-                                SIGN OUT
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="px-4 mb-6">
+            {/* V5 - Integrated Profile Tabs - Made Sticky */}
+            <div className="sticky top-0 bg-slate-50/90 dark:bg-[var(--bg-void)]/90 backdrop-blur-md z-20 border-b border-slate-200/50 dark:border-slate-800 pt-4 pb-4 px-4 shadow-sm mb-6">
                 <div className="flex p-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                     <button onClick={() => setActiveTab('HISTORY')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'HISTORY' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'HISTORY' ? '#475569' : undefined }}>
                         <History size={14} /> Activity
@@ -262,6 +230,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                         <Users size={14} /> Invite
                     </button>
                 </div>
+                {user.role === 'ADMIN' && onShowAdmin && (
+                    <div className="flex justify-center mt-4">
+                        <button onClick={onShowAdmin} className="text-[10px] font-bold bg-[#BE5103] text-white px-6 py-2 rounded-full flex items-center gap-1.5 shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-transform">
+                            <ShieldCheck size={14} /> Open Admin Panel
+                        </button>
+                    </div>
+                )}
             </div>
 
             {activeTab === 'WALLET' && wallet && (
@@ -280,7 +255,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
                         <div>
                             <p className="text-xs text-slate-500 font-bold uppercase">Gram-Score</p>
-                            <p className="text-2xl font-bold dark:text-white">{gramScore} <span className="text-xs font-normal text-slate-400">/ 900</span></p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{gramScore} <span className="text-xs font-normal text-slate-400">/ 900</span></p>
                         </div>
                         <div className="text-right">
                             <div className="text-[10px] bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 px-2 py-1 rounded font-bold mb-1">Excellent</div>
@@ -298,7 +273,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                                             {tx.type === 'EARN' ? <ArrowLeft size={16} className="rotate-45" /> : <ArrowLeft size={16} className="-rotate-[135deg]" />}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-sm dark:text-white">{tx.desc}</p>
+                                            <p className="font-bold text-sm text-slate-900 dark:text-white">{tx.desc}</p>
                                             <p className="text-[10px] text-slate-400">{new window.Date(tx.timestamp).toLocaleDateString()}</p>
                                         </div>
                                     </div>

@@ -22,10 +22,12 @@ import { VectorRouteMap as RouteMap } from './VectorRouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap, Play } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
 import { FlashPass } from './FlashPass';
+import { JourneyCinematic } from './JourneyCinematic';
+
 
 // Animated Wave Component for Ultrasonic Status
 const AnimatedWave = ({ isBroadcasting, isError = false }: { isBroadcasting: boolean, isError?: boolean }) => {
@@ -74,9 +76,10 @@ interface PassengerViewProps {
     user: User;
     lang: 'EN' | 'HI';
     isScrolled?: boolean;
+    onLogout?: () => void;
 }
 
-export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false }) => {
+export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false, onLogout }) => {
     const t = (key: any) => (TRANSLATIONS[lang] as any)[key] || (TRANSLATIONS.EN as any)[key];
 
     const [appMode, setAppMode] = useState<'TRANSPORT' | 'MARKET' | 'FOOD'>('TRANSPORT');
@@ -115,8 +118,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
     const [showFlashPassModal, setShowFlashPassModal] = useState<Ticket | null>(null);
 
     // New Feature State
-    const [hasLivestock, setHasLivestock] = useState(false);
-    const [hasInsurance, setHasInsurance] = useState(false);
+    const [livestockInfo, setLivestockInfo] = useState('');
+    const [hasInsurance, setInsurance] = useState(false);
+    const [showJourneyCinematic, setShowJourneyCinematic] = useState(false);
     const [lostItems, setLostItems] = useState<LostItem[]>([]);
     const [drKisanResult, setDrKisanResult] = useState<LeafDiagnosisResult | null>(null);
     const [isScanningLeaf, setIsScanningLeaf] = useState(false);
@@ -464,7 +468,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             return;
         }
 
-        const totalCost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (hasLivestock ? 20 : 0) + (hasInsurance ? 1 : 0));
+        const totalCost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0));
 
         if (paymentMethod === PaymentMethod.GRAMCOIN) {
             const result = await spendGramCoin(user.id, totalCost, "Bus Ticket");
@@ -496,7 +500,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 totalPrice: totalCost,
                 routePath: calculatedPath,
                 seatNumber: selectedSeat || undefined,
-                hasLivestock,
+                hasLivestock: !!livestockInfo,
                 hasInsurance,
                 recipientPhone: isGift ? recipientPhone : undefined,
                 giftedBy: isGift ? user.name : undefined
@@ -529,7 +533,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
     const completeBooking = async (method: PaymentMethod, status: TicketStatus, transactionId?: string) => {
         setIsBooking(true);
-        const cost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (hasLivestock ? 20 : 0) + (hasInsurance ? 1 : 0));
+        const cost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0));
 
         const signature = await signTransaction({ userId: user.id, amount: rentalPrice || passPrice || cost, type: 'BOOKING' });
 
@@ -616,7 +620,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 routePath: calculatedPath,
                 digitalSignature: signature,
                 seatNumber: selectedSeat || undefined,
-                hasLivestock,
+                hasLivestock: !!livestockInfo,
                 hasInsurance,
                 recipientPhone: isGift ? recipientPhone : undefined,
                 giftedBy: isGift ? user.name : undefined,
@@ -653,8 +657,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         setSelectedVehicle(null);
         setIsBuyingPass(false);
         setMarketBooking(null);
-        setHasLivestock(false);
-        setHasInsurance(false);
+        setLivestockInfo('');
+        setInsurance(false);
         setIsGift(false);
         setRecipientPhone('');
     };
@@ -701,6 +705,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                     onBack={() => setActiveTab('HOME')}
                                     onShowPayments={() => setShowPayments(true)}
                                     onShowAdmin={() => setShowVendorAdmin(true)}
+                                    onLogout={onLogout}
                                 />
                     )}
 
@@ -1081,6 +1086,16 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                         </div>
                                                     ))}
                                                 </div>
+                                                
+                                                {/* The Horizon Drive Preview Button */}
+                                                <div className="mt-4 pt-4 border-t border-white/5">
+                                                    <button 
+                                                        onClick={() => setShowJourneyCinematic(true)}
+                                                        className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold tracking-wider text-xs uppercase flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--brand-500),0.3)] active:scale-95 transition-transform"
+                                                    >
+                                                        <Play size={16} fill="currentColor" /> Cinematic Route Preview
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
 
@@ -1216,13 +1231,22 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 </div>
             </Modal>
 
+            {/* Payment Gateway Modal */}
             {showPaymentGateway && activeOrderId && (
                 <PaymentGatewayModal
                     isOpen={showPaymentGateway}
                     onClose={() => setShowPaymentGateway(false)}
                     onSuccess={handlePaymentGatewaySuccess}
-                    amount={isBuyingPass ? passPrice : (fareDetails?.totalFare || 0) * passengerCount}
+                    amount={Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0))}
                     orderId={activeOrderId}
+                />
+            )}
+
+            {/* Journey Cinematic Interactive Preview */}
+            {showJourneyCinematic && calculatedPath && calculatedPath.length > 0 && (
+                <JourneyCinematic 
+                    path={calculatedPath} 
+                    onClose={() => setShowJourneyCinematic(false)} 
                 />
             )}
 

@@ -293,7 +293,7 @@ const App: React.FC = () => {
           ) : (
             <Suspense fallback={view === 'PROFILE' ? <ProfileSkeleton /> : <ViewSkeleton />}>
               {view === 'PROFILE' ? (
-                <UserProfile user={user} onBack={() => setView('HOME')} />
+                <UserProfile user={user} onBack={() => setView('HOME')} onLogout={handleLogout} />
               ) : (
                 renderRoleView()
               )}

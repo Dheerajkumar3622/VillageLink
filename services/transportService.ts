@@ -37,10 +37,10 @@ export const initSocketConnection = () => {
         }
     }
 
-    // FIX: Use polling first for stability on Render/Cloud hosting
-    // 'websocket' first often fails due to firewalls or initial handshake issues
+    // FIX: Force websocket to bypass Render's polling handshake 400 Errors
+    // 'websocket' skips the HTTP polling phase which requires sticky sessions
     socket = io(SERVER_URL, {
-        transports: ['polling', 'websocket'],
+        transports: ['websocket'],
         auth: { token },
         reconnection: true,
         reconnectionAttempts: 5,

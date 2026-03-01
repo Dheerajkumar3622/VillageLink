@@ -53,6 +53,8 @@ const ROLE_CONFIGS: Record<ProviderRole, RoleConfig> = {
     LOGISTICS: { icon: <Box className="w-4 h-4" />, label: 'Logistics', color: '#84cc16' }
 };
 
+import { Geolocation } from '@capacitor/geolocation';
+
 const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const [activeTab, setActiveTab] = useState<TabType>('dashboard');
     const [activeRole, setActiveRole] = useState<ProviderRole>('DRIVER');
@@ -84,6 +86,32 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     useEffect(() => {
         if (user) {
             loadUserRoles();
+
+            // 1. Request GPS Permissions via Capacitor explicitly on App Load
+            const requestGPS = async () => {
+                try {
+                    const status = await Geolocation.checkPermissions();
+                    if (status.location !== 'granted') {
+                        await Geolocation.requestPermissions();
+                    }
+                    // Trigger a dummy fetch to warm up the GPS sensor
+                    await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+                } catch (e) {
+                    console.error("GPS Init Error - Provider might have denied:", e);
+                }
+            };
+            requestGPS();
+
+            // 2. Add Background Pinger (Clicker) to Keep Render Server Awake 
+            // Hits the health endpoint every 5 minutes while the app is alive
+            const keepAliveInterval = setInterval(() => {
+                fetch(`${API_BASE_URL}/api/health`)
+                    .then(res => res.json())
+                    .then(data => console.log('💓 Keep-Alive Ping Sent (Provider):', data.status))
+                    .catch(e => console.error('Keep-Alive Failed (Provider):', e.message));
+            }, 5 * 60 * 1000); // 5 minutes
+
+            return () => clearInterval(keepAliveInterval);
         }
     }, [user]);
 

@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserType } from '../types';
 import { API_BASE_URL } from '../config';
-import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck } from 'lucide-react';
+import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck, ArrowLeft, LogOut } from 'lucide-react';
 
 // Import V5 Shared Components
 import { BentoCard } from './BentoCard';
@@ -37,6 +37,8 @@ interface UserAppProps {
     toggleTheme?: () => void;
 }
 
+import { Geolocation } from '@capacitor/geolocation';
+
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme }) => {
     const [activeTab, setActiveTab] = useState<UserTabType>('rides');
     const [showQRScanner, setShowQRScanner] = useState(false);
@@ -47,10 +49,46 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     const [gramSetuMode, setGramSetuMode] = useState(false);
     const [didiMode, setDidiMode] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showProfileDetails, setShowProfileDetails] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
-        if (user) fetchUnreadCount(controller.signal);
+        if (user) {
+            fetchUnreadCount(controller.signal);
+            
+            // 1. Request GPS Permissions via Capacitor explicitly on App Load
+            const requestGPS = async () => {
+                try {
+                    const status = await Geolocation.checkPermissions();
+                    if (status.location !== 'granted') {
+                        await Geolocation.requestPermissions();
+                    }
+                    // Trigger a dummy fetch to warm up the GPS sensor
+                    try {
+                        await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
+                    } catch (posErr) {
+                        console.warn("GPS Init: Device could not fetch location.");
+                    }
+                } catch (e) {
+                    console.warn("GPS Permissions deferred or denied by user (Safe to ignore).");
+                }
+            };
+            requestGPS();
+
+            // 2. Add Background Pinger (Clicker) to Keep Render Server Awake 
+            // Hits the health endpoint every 5 minutes while the app is alive
+            const keepAliveInterval = setInterval(() => {
+                fetch(`${API_BASE_URL}/api/health`)
+                    .then(res => res.json())
+                    .then(data => console.log('💓 Keep-Alive Ping Sent:', data.status))
+                    .catch(e => console.error('Keep-Alive Failed:', e.message));
+            }, 5 * 60 * 1000); // 5 minutes
+
+            return () => {
+                controller.abort();
+                clearInterval(keepAliveInterval);
+            };
+        }
 
         // Simulate Contextual AI Insights (V5 Parity)
         const insights = [
@@ -139,18 +177,18 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </div>
 
             {/* Passenger View Content */}
-            <PassengerView user={user!} lang={lang} isScrolled={isScrolled} />
+            <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} />
         </div>
     );
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} />;
+            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} />;
             case 'reels': return <ReelsSection user={user!} />;
             case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />;
             case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />;
             case 'cargo': return <LogisticsApp />;
-            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('rides')} />;
+            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('rides')} onLogout={onLogout} />;
             default: return null;
         }
     };
@@ -176,17 +214,29 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             {/* V5 Header */}
             <header className={`v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto ${isScrolled ? '![border-radius:0_0_50%_50%/0_0_24px_24px] !shadow-lg border-b-border-subtle backdrop-blur-2xl' : '![border-radius:32px_32px_0_0] !border-b-transparent !shadow-none'}`}>
                 <div className="flex items-center gap-3 animate-[pulseGlow_3s_ease-in-out_infinite] rounded-full transition-all duration-500">
-                    {/* V5 Holographic Prism Logo */}
-                    <div className="v5-logo-holographic">
-                        <span className="v5-logo-sparkle"></span>
-                        <span className="v5-logo-sparkle"></span>
-                        <span className="v5-logo-sparkle"></span>
-                        <span>V</span>
-                    </div>
+                    {/* V5 Holographic Prism Logo or Back Button */}
+                    {activeTab === 'profile' ? (
+                        <button onClick={() => setActiveTab('rides')} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
+                            <ArrowLeft size={20} className="text-slate-900 dark:text-white" />
+                        </button>
+                    ) : (
+                        <div className="v5-logo-holographic">
+                            <span className="v5-logo-sparkle"></span>
+                            <span className="v5-logo-sparkle"></span>
+                            <span className="v5-logo-sparkle"></span>
+                            <span>V</span>
+                        </div>
+                    )}
                 </div>
                 <div className="v5-living-header">
                     {/* Breathing Avatar */}
-                    <div className="v5-avatar-ecosystem" onClick={() => setActiveTab('profile')}>
+                    <div className="v5-avatar-ecosystem" onClick={() => {
+                        if (activeTab === 'profile') {
+                            setShowProfileDetails(true);
+                        } else {
+                            setActiveTab('profile');
+                        }
+                    }}>
                         <div className="v5-breathing-ring"></div>
                         <div className="v5-avatar-core">
                             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -250,15 +300,21 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         )}
                     </div>
                     
-                    {/* Eclipse Theme Toggle */}
-                    <button 
-                        className={`v5-eclipse-toggle ${darkMode ? 'dark' : 'light'}`}
-                        onClick={toggleTheme}
-                        aria-label="Toggle theme"
-                    >
-                        <Sun size={16} className="v5-sun-icon text-amber-400" />
-                        <Moon size={16} className="v5-moon-icon text-indigo-400" />
-                    </button>
+                    {/* Eclipse Theme Toggle or Sign Out */}
+                    {activeTab === 'profile' ? (
+                        <button onClick={onLogout} className="bg-red-500 text-white p-2 rounded-full shadow-lg shadow-red-500/20 active:scale-95 transition-transform flex items-center justify-center shrink-0" aria-label="Sign Out">
+                            <LogOut size={16} strokeWidth={3} className="text-white" />
+                        </button>
+                    ) : (
+                        <button 
+                            className={`v5-eclipse-toggle ${darkMode ? 'dark' : 'light'}`}
+                            onClick={toggleTheme}
+                            aria-label="Toggle theme"
+                        >
+                            <Sun size={16} className="v5-sun-icon text-amber-400" />
+                            <Moon size={16} className="v5-moon-icon text-indigo-400" />
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -321,6 +377,47 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         setShowScratchCard(false);
                     }}
                 />
+            )}
+
+            {/* Profile Details Modal */}
+            {showProfileDetails && (
+                <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="bg-gradient-to-br from-[#BE5103] to-[#FFCE1B] p-6 text-white text-center relative">
+                            <button onClick={() => setShowProfileDetails(false)} className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                            <div className="w-20 h-20 mx-auto bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-4xl font-bold border-4 border-white overflow-hidden shadow-xl mb-3">
+                                {user?.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <h2 className="text-2xl font-bold">{user?.name}</h2>
+                            <p className="opacity-90 text-sm">{user?.role}</p>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">User ID</p>
+                                <p className="font-mono text-slate-800 dark:text-white font-medium">{user?.id}</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Phone Number</p>
+                                <p className="font-medium text-slate-800 dark:text-white">{user?.phone || 'Not provided'}</p>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gender</p>
+                                <p className="font-medium text-slate-800 dark:text-white capitalize">{user?.gender?.toLowerCase() || 'Not specified'}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <button className="py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    Update Photo
+                                </button>
+                                <button className="py-2.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <style>{`
