@@ -7,11 +7,12 @@ import java.io.File;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    private String customBasePath = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // [CRITICAL INJECTION POINT]: Read OTA state before Bridge boots
+        super.onCreate(savedInstanceState);
+
+        // [OTA INJECTION]: Read OTA state AFTER Bridge boots, then redirect WebView
         SharedPreferences prefs = getApplicationContext().getSharedPreferences("CapacitorStorage",
                 Context.MODE_PRIVATE);
         String bundlePath = prefs.getString("ota_bundle_path", null);
@@ -21,8 +22,8 @@ public class MainActivity extends BridgeActivity {
             String actualPath = bundlePath.replace("file://", "");
             File indexFile = new File(actualPath, "index.html");
             if (indexFile.exists()) {
-                // Override the WebView path to load our custom OTA bundle!
-                customBasePath = actualPath;
+                // Use Capacitor 8 Bridge API to switch serving path
+                getBridge().setServerBasePath(actualPath);
             } else {
                 // Fallback to safety if corrupted
                 SharedPreferences.Editor editor = prefs.edit();
@@ -30,16 +31,5 @@ public class MainActivity extends BridgeActivity {
                 editor.apply();
             }
         }
-
-        // Let Capacitor initialize NOW (Bridge uses getServerBasePath)
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public String getServerBasePath() {
-        if (customBasePath != null) {
-            return customBasePath;
-        }
-        return super.getServerBasePath();
     }
 }
