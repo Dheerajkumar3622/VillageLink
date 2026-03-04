@@ -106,7 +106,7 @@ export const Transaction = mongoose.model('Transaction', new mongoose.Schema({
   relatedEntityId: String
 }));
 
-export const Ticket = mongoose.model('Ticket', new mongoose.Schema({
+const ticketSchema = new mongoose.Schema({
   id: { type: String, unique: true },
   userId: String,
   driverId: String,
@@ -123,8 +123,17 @@ export const Ticket = mongoose.model('Ticket', new mongoose.Schema({
   digitalSignature: String,
   giftedBy: String,
   recipientPhone: String,
-  transactionId: String
-}));
+  transactionId: String,
+  scannedByDriverId: String,
+  scannedAt: Number
+});
+
+// Compound indexes for scaling under 10k users
+ticketSchema.index({ userId: 1, status: 1 });
+ticketSchema.index({ status: 1, paymentMethod: 1, timestamp: -1 });
+ticketSchema.index({ scannedByDriverId: 1, scannedAt: -1 }); // Used heavily by driver routes
+
+export const Ticket = mongoose.model('Ticket', ticketSchema);
 
 export const Pass = mongoose.model('Pass', new mongoose.Schema({
   id: { type: String, unique: true },
@@ -468,6 +477,7 @@ const activeTripSchema = new mongoose.Schema({
 activeTripSchema.index({ tripId: 1 });
 activeTripSchema.index({ driverId: 1, status: 1 });
 activeTripSchema.index({ passengerId: 1, status: 1 });
+activeTripSchema.index({ status: 1 }); // Used by dynamically rerouting service & trip monitor
 
 export const ActiveTrip = mongoose.model('ActiveTrip', activeTripSchema);
 

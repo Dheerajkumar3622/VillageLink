@@ -80,7 +80,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                 <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
                     Village<span className="text-emerald-600 dark:text-emerald-400">Link</span>
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-2">
                     Your Rural Super App
                 </p>
             </div>
@@ -107,7 +107,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                                     placeholder="User ID, Email or Phone"
                                     value={loginId}
                                     onChange={(e) => setLoginId(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                             <div className="relative">
@@ -117,7 +117,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                                     placeholder="Password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -126,9 +126,9 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>{t('login')}</span><ArrowRight className="w-5 h-5 ml-2" /></>}
                         </Button>
 
-                        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                        <p className="text-center text-sm font-medium text-slate-600 dark:text-slate-300">
                             New user?{' '}
-                            <button type="button" onClick={() => { setViewState('REGISTER'); setError(null); }} className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
+                            <button type="button" onClick={() => { setViewState('REGISTER'); setError(null); }} className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline">
                                 Create Account
                             </button>
                         </p>
@@ -169,7 +169,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                                     placeholder="Phone Number"
                                     value={regPhone}
                                     onChange={(e) => setRegPhone(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                             <div className="relative">
@@ -179,7 +179,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                                     placeholder="Email (optional)"
                                     value={regEmail}
                                     onChange={(e) => setRegEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                             <div className="relative">
@@ -189,7 +189,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
                                     placeholder="Create Password"
                                     value={regPass}
                                     onChange={(e) => setRegPass(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                                     required
                                 />
                             </div>
@@ -203,9 +203,9 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
             </div>
 
             {/* Provider Link */}
-            <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-8 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-3 rounded-full shadow-sm border border-slate-200/50 dark:border-slate-700/50">
                 Are you a service provider?{' '}
-                <a href="/provider.html" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                <a href="/provider.html" className="text-blue-700 dark:text-blue-400 font-bold hover:underline ml-1">
                     Partner Login →
                 </a>
             </p>

@@ -105,7 +105,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                 <h1 className="text-2xl font-bold text-white">
                     Village<span className="text-blue-400">Link</span> <span className="text-slate-400 font-normal">Partner</span>
                 </h1>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-sm font-medium text-slate-300 mt-2">
                     Service Provider Portal
                 </p>
             </div>
@@ -119,7 +119,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                         </h2>
 
                         {error && (
-                            <div className="bg-red-900/30 text-red-400 text-sm p-3 rounded-xl text-center border border-red-800">
+                            <div className="bg-red-900/60 text-red-300 font-medium text-sm p-3 rounded-xl text-center border border-red-700">
                                 {error}
                             </div>
                         )}
@@ -151,9 +151,9 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Login</span><ArrowRight className="w-5 h-5 ml-2" /></>}
                         </Button>
 
-                        <p className="text-center text-sm text-slate-400">
+                        <p className="text-center text-sm font-medium text-slate-300">
                             New partner?{' '}
-                            <button type="button" onClick={() => { setViewState('ROLE_SELECT'); setError(null); }} className="text-blue-400 font-semibold hover:underline">
+                            <button type="button" onClick={() => { setViewState('ROLE_SELECT'); setError(null); }} className="text-blue-400 font-bold hover:underline ml-1">
                                 Register Now
                             </button>
                         </p>
@@ -218,7 +218,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                                     placeholder="Phone Number"
                                     value={regPhone}
                                     onChange={(e) => setRegPhone(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-500 rounded-xl text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                             <div className="relative">
@@ -228,7 +228,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                                     placeholder="Email (optional)"
                                     value={regEmail}
                                     onChange={(e) => setRegEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-500 rounded-xl text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 />
                             </div>
                             <div className="relative">
@@ -238,7 +238,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                                     placeholder="Create Password"
                                     value={regPass}
                                     onChange={(e) => setRegPass(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-500 rounded-xl text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     required
                                 />
                             </div>
@@ -248,7 +248,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                                     <select
                                         value={regVehicleType}
                                         onChange={(e) => setRegVehicleType(e.target.value as VehicleType)}
-                                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-500 rounded-xl text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                         aria-label="Vehicle Type"
                                     >
                                         <option value="BUS">Bus</option>
@@ -261,7 +261,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
                                         placeholder="Vehicle Capacity"
                                         value={regCapacity}
                                         onChange={(e) => setRegCapacity(e.target.value)}
-                                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-500 rounded-xl text-white placeholder-slate-400 font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                     />
                                 </>
                             )}
@@ -275,9 +275,9 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
             </div>
 
             {/* User Link */}
-            <p className="mt-6 text-sm text-slate-400">
+            <p className="mt-8 text-sm font-medium text-slate-300 bg-slate-800/80 backdrop-blur-sm p-3 rounded-full shadow-sm border border-slate-700">
                 Looking to book a ride or order food?{' '}
-                <a href="/user.html" className="text-emerald-400 font-semibold hover:underline">
+                <a href="/user.html" className="text-emerald-400 font-bold hover:underline ml-1">
                     User App →
                 </a>
             </p>

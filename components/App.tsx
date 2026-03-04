@@ -258,37 +258,35 @@ const App: React.FC = () => {
 
       <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10">
 
-        {/* Fixed Header */}
-        <header className="sticky top-0 z-50 flex justify-between items-center py-4 mb-6 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md -mx-4 px-4 border-b border-slate-200/50 dark:border-slate-800/50">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('HOME')}>
-            <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-400 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">V</div>
-            <span className="font-bold text-xl tracking-tight dark:text-white">Village<span className="text-brand-600 dark:text-brand-400">Link</span></span>
-          </div>
+        {user && (
+          <header className="sticky top-0 z-50 flex justify-between items-center py-4 mb-6 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md -mx-4 px-4 border-b border-slate-200/50 dark:border-slate-800/50">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('HOME')}>
+              <div className="w-8 h-8 bg-gradient-to-br from-brand-600 to-brand-400 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-lg">V</div>
+              <span className="font-bold text-xl tracking-tight dark:text-white">Village<span className="text-brand-600 dark:text-brand-400">Link</span></span>
+            </div>
 
-          <div className="flex items-center gap-2">
-            {/* Language Toggle */}
-            <button onClick={toggleLang} className="px-3 py-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700 font-bold text-xs flex items-center gap-1">
-              <Languages size={14} />
-              {lang === 'EN' ? 'अ' : 'A'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleLang} className="px-3 py-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700 font-bold text-xs flex items-center gap-1">
+                <Languages size={14} />
+                {lang === 'EN' ? 'अ' : 'A'}
+              </button>
 
-            <button onClick={toggleTheme} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            {user && (
+              <button onClick={toggleTheme} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700">
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
               <button onClick={handleLogout} aria-label="Logout" className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md text-red-500 dark:text-red-400 shadow-sm border border-slate-200 dark:border-slate-700">
                 <LogOut size={18} />
               </button>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         <main className="relative flex-grow">
           {!isInitialized ? (
             <ViewSkeleton />
           ) : !user ? (
             <div className="my-auto py-10">
-              <AuthView onSuccess={handleLoginSuccess} lang={lang} />
+              <AuthView onSuccess={handleLoginSuccess} lang={lang} toggleLang={toggleLang} toggleTheme={toggleTheme} darkMode={darkMode} />
             </div>
           ) : (
             <Suspense fallback={view === 'PROFILE' ? <ProfileSkeleton /> : <ViewSkeleton />}>

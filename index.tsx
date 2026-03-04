@@ -5,6 +5,8 @@ import ReactDOM from 'react-dom/client';
 import App from './components/App';
 import { API_BASE_URL } from './config';
 import { getCurrentUser } from './services/authService';
+import { bootstrapOTA } from './src/services/OTABootstrap';
+import { OTAService } from './src/services/OTAService';
 
 // --- GLOBAL ERROR REPORTER ---
 const reportError = (message: string, stack: string, componentStack?: string) => {
@@ -40,9 +42,22 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+async function main() {
+  // 1. Clean up old tmp debris BEFORE mounting UI
+  await bootstrapOTA();
+  
+  // 2. Mount React App
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+
+  // 3. Check for updates in the background (Non-blocking)
+  setTimeout(() => {
+    OTAService.getInstance().checkForUpdate().catch(console.error);
+  }, 5000);
+}
+
+main();

@@ -1,0 +1,13 @@
+config:
+  target: 'http://localhost:3001'
+  phases:
+    - duration: 300
+      arrivalRate: 34
+      name: "Sustained load: 10,000 users over 5 minutes"
+scenarios:
+  - name: "Passenger hitting health and shops"
+    flow:
+      - get:
+          url: "/api/health"
+      - get:
+          url: "/api/market/shops"

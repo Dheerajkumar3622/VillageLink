@@ -148,6 +148,7 @@ const connectWithRetry = (uri) => {
     mongoose.connect(uri, {
         serverSelectionTimeoutMS: 5000,
         connectTimeoutMS: 10000,
+        maxPoolSize: 500, // Handle up to 500 concurrent connections
         family: 4, // Force IPv4
     })
         .then(() => {
@@ -438,7 +439,7 @@ app.post('/api/payment/verify', Auth.authenticate, async (req, res) => {
 app.get('/api/market/commodities', async (req, res) => {
     try {
         // Fetch strictly from DB. No random generation.
-        const items = await MarketItem.find({ type: 'COMMODITY' }).sort({ name: 1 });
+        const items = await MarketItem.find({ type: 'COMMODITY' }).sort({ name: 1 }).lean();
         if (items.length === 0) {
             return res.json([]); // Return empty if no data, don't fake it
         }
@@ -454,7 +455,7 @@ app.get('/api/market/commodities', async (req, res) => {
 });
 
 app.get('/api/market/shops', async (req, res) => {
-    try { const shops = await Shop.find({}); res.json(shops); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { const shops = await Shop.find({}).lean(); res.json(shops); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/market/shops', Auth.authenticate, async (req, res) => {
     try { const shop = new Shop(req.body); await shop.save(); res.json(shop); } catch (e) { res.status(500).json({ error: e.message }); }
@@ -463,7 +464,7 @@ app.get('/api/market/products', async (req, res) => {
     try {
         const { shopId } = req.query;
         const query = shopId ? { shopId } : {};
-        const products = await Product.find(query);
+        const products = await Product.find(query).lean();
         res.json(products);
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -475,7 +476,7 @@ app.post('/api/passes/buy', Auth.authenticate, async (req, res) => {
     try { const pass = new Pass(req.body); await pass.save(); res.json({ success: true, pass }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/passes/list', Auth.authenticate, async (req, res) => {
-    try { const passes = await Pass.find({ userId: req.query.userId }); res.json(passes); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { const passes = await Pass.find({ userId: req.query.userId }).lean(); res.json(passes); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // --- DRIVER SCAN TICKET ---
@@ -579,13 +580,13 @@ app.post('/api/rentals/book', Auth.authenticate, async (req, res) => {
     try { const rental = new RentalBooking(req.body); await rental.save(); res.json({ success: true, rental }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/rentals/requests', Auth.authenticate, async (req, res) => {
-    try { const requests = await RentalBooking.find({ status: 'PENDING' }); res.json(requests); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { const requests = await RentalBooking.find({ status: 'PENDING' }).lean(); res.json(requests); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/logistics/book', Auth.authenticate, async (req, res) => {
     try { const parcel = new Parcel(req.body); await parcel.save(); res.json({ success: true, parcel }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/logistics/all', Auth.authenticate, async (req, res) => {
-    try { const parcels = await Parcel.find({}); res.json(parcels); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { const parcels = await Parcel.find({}).lean(); res.json(parcels); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/admin/pricing', Auth.requireAdmin, async (req, res) => {
@@ -750,7 +751,7 @@ app.get('/api/admin/stats', Auth.requireAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.get('/api/admin/users', Auth.requireAdmin, async (req, res) => {
-    try { const users = await User.find({}, '-password').sort({ _id: -1 }); res.json(users); } catch (e) { res.status(500).json({ error: e.message }); }
+    try { const users = await User.find({}, '-password').sort({ _id: -1 }).lean(); res.json(users); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/admin/verify-driver', Auth.requireAdmin, async (req, res) => {
     try { await User.findOneAndUpdate({ id: req.body.userId }, { isVerified: req.body.isVerified }); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
