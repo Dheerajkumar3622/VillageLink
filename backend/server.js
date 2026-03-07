@@ -41,6 +41,7 @@ import aiRoutes from './backend/routes/aiRoutes.js';
 import foodRoutes from './backend/routes/foodRoutes.js';
 import paymentRoutes from './backend/routes/paymentRoutes.js';
 import smsRoutes from './backend/routes/smsRoutes.js';
+import adminToolsRoutes from './backend/routes/adminToolsRoutes.js';
 import ticketRoutes from './backend/routes/ticketRoutes.js';
 import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
 import userRoutes from './backend/routes/userRoutes.js';
@@ -349,6 +350,7 @@ app.use('/api/aero', aeroRoutes);               // Smart Aeroponics IoT
 app.use('/api/driver', driverRoutes);            // Smart Driver Panel
 app.use('/api/kisan', kisanRoutes);              // Kisan Crop Marketplace
 app.use('/api/dashboard', dashboardRoutes);      // Unified Role-Based Dashboard
+app.use('/api/system', adminToolsRoutes);        // Admin & System Admin Tools
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 
