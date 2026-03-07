@@ -43,6 +43,68 @@ function addPlace(placeMap, name, lat, lng, district, state, type, source) {
 }
 
 // ━━━━━━━━━━━━━━━━━━ EXTRACTORS ━━━━━━━━━━━━━━━━━━
+
+// THE MAIN VILLAGES COLLECTION (GeoJSON with 2dsphere index)
+async function extractVillagesCollection(db, placeMap, stats) {
+    const collection = db.collection('villages');
+    const count = await collection.countDocuments();
+    stats.villages = count;
+    console.log(`📍 villages collection has ${count} documents`);
+    
+    // Process in batches of 5000 to avoid memory issues
+    const batchSize = 5000;
+    let processed = 0;
+    const cursor = collection.find({}, {
+        projection: { name: 1, code: 1, district: 1, geometry: 1, properties: 1 }
+    }).batchSize(batchSize);
+    
+    while (await cursor.hasNext()) {
+        const v = await cursor.next();
+        let lat = null, lng = null;
+        
+        // Extract centroid from GeoJSON geometry
+        if (v.geometry && v.geometry.coordinates) {
+            if (v.geometry.type === 'Point') {
+                // GeoJSON Point: [lng, lat]
+                lng = v.geometry.coordinates[0];
+                lat = v.geometry.coordinates[1];
+            } else if (v.geometry.type === 'Polygon' && v.geometry.coordinates[0]) {
+                // Calculate centroid of polygon
+                const ring = v.geometry.coordinates[0];
+                let sumLat = 0, sumLng = 0;
+                for (const coord of ring) {
+                    sumLng += coord[0];
+                    sumLat += coord[1];
+                }
+                lng = sumLng / ring.length;
+                lat = sumLat / ring.length;
+            } else if (v.geometry.type === 'MultiPolygon' && v.geometry.coordinates[0]) {
+                // Use first polygon's centroid
+                const ring = v.geometry.coordinates[0][0];
+                if (ring) {
+                    let sumLat = 0, sumLng = 0;
+                    for (const coord of ring) {
+                        sumLng += coord[0];
+                        sumLat += coord[1];
+                    }
+                    lng = sumLng / ring.length;
+                    lat = sumLat / ring.length;
+                }
+            }
+        }
+        
+        const district = v.district || v.properties?.district || '';
+        const state = v.properties?.state || 'Bihar';
+        const name = v.name || v.properties?.name || '';
+        
+        if (name) {
+            addPlace(placeMap, name, lat, lng, district, state, 'Village', 'VillagesCollection');
+        }
+        processed++;
+    }
+    
+    console.log(`   Processed ${processed} village documents`);
+}
 async function extractTrajectories(db, placeMap, stats) {
     const collection = db.collection('trajectories');
     const count = await collection.countDocuments();
@@ -277,6 +339,7 @@ router.get('/extract-geo', async (req, res) => {
         
         // Run sequentially to avoid overwhelming free-tier server
         const extractors = [
+            ['VillagesCollection', extractVillagesCollection],  // THE BIG ONE - 40K+ villages
             ['Trajectories', extractTrajectories],
             ['SupplyListings', extractSupplyListings],
             ['DairyFarmers', extractDairyFarmers],
@@ -335,3 +398,69 @@ router.get('/extract-geo', async (req, res) => {
 });
 
 export default router;
+
+// ━━━━━━━━━━━━ DEDICATED VILLAGES-ONLY ENDPOINT ━━━━━━━━━━━━
+// Faster endpoint that extracts ONLY the villages collection (40K+)
+router.get('/extract-villages', async (req, res) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({ error: 'Database not connected' });
+        }
+        
+        const db = mongoose.connection.db;
+        const placeMap = new Map();
+        const stats = {};
+        
+        await extractVillagesCollection(db, placeMap, stats);
+        
+        const geoOutput = [];
+        for (const [_, place] of placeMap) {
+            geoOutput.push([
+                place.name,
+                place.type || 'Village',
+                place.district || '',
+                place.state || 'Bihar',
+                place.lat ? Math.round(place.lat * 1000000) / 1000000 : null,
+                place.lng ? Math.round(place.lng * 1000000) / 1000000 : null,
+                Array.from(place.sources).join(',')
+            ]);
+        }
+        
+        geoOutput.sort((a, b) => {
+            if (a[4] && !b[4]) return -1;
+            if (!a[4] && b[4]) return 1;
+            return (a[0] || '').localeCompare(b[0] || '');
+        });
+        
+        res.json({
+            status: 'success',
+            stats,
+            totalUniquePlaces: geoOutput.length,
+            placesWithCoords: geoOutput.filter(p => p[4]).length,
+            data: geoOutput
+        });
+    } catch (error) {
+        console.error('Villages Extraction Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ━━━━━━━━━━━━ LIST ALL COLLECTIONS ━━━━━━━━━━━━
+router.get('/list-collections', async (req, res) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({ error: 'Database not connected' });
+        }
+        const db = mongoose.connection.db;
+        const collections = await db.listCollections().toArray();
+        const result = [];
+        for (const col of collections) {
+            const count = await db.collection(col.name).countDocuments();
+            result.push({ name: col.name, documents: count });
+        }
+        result.sort((a, b) => b.documents - a.documents);
+        res.json({ collections: result, total: result.reduce((s, c) => s + c.documents, 0) });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
