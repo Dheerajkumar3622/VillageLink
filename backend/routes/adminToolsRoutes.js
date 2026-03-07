@@ -275,20 +275,30 @@ router.get('/extract-geo', async (req, res) => {
         const placeMap = new Map();
         const stats = {};
         
-        await Promise.all([
-            extractTrajectories(db, placeMap, stats),
-            extractSupplyListings(db, placeMap, stats),
-            extractDairyFarmers(db, placeMap, stats),
-            extractCollectionCenters(db, placeMap, stats),
-            extractColdStorage(db, placeMap, stats),
-            extractProduceListings(db, placeMap, stats),
-            extractLogisticsTrips(db, placeMap, stats),
-            extractRouteCapacity(db, placeMap, stats),
-            extractReels(db, placeMap, stats),
-            extractCommutePatterns(db, placeMap, stats),
-            extractSupplyOrders(db, placeMap, stats),
-            extractMarketPrices(db, placeMap, stats)
-        ]);
+        // Run sequentially to avoid overwhelming free-tier server
+        const extractors = [
+            ['Trajectories', extractTrajectories],
+            ['SupplyListings', extractSupplyListings],
+            ['DairyFarmers', extractDairyFarmers],
+            ['CollectionCenters', extractCollectionCenters],
+            ['ColdStorage', extractColdStorage],
+            ['ProduceListings', extractProduceListings],
+            ['LogisticsTrips', extractLogisticsTrips],
+            ['RouteCapacity', extractRouteCapacity],
+            ['Reels', extractReels],
+            ['CommutePatterns', extractCommutePatterns],
+            ['SupplyOrders', extractSupplyOrders],
+            ['MarketPrices', extractMarketPrices]
+        ];
+        for (const [name, fn] of extractors) {
+            try {
+                await fn(db, placeMap, stats);
+                console.log(`✅ Extracted: ${name}`);
+            } catch (e) {
+                console.error(`⚠️ Failed: ${name}`, e.message);
+                stats[name + '_error'] = e.message;
+            }
+        }
         
         const geoOutput = [];
         for (const [_, place] of placeMap) {
