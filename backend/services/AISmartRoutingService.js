@@ -128,6 +128,7 @@ export const getOptimalRoute = async (startLoc, endLoc) => {
         }
         return null;
     } catch (e) {
+        console.error("AI Routing OSRM Route Error:", e);
         return null;
     }
 }

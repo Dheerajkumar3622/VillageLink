@@ -18,8 +18,8 @@ if (!fs.existsSync(outputDir)) {
 async function startConversion() {
   try {
     if (!fs.existsSync(inputFile)) {
-      console.error(`Input file not found at: ${inputFile}`);
-      process.exit(1);
+      console.warn(`Input file not found at: ${inputFile}. Please ensure the file exists. Skipping conversion.`);
+      return;
     }
     
     console.log('Reading raw stations JSON...');

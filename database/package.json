@@ -1,0 +1,9 @@
+{
+    "name": "@villagelink/database",
+    "version": "1.0.0",
+    "main": "src/index.ts",
+    "dependencies": {
+        "mongoose": "^8.21.0",
+        "dotenv": "^16.6.1"
+    }
+}

@@ -245,6 +245,45 @@ export const login = async (req, res) => {
   }
 };
 
+// --- OTP-BASED LOGIN (Backend SMS Fallback) ---
+export const verifyOtpLogin = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Phone and OTP are required." });
+    }
+
+    const normalizedPhone = phone.replace('+91', '').replace('+', '');
+
+    const user = await User.findOne({
+      $or: [{ phone: normalizedPhone }, { phone: `+91${normalizedPhone}` }],
+      resetOTP: otp,
+      resetOTPExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid or expired OTP." });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).json({ error: "Account Suspended by Administrator" });
+    }
+
+    // Clear OTP after successful verification
+    user.resetOTP = undefined;
+    user.resetOTPExpiry = undefined;
+    await user.save();
+
+    const panelType = user.panelType || (user.role === 'PASSENGER' ? 'USER' : 'PROVIDER');
+    const token = jwt.sign({ id: user.id, role: user.role, panelType }, JWT_SECRET, { expiresIn: '7d' });
+    const { password: _, ...safeUser } = user.toObject();
+
+    res.json({ success: true, user: safeUser, token, panelType });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // --- 1000x: FCM TOKEN UPDATE ---
 export const updateFCMToken = async (req, res) => {
   try {
@@ -531,5 +570,6 @@ export default {
   registerProvider,
   updateFCMToken,
   loginViaFirebase,
-  registerViaFirebase
+  registerViaFirebase,
+  verifyOtpLogin
 };
