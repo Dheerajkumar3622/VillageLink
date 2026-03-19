@@ -147,18 +147,29 @@ export const LogisticsApp: React.FC = () => {
             const res = await fetch(`${API_BASE_URL}/api/grammandi/logistics/my-trips`, { headers });
             if (res.ok) {
                 const data = await res.json();
-                // If it returns a list, we can use it to derive stats
                 setStats({
                     todayTrips: data.length,
                     todayEarnings: data.reduce((acc: number, t: any) => acc + (t.earnings || 0), 0),
-                    weekEarnings: 0, // Mock for now
+                    weekEarnings: 0, 
                     totalDeliveries: data.length * 2
                 });
 
-                // Set first pending trip as active if online
                 if (isOnline) {
                     const pending = data.find((t: any) => t.status === 'PENDING');
                     if (pending) setActiveTrip(pending);
+                }
+            } else {
+                // MOCK DATA FOR MANDI DEMONSTRATION IF API FAILS
+                setStats({ todayTrips: 3, todayEarnings: 450, weekEarnings: 3100, totalDeliveries: 6 });
+                if (isOnline) {
+                    setActiveTrip({
+                        id: `ORD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+                        pickups: [{ location: 'Kishan Mandi (Ramesh S.)', crop: 'Mixed Produce', quantity: '5kg', completed: false }],
+                        deliveries: [{ location: 'Patna User Address', customerName: 'VillageLink User', completed: false }],
+                        status: 'PENDING',
+                        totalDistance: 4.2,
+                        estimatedEarnings: 65
+                    });
                 }
             }
         } catch (e) {
@@ -382,6 +393,100 @@ export const LogisticsApp: React.FC = () => {
                             <p className="font-black text-[10px] uppercase tracking-widest dark:text-white text-center">Earnings Hub</p>
                         </button>
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ==================== ACTIVE TRIP VIEW (QR SCANNING) ====================
+    if (viewState === 'ACTIVE_TRIP' && activeTrip) {
+        return (
+            <div className="min-h-screen bg-slate-900 text-white font-sans relative overflow-hidden pb-24 animate-fade-in">
+                {/* Immersive Map Background Placeholder */}
+                <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=Patna,India&zoom=14&size=600x800&maptype=roadmap&style=feature:all|element:labels|visibility:off&style=feature:water|color:0x1a2436')] bg-cover bg-center mix-blend-screen"></div>
+                <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-slate-950 via-slate-900 to-transparent z-10"></div>
+                
+                {/* Header Navbar */}
+                <div className="relative z-20 flex justify-between items-center p-4 pt-6 bg-gradient-to-b from-slate-950 to-transparent">
+                    <button onClick={() => setViewState('DASHBOARD')} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div className="flex bg-rose-500/20 text-rose-400 px-4 py-1.5 rounded-full items-center gap-2 border border-rose-500/30">
+                        <AlertCircle size={14}/> SOS
+                    </div>
+                </div>
+
+                {/* Routing Flow UI */}
+                <div className="relative z-20 px-4 mt-8">
+                    <div className="bg-slate-950/80 backdrop-blur-2xl rounded-3xl p-6 border border-slate-800 shadow-2xl">
+                        
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-electric-400 to-indigo-400">Order #{activeTrip.id}</h2>
+                            <span className="bg-electric-500/20 text-electric-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border border-electric-500/30">
+                                Navigating
+                            </span>
+                        </div>
+
+                        {/* Timeline */}
+                        <div className="relative border-l-2 border-slate-800 ml-4 pl-6 space-y-8 pb-4">
+                            {/* Pickup */}
+                            <div className="relative">
+                                <div className={`absolute -left-[35px] top-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors
+                                    ${activeTrip.pickups[0].completed ? 'bg-emerald-500 text-white' : 'bg-slate-800 border-2 border-electric-500 text-electric-500'}`}>
+                                    {activeTrip.pickups[0].completed ? <Check size={12} strokeWidth={4} /> : <div className="w-2 h-2 rounded-full bg-electric-500 animate-pulse"></div>}
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-300">Pickup Location</h3>
+                                <p className="text-lg font-black text-white leading-tight mt-1">{activeTrip.pickups[0].location}</p>
+                                <p className="text-xs text-slate-500 mt-1">{activeTrip.pickups[0].quantity} • {activeTrip.pickups[0].crop}</p>
+                                
+                                {!activeTrip.pickups[0].completed && (
+                                    <button 
+                                        onClick={() => completePickup(0)}
+                                        className="mt-4 w-full bg-electric-600 hover:bg-electric-500 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-electric-600/30 transition-all"
+                                    >
+                                        <Camera size={16} /> Scan Pickup QR
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dropoff */}
+                            <div className={`relative transition-opacity duration-500 ${!activeTrip.pickups[0].completed ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                <div className="absolute -left-[35px] top-0 w-6 h-6 rounded-full flex items-center justify-center bg-slate-800 border-2 border-rose-500 z-10">
+                                    <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-300">Dropoff Location</h3>
+                                <p className="text-lg font-black text-white leading-tight mt-1">{activeTrip.deliveries[0].location}</p>
+                                <p className="text-xs text-slate-500 mt-1">{activeTrip.deliveries[0].customerName}</p>
+                                
+                                {activeTrip.pickups[0].completed && !activeTrip.deliveries[0].completed && (
+                                    <button 
+                                        onClick={() => {
+                                            completeDelivery(0);
+                                            setTimeout(() => {
+                                                alert('Order Delivered Successfully! Earning added to wallet.');
+                                                setViewState('DASHBOARD');
+                                                setActiveTrip(null);
+                                            }, 500);
+                                        }}
+                                        className="mt-4 w-full bg-rose-600 hover:bg-rose-500 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition-all"
+                                    >
+                                        <Camera size={16} /> Scan Delivery QR
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Floating Navigation Controls */}
+                <div className="fixed bottom-0 inset-x-0 p-4 bg-gradient-to-t from-slate-950 to-transparent flex gap-3 z-30">
+                    <button className="flex-1 bg-white text-slate-900 py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-xl hover:scale-[1.02] transition-transform">
+                        <Navigation size={20} className="text-electric-600"/> Open Maps
+                    </button>
+                    <button className="w-16 flex-shrink-0 bg-slate-800 border border-slate-700 text-emerald-400 flex items-center justify-center rounded-2xl shadow-xl">
+                        <Phone size={20} />
+                    </button>
                 </div>
             </div>
         );

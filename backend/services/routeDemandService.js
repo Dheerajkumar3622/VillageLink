@@ -223,3 +223,24 @@ export const getCurrentDemand = () => {
         .filter(d => d.isHot)
         .sort((a, b) => b.demandScore - a.demandScore);
 };
+
+/**
+ * Super App Feature: Calculate surge pricing multiplier autonomously based on offline intel.
+ */
+export const getSurgeMultiplier = (fromVillage, toVillage) => {
+    if (!fromVillage || !toVillage) return 1.0;
+    
+    // Check both directions
+    const key = `${fromVillage}|${toVillage}`;
+    const keyReverse = `${toVillage}|${fromVillage}`;
+    
+    const demand = routeDemandCache.get(key) || routeDemandCache.get(keyReverse);
+    
+    if (demand && demand.demandScore > 0) {
+        // Score 0 -> Surge 1.0x
+        // Score 100 -> Surge 1.5x
+        return 1.0 + (demand.demandScore / 200.0);
+    }
+    
+    return 1.0; // Base rate
+};

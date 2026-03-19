@@ -849,6 +849,45 @@ export interface VendorKhataEntry {
   relatedBulkOrderId?: string;
 }
 
+// --- TOURISM TYPES (v19.0) ---
+export interface GuideProfile {
+  id: string;
+  userId: string;
+  capabilities: ('CAB_DRIVER' | 'EXPERT_GUIDE' | 'TICKET_AGENT' | 'CAB_PLUS_GUIDE')[];
+  languages: string[];
+  rating: number;
+  totalTours: number;
+  isOnline: boolean;
+  currentLocation?: GeoLocation;
+  socketId?: string;
+  walletBalance: number;
+  createdAt: number;
+}
+
+export interface TourismBooking {
+  id: string;
+  userId: string;
+  packageId: string;
+  amount: number;
+  paymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  bookingStatus: 'INITIATED' | 'SEARCHING_GUIDE' | 'ACCEPTED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+  assignedGuideId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  scheduledDate: number | string;
+  tourOtp: string;
+  createdAt: number | string;
+  completedAt?: number | string;
+  // Extra client-side fields for UX
+  spotName?: string;
+  packageTitle?: string;
+  guideDetails?: {
+    name: string;
+    phone: string;
+    vehicle?: string;
+  };
+}
+
 export interface VendorKhata {
   vendorId: string;
   entries: VendorKhataEntry[];

@@ -9,6 +9,8 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import { Server } from 'socket.io';
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dns from 'dns';
@@ -25,66 +27,71 @@ import mongoSanitize from 'express-mongo-sanitize';
 import Razorpay from 'razorpay';
 
 // Import Modular Components
-import Models from './backend/models.js';
+import Models from './models.js';
 const { Ticket, Pass, RentalBooking, Parcel, User, Location, Block, Transaction, Route, RoadReport, Job, MarketItem, NewsItem, Shop, Product, BugReport, ActivityLog, SystemSetting, TripLog } = Models;
 
-import Auth from './backend/auth.js';
+import Auth from './auth.js';
 const { register, registerUser, registerProvider, login, authenticate, requireAdmin, requestPasswordReset, resetPassword, updateFCMToken } = Auth;
 
-import Logic from './backend/logic.js';
+import Logic from './logic.js';
 const { getRealRoadPath } = Logic;
 
+// Background Workers
+import { startOSMPoller } from './workers/osmPollingWorker.js';
+
 // --- IMPORT ROUTERS ---
-import villageRoutes from './backend/routes/villageRoutes.js';
-import bugRoutes from './backend/routes/bugRoutes.js';
-import aiRoutes from './backend/routes/aiRoutes.js';
-import foodRoutes from './backend/routes/foodRoutes.js';
-import paymentRoutes from './backend/routes/paymentRoutes.js';
-import smsRoutes from './backend/routes/smsRoutes.js';
-import adminToolsRoutes from './backend/routes/adminToolsRoutes.js';
-import ticketRoutes from './backend/routes/ticketRoutes.js';
-import routeIntelRoutes from './backend/routes/routeIntelRoutes.js';
-import userRoutes from './backend/routes/userRoutes.js';
-import gramMandiRoutes from './backend/routes/gramMandiRoutes.js';
-import indiaLocationRoutes from './backend/routes/indiaLocationRoutes.js';
-import socialRoutes from './backend/routes/socialRoutes.js';
-import aeroRoutes from './backend/routes/aeroRoutes.js';
+import villageRoutes from './routes/villageRoutes.js';
+import bugRoutes from './routes/bugRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import foodRoutes from './routes/foodRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import smsRoutes from './routes/smsRoutes.js';
+import adminToolsRoutes from './routes/adminToolsRoutes.js';
+import ticketRoutes from './routes/ticketRoutes.js';
+import routeIntelRoutes from './routes/routeIntelRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import gramMandiRoutes from './routes/gramMandiRoutes.js';
+import indiaLocationRoutes from './routes/indiaLocationRoutes.js';
+import socialRoutes from './routes/socialRoutes.js';
+import aeroRoutes from './routes/aeroRoutes.js';
+import osmRoutes from './routes/osmRoutes.js'; // Offline Routing
 
 // --- 1000x IMPORTS ---
-import driverRoutes from './backend/routes/driverRoutes.js';
-import kisanRoutes from './backend/routes/kisanRoutes.js';
-import dashboardRoutes from './backend/routes/dashboardRoutes.js';
-import { initializeSpeedMatchEngine, updateSpeedBuffer, clearSpeedBuffer, checkAlighting } from './backend/services/speedMatchEngine.js';
-import { initializeSeatTracking } from './backend/services/seatTrackingService.js';
-import { initializeTrajectoryMatcher, registerTrajectory, updateDriverPosition, removeTrajectory, findMatchingVehicles, getActiveTrajectoryCount } from './backend/services/trajectoryMatcher.js';
-import { harvestTrajectoryData } from './backend/services/AISmartRoutingService.js';
+import driverRoutes from './routes/driverRoutes.js';
+import kisanRoutes from './routes/kisanRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+import { initializeSpeedMatchEngine, updateSpeedBuffer, clearSpeedBuffer, checkAlighting } from './services/speedMatchEngine.js';
+import { initializeSeatTracking } from './services/seatTrackingService.js';
+import { initializeTrajectoryMatcher, registerTrajectory, updateDriverPosition, removeTrajectory, findMatchingVehicles, getActiveTrajectoryCount } from './services/trajectoryMatcher.js';
+import { harvestTrajectoryData } from './services/AISmartRoutingService.js';
+import { initRouteAnalyzerCron } from './services/tripAnalysisCron.js';
 
-import EmailService from './backend/services/emailService.js';
+import EmailService from './services/emailService.js';
 const { sendEmail } = EmailService;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- SERVICES ---
-import MarketService from './backend/services/marketService.js';
+import MarketService from './services/marketService.js';
 const { refreshMarketPrices } = MarketService;
 
-import JobService from './backend/services/jobService.js';
+import JobService from './services/jobService.js';
 const { initializeJobs } = JobService;
 
-import TrafficService from './backend/services/trafficAggregatorService.js';
+import TrafficService from './services/trafficAggregatorService.js';
 const { getTrafficInBounds, getTrafficAlongRoute, processDriverLocation } = TrafficService;
 
-import TimeoutManager from './backend/services/driverTimeoutManager.js';
+import TimeoutManager from './services/driverTimeoutManager.js';
 const { initializeTimeoutManager, startTimeout, handleDriverAcceptance, handleDriverRejection } = TimeoutManager;
 
-import TripMonitor from './backend/services/tripMonitorService.js';
+import TripMonitor from './services/tripMonitorService.js';
 const { initializeTripMonitor, getTripLiveStatus, onDriverLocationUpdate } = TripMonitor;
 
-import ReroutingService from './backend/services/dynamicReroutingService.js';
+import ReroutingService from './services/dynamicReroutingService.js';
 const { initializeReroutingService, acceptReroute, declineReroute, checkTripForRerouteManual } = ReroutingService;
 
-import ErrorAggregator from './backend/services/errorAggregatorService.js';
+import ErrorAggregator from './services/errorAggregatorService.js';
 const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDeviceStats } = ErrorAggregator;
 
 const app = express();
@@ -96,6 +103,7 @@ app.set('trust proxy', 1);
 setImmediate(() => {
     refreshMarketPrices();
     initializeJobs(); // Seed jobs if empty
+    initRouteAnalyzerCron(); // Start AI Route analyzer schedule
 });
 
 // --- SECURITY MIDDLEWARE ---
@@ -114,6 +122,9 @@ app.use(mongoSanitize());
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// Static directory for routing graphs
+app.use('/routing_data', express.static(path.join(__dirname, 'public', 'routing_data')));
 
 // --- RAZORPAY CONFIGURATION ---
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID?.trim();
@@ -315,14 +326,15 @@ app.use('/api/ticket', ticketRoutes);
 app.use('/api/route', routeIntelRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/india', indiaLocationRoutes); // Pan-India location search API
+app.use('/api/osm', osmRoutes); // Offline OSM Downloader
 
 // --- FOODLINK VENDOR ROUTES ---
-import vendorRoutes from './backend/routes/vendorRoutes.js';
-import foodLinkRoutes from './backend/routes/foodLinkRoutes.js';
-import umgRoutes from './backend/routes/umgRoutes.js';
-import fleetRoutes from './backend/routes/fleetRoutes.js';
-import becknRoutes from './backend/routes/becknRoutes.js';
-import cargoRoutes from './backend/routes/cargoRoutes.js';
+import vendorRoutes from './routes/vendorRoutes.js';
+import foodLinkRoutes from './routes/foodLinkRoutes.js';
+import umgRoutes from './routes/umgRoutes.js';
+import fleetRoutes from './routes/fleetRoutes.js';
+import becknRoutes from './routes/becknRoutes.js';
+import cargoRoutes from './routes/cargoRoutes.js';
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/foodlink', foodLinkRoutes);
 app.use('/api', umgRoutes); // UMG Routes for subscriptions, FLMC, guardian
@@ -331,12 +343,12 @@ app.use('/api/beckn', becknRoutes); // ONDC/Beckn Protocol endpoints
 app.use('/api/cargo', cargoRoutes); // CargoLink crowdsourced logistics
 
 // --- USS v3.0 ROUTES (Unified Supply Chain System) ---
-import qrRoutes from './backend/routes/qrRoutes.js';
-import supplyChainRoutes from './backend/routes/supplyChainRoutes.js';
-import pricingRoutes from './backend/routes/pricingRoutes.js';
-import reelsRoutes from './backend/routes/reelsRoutes.js';
-import chatRoutes from './backend/routes/chatRoutes.js';
-import villageManagerRoutes from './backend/routes/villageManagerRoutes.js';
+import qrRoutes from './routes/qrRoutes.js';
+import supplyChainRoutes from './routes/supplyChainRoutes.js';
+import pricingRoutes from './routes/pricingRoutes.js';
+import reelsRoutes from './routes/reelsRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+import villageManagerRoutes from './routes/villageManagerRoutes.js';
 app.use('/api/qr', qrRoutes);                   // Universal QR Scanner
 app.use('/api/supply', supplyChainRoutes);      // Supply Chain Marketplace
 app.use('/api/pricing', pricingRoutes);         // Admin Pricing Control
@@ -821,6 +833,23 @@ app.get('/api/trip/:tripId/status', Auth.authenticate, async (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
+// SUPER APP PHASE 3: Massive Clustering via Redis Pub/Sub
+if (process.env.REDIS_URL) {
+    const { createClient } = require('redis');
+    const { createAdapter } = require('@socket.io/redis-adapter');
+    const pubClient = createClient({ url: process.env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+
+    Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+        io.adapter(createAdapter(pubClient, subClient));
+        console.log('🔗 Redis Adapter linked to Socket.IO. Clustering enabled!');
+    }).catch(e => console.error("Redis clustering failed:", e));
+} else {
+    console.log('⚠️ REDIS_URL not provided. Socket.IO running in single-instance memory mode.');
+}
+
+// ---------------------------------------------------------
+// WebSocket Event Handlers
 io.on('connection', (socket) => {
     console.log(`🔌 Socket connected: ${socket.id}`);
 
@@ -832,7 +861,7 @@ io.on('connection', (socket) => {
     // Driver goes online
     socket.on('driver_go_online', async (driverId) => {
         try {
-            const { setDriverOnline } = await import('./backend/services/driverAllocationService.js');
+            const { setDriverOnline } = await import('./services/driverAllocationService.js');
             await setDriverOnline(driverId);
             socket.join(`driver_${driverId}`);
             socket.driverId = driverId;
@@ -845,7 +874,7 @@ io.on('connection', (socket) => {
     // Driver goes offline
     socket.on('driver_go_offline', async (driverId) => {
         try {
-            const { setDriverOffline } = await import('./backend/services/driverAllocationService.js');
+            const { setDriverOffline } = await import('./services/driverAllocationService.js');
             await setDriverOffline(driverId);
             socket.leave(`driver_${driverId}`);
             console.log(`⚫ Driver ${driverId} offline`);
@@ -857,7 +886,7 @@ io.on('connection', (socket) => {
     // Driver location stream (high frequency updates)
     socket.on('driver_location_stream', async (data) => {
         try {
-            const { updateDriverLocation } = await import('./backend/services/driverAllocationService.js');
+            const { updateDriverLocation } = await import('./services/driverAllocationService.js');
             await updateDriverLocation(data.driverId, data);
 
             // Process for traffic aggregation
@@ -979,7 +1008,7 @@ io.on('connection', (socket) => {
         // data should contain { driverId, vehicleType, startNode, endNode }
         // We retrieve their raw trajectory from the matcher before removing it
         try {
-            const { activeDrivers } = await import('./backend/services/trajectoryMatcher.js').catch(() => ({}));
+            const { activeDrivers } = await import('./services/trajectoryMatcher.js').catch(() => ({}));
             // NOTE: activeDrivers is internal to trajectoryMatcher, so we should instead
             // either expose a getter or pass the raw trip ping array directly in the socket payload.
             // For now, if the client sends rawPings back:
@@ -1034,8 +1063,8 @@ io.on('connection', (socket) => {
     // Request ride - find nearby driver
     socket.on('request_ride', async (data) => {
         try {
-            const { findBestDriver, assignDriverToTrip } = await import('./backend/services/driverAllocationService.js');
-            const { ActiveTrip } = await import('./backend/models.js');
+            const { findBestDriver, assignDriverToTrip } = await import('./services/driverAllocationService.js');
+            const { ActiveTrip } = await import('./models.js');
 
             const tripId = `TRIP-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -1092,7 +1121,7 @@ io.on('connection', (socket) => {
     // Driver accepts/rejects ride
     socket.on('accept_ride', async (data) => {
         try {
-            const { ActiveTrip } = await import('./backend/models.js');
+            const { ActiveTrip } = await import('./models.js');
             await ActiveTrip.findOneAndUpdate(
                 { tripId: data.tripId },
                 { status: 'EN_ROUTE_PICKUP' }
@@ -1113,8 +1142,8 @@ io.on('connection', (socket) => {
 
     socket.on('reject_ride', async (data) => {
         try {
-            const { releaseDriver, findBestDriver, assignDriverToTrip } = await import('./backend/services/driverAllocationService.js');
-            const { ActiveTrip } = await import('./backend/models.js');
+            const { releaseDriver, findBestDriver, assignDriverToTrip } = await import('./services/driverAllocationService.js');
+            const { ActiveTrip } = await import('./models.js');
 
             await releaseDriver(data.driverId);
 
@@ -1161,7 +1190,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', async () => {
         if (socket.driverId) {
             try {
-                const { setDriverOffline } = await import('./backend/services/driverAllocationService.js');
+                const { setDriverOffline } = await import('./services/driverAllocationService.js');
                 await setDriverOffline(socket.driverId);
                 clearSpeedBuffer(socket.driverId); // 1000x: Clean up speed buffer
                 console.log(`⚫ Driver ${socket.driverId} disconnected`);
@@ -1212,7 +1241,8 @@ server.listen(PORT, () => {
     // Phase 5: Initialize Trajectory Matcher
     initializeTrajectoryMatcher(io);
     
-    // Start Keep-Alive service to prevent server sleep
+    // Start Heavy Background Services
+    startOSMPoller();
     startKeepAlive();
     console.log('🚀 Real-time Route Allocation Services initialized');
 });

@@ -49,6 +49,7 @@ import gramMandiRoutes from '../routes/gramMandiRoutes.js';
 import indiaLocationRoutes from '../routes/indiaLocationRoutes.js';
 import socialRoutes from '../routes/socialRoutes.js';
 import aeroRoutes from '../routes/aeroRoutes.js';
+import tourismRoutes from '../routes/tourismRoutes.js';
 
 // --- 1000x IMPORTS ---
 import driverRoutes from '../routes/driverRoutes.js';
@@ -352,6 +353,7 @@ app.use('/api/driver', driverRoutes);            // Smart Driver Panel
 app.use('/api/kisan', kisanRoutes);              // Kisan Crop Marketplace
 app.use('/api/dashboard', dashboardRoutes);      // Unified Role-Based Dashboard
 app.use('/api/system', adminToolsRoutes);        // Admin & System Admin Tools
+app.use('/api/tourism', tourismRoutes);          // Tourism & Guide Panel Services
 
 // --- SAFETY ENDPOINTS (Didi Style) ---
 

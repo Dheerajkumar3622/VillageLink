@@ -38,13 +38,17 @@ export const JourneyCinematic: React.FC<JourneyCinematicProps> = ({ path, onClos
             const paddedId = i.toString().padStart(3, '0');
             img.src = `/animation/Whisk_ctywujmjntnjfjzm1smhzjytaty3qtl4imzj1yn_${paddedId}.jpg`;
             
-            img.onload = () => {
+            const handleLoad = () => {
                 loaded++;
                 setImagesLoaded(loaded);
                 if (loaded === TOTAL_FRAMES) {
                     setIsLoaded(true);
                 }
             };
+            
+            img.onload = handleLoad;
+            img.onerror = handleLoad; // Prevent infinite loading if frame is missing
+            
             imgArray.push(img);
         }
         setImages(imgArray);

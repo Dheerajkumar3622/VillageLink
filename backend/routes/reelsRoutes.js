@@ -45,6 +45,28 @@ router.get('/feed', async (req, res) => {
     }
 });
 
+// GET /api/reels/mandi-khabar
+// Super App Feature: Hyper-localized Mandi Khabar feed (Prices, Weather, Agri-news)
+router.get('/mandi-khabar', async (req, res) => {
+    try {
+        const { locationTag } = req.query;
+        let query = { status: 'ACTIVE' };
+        
+        if (locationTag) {
+            query.locationTag = { $regex: locationTag, $options: 'i' };
+        }
+        
+        // In a real query we'd filter by creatorType = 'FARMER' or 'MANDI_OFFICIAL' etc.
+        const reels = await Reel.find(query)
+            .sort({ createdAt: -1 })
+            .limit(10);
+            
+        res.json({ success: true, reels, feedType: "Mandi Khabar" });
+    } catch (error) {
+         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Get reels by shop/creator
 router.get('/creator/:creatorId', async (req, res) => {
     try {

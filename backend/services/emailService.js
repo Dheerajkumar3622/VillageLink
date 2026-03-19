@@ -1,34 +1,44 @@
 
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+// Load .env from the root directory instead of backend/
+dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
+
+const getResendInstance = () => {
+    if (process.env.RESEND_API_KEY) {
+        return new Resend(process.env.RESEND_API_KEY);
     }
-});
+    return null;
+};
 
 export const sendEmail = async (to, subject, html) => {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.warn("⚠️ Email credentials missing in .env. Email simulation mode.");
+    const resend = getResendInstance();
+    if (!resend) {
+        console.warn("⚠️ RESEND_API_KEY missing in .env. Email simulation mode.");
+
         console.log(`[EMAIL SIM] To: ${to}, Subject: ${subject}`);
         return false;
     }
 
     try {
-        const info = await transporter.sendMail({
-            from: `"VillageLink Admin" <${process.env.EMAIL_USER}>`,
-            to,
-            subject,
-            html
+        const { data, error } = await resend.emails.send({
+            from: 'VillageLink <onboarding@resend.dev>',
+            to: [to],
+            subject: subject,
+            html: html,
         });
-        console.log(`✅ Email sent: ${info.messageId}`);
+
+        if (error) {
+            console.error("❌ Resend API Error:", error);
+            return false;
+        }
+
+        console.log(`✅ Email sent successfully via Resend. ID: ${data?.id}`);
         return true;
     } catch (error) {
-        console.error("❌ Email Send Error:", error);
+        console.error("❌ Unexpected Email Send Error (Resend):", error);
         return false;
     }
 };

@@ -305,22 +305,29 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                     <div>
                         <h4 className="font-bold text-sm text-slate-500 uppercase mb-4 pl-1">Recent Transactions</h4>
                         <div className="space-y-3">
-                            {wallet.transactions.map(tx => (
-                                <div key={tx.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-full ${tx.type === 'EARN' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                            {tx.type === 'EARN' ? <ArrowLeft size={16} className="rotate-45" /> : <ArrowLeft size={16} className="-rotate-[135deg]" />}
+                            {wallet.transactions && wallet.transactions.length > 0 ? (
+                                wallet.transactions.map(tx => (
+                                    <div key={tx.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-full ${tx.type === 'EARN' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                                {tx.type === 'EARN' ? <ArrowLeft size={16} className="rotate-45" /> : <ArrowLeft size={16} className="-rotate-[135deg]" />}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-sm text-slate-900 dark:text-white">{tx.desc}</p>
+                                                <p className="text-[10px] text-slate-400">{new window.Date(tx.timestamp).toLocaleDateString()}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-sm text-slate-900 dark:text-white">{tx.desc}</p>
-                                            <p className="text-[10px] text-slate-400">{new window.Date(tx.timestamp).toLocaleDateString()}</p>
-                                        </div>
+                                        <span className={`font-bold text-sm ${tx.type === 'EARN' ? 'text-luxe-teal' : 'text-slate-500'}`}>
+                                            {tx.type === 'EARN' ? '+' : '-'}{tx.amount}
+                                        </span>
                                     </div>
-                                    <span className={`font-bold text-sm ${tx.type === 'EARN' ? 'text-luxe-teal' : 'text-slate-500'}`}>
-                                        {tx.type === 'EARN' ? '+' : '-'}{tx.amount}
-                                    </span>
+                                ))
+                            ) : (
+                                <div className="text-center py-6 text-slate-400 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 border-dashed">
+                                    <Clock size={24} className="mx-auto mb-2 opacity-30" />
+                                    <p className="text-xs font-medium">No recent transactions</p>
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>

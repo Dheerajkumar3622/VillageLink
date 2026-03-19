@@ -101,13 +101,32 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
 
         setIsLoading(true);
         try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/india/search?q=${encodeURIComponent(searchQuery)}&limit=15`
-            );
+            // 1. Primary DB Search (Source of Truth) for absolute precision with multi-tokens like "Padariya Tilauthu"
+            const localResponse = await fetch(`${API_BASE_URL}/api/locations/search?q=${encodeURIComponent(searchQuery)}`);
+            const localData = await localResponse.json();
+            
+            if (Array.isArray(localData) && localData.length > 0) {
+                setResults(localData.map((item: any) => ({
+                    name: item.name,
+                    lat: item.lat || 0,
+                    lng: item.lng || 0,
+                    type: 'VILLAGE',
+                    district: item.district,
+                    state: item.state || 'Bihar',
+                    pincode: item.pincode
+                })));
+                setIsLoading(false);
+                return;
+            }
+            
+            // 2. Fallback to India Location Hub API limit 15 if local DB yields nothing
+            const response = await fetch(`${API_BASE_URL}/api/india/search?q=${encodeURIComponent(searchQuery)}&limit=15`);
             const data = await response.json();
 
-            if (data.success && data.data) {
-                setResults(data.data.map((item: any) => ({
+            if (data.success && data.data && Array.isArray(data.data)) {
+                 // Handle double-wrapped data from some API structures just in case
+                 const apiItems = Array.isArray(data.data[0]?.data) ? data.data[0].data : (Array.isArray(data.data.data) ? data.data.data : data.data);
+                 setResults(apiItems.map((item: any) => ({
                     name: item.name,
                     lat: item.coordinates?.lat || 0,
                     lng: item.coordinates?.lng || 0,
@@ -120,19 +139,8 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
                 setResults([]);
             }
         } catch (error) {
-            console.error('Location search error:', error);
-            // Fallback to existing API
-            try {
-                const fallbackResponse = await fetch(
-                    `${API_BASE_URL}/api/locations/search?q=${encodeURIComponent(searchQuery)}`
-                );
-                const fallbackData = await fallbackResponse.json();
-                if (Array.isArray(fallbackData)) {
-                    setResults(fallbackData);
-                }
-            } catch {
-                setResults([]);
-            }
+            console.error('Search error:', error);
+            setResults([]);
         }
         setIsLoading(false);
     }, []);

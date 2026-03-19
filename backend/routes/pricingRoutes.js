@@ -7,6 +7,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import * as Auth from '../auth.js';
 import { TransportPricing, PriceAudit } from '../models/ussModels.js';
+import { getSurgeMultiplier } from '../services/routeDemandService.js';
 
 const router = express.Router();
 
@@ -128,8 +129,13 @@ router.post('/calculate', async (req, res) => {
     try {
         const {
             vehicleType, distanceKm, weightKg = 0,
-            isNight = false, surgeMultiplier = 1
+            isNight = false, fromVillage, toVillage
         } = req.body;
+
+        // Auto-compute surge from backend intel instead of trusting client
+        const backendSurge = (fromVillage && toVillage) 
+            ? getSurgeMultiplier(fromVillage, toVillage) 
+            : 1.0;
 
         let pricing = await TransportPricing.findOne({
             vehicleType: vehicleType.toUpperCase(),
@@ -161,8 +167,8 @@ router.post('/calculate', async (req, res) => {
         const night = isNight ? subtotal * (pricing.nightChargePercent / 100) : 0;
         subtotal += night;
 
-        // Surge (capped)
-        const actualSurge = Math.min(surgeMultiplier, pricing.surgeMax);
+        // Surge (capped) calculated server-side
+        const actualSurge = Math.min(backendSurge, pricing.surgeMax);
         const surge = subtotal * (actualSurge - 1);
         subtotal += surge;
 

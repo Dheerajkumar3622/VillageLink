@@ -16,26 +16,40 @@ export const findDetailedPath = (startName: string, endName: string): string[] =
     return [startName, endName];
 };
 
-// NEW: Smart Route using Server-Side Analysis
+// NEW: Smart Route using Server-Side Analysis and OfflineRouter
+import { OfflineRouter, RoutingData } from '../utils/OfflineRouter';
+
+let cachedRouter: OfflineRouter | null = null;
+let currentAreaGraphId: string | null = null;
+
 export const fetchSmartRoute = async (start: LocationData, end: LocationData): Promise<{ path: string[], distance: number, pathDetails: {name: string, lat: number, lng: number}[] }> => {
     try {
-        const routeResponse = await defaultRoutingService.getRoute(start, end);
-        
-        // Ensure start and end names are always in the path array
-        const path = [start.name];
-        
-        // Add random intermediate villages if desired or just keep start/end
-        path.push(end.name);
+        // Query backend for geospatial logic (combines MongoDB precise locations with precise Polylines)
+        const response = await fetch(`${API_BASE_URL}/api/routes/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ start, end })
+        });
 
+        if (response.ok) {
+            const data = await response.json();
+            return {
+                path: data.path || [start.name, end.name],
+                distance: (data.distance || 10000) / 1000, 
+                pathDetails: data.pathDetails || []
+            };
+        }
+
+        // Fallback to basic frontend API if backend fails (loss of intermediate stops)
+        const routeResponse = await defaultRoutingService.getRoute(start, end);
         return { 
-            path,
+            path: [start.name, end.name],
             distance: routeResponse.distance / 1000, // Return km
             pathDetails: routeResponse.pathDetails.map((p) => ({ name: 'Waypoint', lat: p.lat, lng: p.lng }))
         };
 
     } catch (error) {
         console.warn("Smart routing failed, using linear fallback.", error);
-        // Really simple fallback
         return { 
             path: [start.name, end.name], 
             distance: 10,

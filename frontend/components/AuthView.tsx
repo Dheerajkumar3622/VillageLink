@@ -53,7 +53,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
 
   const handleLoginWithOtp = async () => {
     if (!loginId || (!/^\+?[0-9]{10,13}$/.test(loginId) && !/^[0-9]{10}$/.test(loginId))) {
-      setError("Please enter a valid 10-digit phone number for auto-OTP login.");
+      setError("Please provide a valid 10-digit number to receive OTP");
       return;
     }
     setOtpLoading(true); setError(null); setInfoMsg(null);
@@ -81,15 +81,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
           body: JSON.stringify({ identifier: phoneNumber })
         });
         const data = await res.json();
-        if (data.message) {
-          setInfoMsg(data.message + (data.otp ? ` (OTP: ${data.otp})` : ''));
+        if (data.message || data.success) {
+          setInfoMsg(data.message || "OTP sent successfully");
           setViewState('LOGIN_VERIFY');
           setConfirmationResult(null); // Will use backend verify
         } else {
           setError(data.error || "Failed to send OTP");
         }
       } catch (fallbackErr: any) {
-        setError("Failed to send OTP. Check your internet connection.");
+        console.error("OTP API Error:", fallbackErr);
+        setError("Failed to send OTP: " + (fallbackErr.message || "Network Error"));
       }
     } finally {
       setOtpLoading(false);
@@ -425,9 +426,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
           <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">
             {viewState.includes('LOGIN') ? "Sign In" : (viewState.includes('REGISTER') ? t('register') : 'Reset Password')}
           </h2>
-          <p className="text-luxe-gold mt-2 text-sm font-bold tracking-wide">
-            VillageLink V6 Luxe
-          </p>
         </div>
 
         {error && <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 rounded-xl text-red-600 dark:text-red-300 text-sm font-medium text-center">{error}</div>}
@@ -510,20 +508,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
                 </div>
                 <div id="recaptcha-login"></div>
 
-                <div className="relative flex py-2 items-center opacity-50">
-                  <div className="flex-grow border-t border-white/10"></div>
-                  <span className="flex-shrink-0 mx-4 text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Biometric Link</span>
-                  <div className="flex-grow border-t border-white/10"></div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={handleVoiceLogin}
-                  className="w-full py-3 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center gap-2 hover:bg-white/20 transition-colors group shadow-sm"
-                >
-                  <Activity size={18} className="text-luxe-teal group-hover:animate-bounce" />
-                  <span className="text-sm font-bold text-white group-hover:text-luxe-gold transition-colors block drop-shadow-md">Initialize Voice Protocol</span>
-                </button>
               </form>
             )}
             <div className="text-center pt-2">

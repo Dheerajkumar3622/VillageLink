@@ -77,6 +77,30 @@ router.get('/demand', Auth.authenticate, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/route/demand/predict
+ * Super App Feature: Predict high-traffic routes for the next X hours (Model Stub)
+ */
+router.get('/demand/predict', Auth.authenticate, async (req, res) => {
+    try {
+        const { hoursAhead = 1, lat, lng } = req.query;
+        // AI Stub implementation: In a real system, this queries a deployed ML model or runs regression on historical Ticket data.
+        
+        const predictedHotspots = [
+            { fromVillage: "Padariya", toVillage: "Tilauthu Mandi", predictedDemandScore: 85, confidence: 0.92, recommendedVehicle: "TRACTOR" },
+            { fromVillage: "Dehri", toVillage: "Sasaram Station", predictedDemandScore: 60, confidence: 0.85, recommendedVehicle: "AUTO" }
+        ];
+
+        res.json({
+            success: true,
+            predictionTimeframe: `${hoursAhead} hours`,
+            predictedHotspots
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to generate demand prediction' });
+    }
+});
+
 // --- COMMUTE PATTERNS ---
 
 /**

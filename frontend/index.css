@@ -342,9 +342,6 @@
 .nav-active-pill {
   background: #FFFFFF;
   border-radius: 12px;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(139, 92, 246, 0.05);
 }
 
@@ -461,10 +458,6 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.shadow-whisk {
-  box-shadow: 0 10px 40px -10px hsla(var(--v5-accent) / 0.3);
 }
 
 /* ========================================
@@ -599,6 +592,29 @@ body,
   50%,
   100% {
     transform: translateX(150%);
+  }
+}
+
+/* Vertical Fade Slide Up (For Search Placeholders) */
+@keyframes fadeSlideUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  10% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  90% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-10px);
+    opacity: 0;
   }
 }
 
@@ -1778,7 +1794,6 @@ body,
 .v5-bottom-nav {
   background: #4f46e5 !important;
   border-top: 1px solid #f59e0b !important;
-  box-shadow: 0 -5px 25px #f59e0bba !important;
 }
 
 .v5-brand-mark::before {

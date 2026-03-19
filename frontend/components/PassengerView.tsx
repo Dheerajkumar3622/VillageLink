@@ -27,7 +27,13 @@ import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
 import { FlashPass } from './FlashPass';
 import { JourneyCinematic } from './JourneyCinematic';
-
+import { TourismCarousel } from './Tourism/TourismCarousel';
+import { TourismDetailView } from './Tourism/TourismDetailView';
+import { TourismSpot, TourismPackage } from '../utils/tourism/tourismData';
+import { TransitHubWidget } from './TransitHubWidget';
+import { TourismTracker } from './TourismTracker';
+import { API_BASE_URL } from '../config';
+import { getAuthToken } from '../services/authService';
 
 // Animated Wave Component for Ultrasonic Status
 const AnimatedWave = ({ isBroadcasting, isError = false }: { isBroadcasting: boolean, isError?: boolean }) => {
@@ -77,9 +83,11 @@ interface PassengerViewProps {
     lang: 'EN' | 'HI';
     isScrolled?: boolean;
     onLogout?: () => void;
+    activeTourismTracker?: Ticket | null;
+    setActiveTourismTracker?: (ticket: Ticket | null) => void;
 }
 
-export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false, onLogout }) => {
+export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false, onLogout, activeTourismTracker, setActiveTourismTracker }) => {
     const t = (key: any) => (TRANSLATIONS[lang] as any)[key] || (TRANSLATIONS.EN as any)[key];
 
     const [appMode, setAppMode] = useState<'TRANSPORT' | 'MARKET' | 'FOOD'>('TRANSPORT');
@@ -140,6 +148,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
     const [isGift, setIsGift] = useState(false);
     const [recipientPhone, setRecipientPhone] = useState('');
     const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null);
+
+    // Tourism State
+    const [selectedTourismSpot, setSelectedTourismSpot] = useState<(TourismSpot & { distance: number }) | null>(null);
 
     const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
     const [showAR, setShowAR] = useState(false);
@@ -227,6 +238,10 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         fetchParcels();
         filterUpcomingBuses();
 
+        // Listen for instant ticket state changes (e.g. cancel from tracker overlay)
+        const onTicketsChanged = () => fetchTickets();
+        window.addEventListener('tickets_changed', onTicketsChanged);
+
         const interval = setInterval(() => {
             fetchTickets();
             fetchPasses();
@@ -236,6 +251,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         }, 60000);
         return () => {
             clearInterval(interval);
+            window.removeEventListener('tickets_changed', onTicketsChanged);
             window.removeEventListener('online', () => setIsOfflineMode(false));
             window.removeEventListener('offline', () => setIsOfflineMode(true));
         };
@@ -706,6 +722,49 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                         <FloatingVehicle size="300px" />
                     </div>
 
+                    {/* V5 SMART TRANSIT HUB WIDGET (Shows only if no active tickets) */}
+                    {activeTab === 'HOME' && activeTickets.length === 0 && (!activeTourismTracker) && (
+                        <TransitHubWidget 
+                            fromLocationName={fromLocation?.name}
+                            lat={fromLocation?.lat}
+                            lng={fromLocation?.lng}
+                        />
+                    )}
+
+                    {/* Active Tourism Tracker */}
+                    {activeTab === 'HOME' && activeTourismTracker && (
+                        <TourismTracker 
+                            ticket={activeTourismTracker} 
+                            onEndSession={async () => {
+                                // Extract true backend ID if present
+                                const isBackendTicket = activeTourismTracker.id.startsWith('TOUR-') && activeTourismTracker.id.length > 10;
+                                const backendId = isBackendTicket ? activeTourismTracker.id.replace('TOUR-', '') : null;
+                                
+                                // Cancel on backend tourism collection first
+                                if (backendId) {
+                                    try {
+                                        await fetch(`${API_BASE_URL}/api/tourism/cancel`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json', 'Authorization': getAuthToken() || '' },
+                                            body: JSON.stringify({ bookingId: backendId })
+                                        });
+                                    } catch (e) {
+                                        console.warn("Tourism cancel failed", e);
+                                    }
+                                }
+
+                                // Cancel from local transport states
+                                setActiveTickets(prev => prev.filter(t => t.id !== activeTourismTracker.id));
+                                // Make backend call
+                                cancelTicket(activeTourismTracker.id).catch(e => console.warn('Cancel backend failed:', e));
+                                // Clear the tracker UI
+                                if (setActiveTourismTracker) {
+                                    setActiveTourismTracker(null);
+                                }
+                            }} 
+                        />
+                    )}
+
                     {/* V5 HOME TAB CONTENT - Duplicate elements removed (handled by parent UserApp) */}
                     {activeTab === 'HOME' && (
                         <div className="mb-6 px-4">
@@ -1013,6 +1072,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                     </div>
                                                     
                                                     <div className="flex gap-2">
+                                                        {activeTickets[0].id.startsWith('TOUR-') && setActiveTourismTracker && (
+                                                            <button
+                                                                onClick={() => setActiveTourismTracker(activeTickets[0])}
+                                                                className="bg-brand-500/20 text-brand-300 border border-brand-500/30 px-3 py-2 rounded-xl text-xs font-bold hover:bg-brand-500/40 transition-colors flex items-center justify-center"
+                                                            >
+                                                                Open Chat
+                                                            </button>
+                                                        )}
                                                         {(activeTickets[0].status === 'PENDING' || activeTickets[0].status === 'PROVISIONAL') && (
                                                             <button
                                                                 onClick={() => handleCancelActiveTicket(activeTickets[0].id)}
@@ -1207,16 +1274,24 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                 {fareDetails.message && <p className="text-center text-[10px] text-slate-400 mt-2">{fareDetails.message}</p>}
                                             </div>
                                         )}
+
+                                        {/* Book Charter & Send Parcel merged into Journey Card */}
+                                        <div className="grid grid-cols-2 gap-3 mt-6">
+                                            <button onClick={() => setCurrentView('BOOK_RENTAL')} className="bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
+                                                <div className="bg-indigo-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Car size={16} /></div><span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Book Charter</span>
+                                            </button>
+                                            <button onClick={() => { setActiveTab('LOGISTICS'); setCurrentView('BOOK_PARCEL'); }} className="bg-orange-50 dark:bg-orange-900/40 hover:bg-orange-100 border border-orange-200 dark:border-orange-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
+                                                <div className="bg-orange-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Package size={16} /></div><span className="text-xs font-bold text-orange-900 dark:text-orange-200">Send Parcel</span>
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 mb-2">
-                                        <button onClick={() => setCurrentView('BOOK_RENTAL')} className="bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
-                                            <div className="bg-indigo-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Car size={16} /></div><span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Book Charter</span>
-                                        </button>
-                                        <button onClick={() => { setActiveTab('LOGISTICS'); setCurrentView('BOOK_PARCEL'); }} className="bg-orange-50 dark:bg-orange-900/40 hover:bg-orange-100 border border-orange-200 dark:border-orange-700 p-3 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm group">
-                                            <div className="bg-orange-500 text-white p-1.5 rounded-lg group-hover:scale-110 transition-transform"><Package size={16} /></div><span className="text-xs font-bold text-orange-900 dark:text-orange-200">Send Parcel</span>
-                                        </button>
-                                    </div>
+                                    {/* Whisk 3.0: Adventurous Packages Section */}
+                                    <TourismCarousel 
+                                        userLocation={fromLocation ? { lat: fromLocation.lat, lng: fromLocation.lng } : undefined}
+                                        onSelectSpot={setSelectedTourismSpot}
+                                    />
+
                                 </div>
                             )}
                         </>
@@ -1286,6 +1361,70 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 />
             )}
 
+            {/* Tourism Detail Modal */}
+            {selectedTourismSpot && (
+                <TourismDetailView 
+                    spot={selectedTourismSpot}
+                    onClose={() => setSelectedTourismSpot(null)}
+                    userLocation={fromLocation ? { lat: fromLocation.lat, lng: fromLocation.lng } : undefined}
+                    onBookPackage={async (pkg, spot) => {
+                        let backendBookingId = null;
+
+                        // Also create a TourismBooking in backend for vendor assignment flow
+                        try {
+                            const token = getAuthToken();
+                            const res = await fetch(`${API_BASE_URL}/api/tourism/book`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': token || '' },
+                                body: JSON.stringify({
+                                    packageId: pkg.id,
+                                    scheduledDate: new Date().toISOString()
+                                })
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                backendBookingId = data.booking?._id;
+                            }
+                        } catch (e) {
+                            console.warn('Tourism booking API call failed (offline?):', e);
+                        }
+
+                        // Use real backend ID if possible to sync cancellations
+                        const ticketId = backendBookingId ? `TOUR-${backendBookingId}` : 'TOUR-' + Math.floor(1000 + Math.random() * 9000);
+                        
+                        const newTicket: Ticket = {
+                            id: ticketId,
+                            userId: user.id,
+                            from: 'Current Location',
+                            to: spot.name,
+                            fromDetails: '',
+                            toDetails: pkg.title,
+                            status: 'BOARDED' as TicketStatus,
+                            paymentMethod: 'ONLINE' as PaymentMethod,
+                            timestamp: Date.now(),
+                            passengerCount: 1,
+                            totalPrice: pkg.price,
+                            routePath: ['Pickup Point', spot.name],
+                            hasLivestock: false,
+                            hasInsurance: false,
+                            driverId: pkg.providerName
+                        };
+
+                        // Fire-and-forget: save to local transport ledger
+                        saveTicket(newTicket).catch(e => console.warn('Tourism ticket save failed:', e));
+                        setActiveTickets(prev => [newTicket, ...prev]);
+                        
+                        // Close the detail view
+                        setSelectedTourismSpot(null);
+                        
+                        // Activate tourism tracker at UserApp level IMMEDIATELY
+                        if (setActiveTourismTracker) {
+                            setActiveTourismTracker(newTicket);
+                        }
+                    }}
+                />
+            )}
+
             <Modal isOpen={showQRModal} onClose={() => setShowQRModal(false)} onConfirm={() => setShowQRModal(false)} title="My Ticket QR" confirmLabel="Close">
                 <div className="flex flex-col items-center justify-center p-4">
                     <div className="bg-white p-2 rounded-xl"><QrCode size={180} className="text-black" /></div>
@@ -1302,11 +1441,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 userName={user.name}
             />
 
-
-
-
             {showToast && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white dark:bg-slate-900 rounded-[40px] p-2 shadow-2xl scale-125">
                         <SuccessAnimation message="Booking Confirmed!" subMessage="Have a safe journey!" />
                     </div>

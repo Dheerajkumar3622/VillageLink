@@ -18,7 +18,9 @@ interface Vendor {
 }
 
 export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const [adminMode, setAdminMode] = useState<'VENDORS' | 'TOURISM'>('VENDORS');
     const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [tourismBookings, setTourismBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('PENDING');
     const [search, setSearch] = useState('');
@@ -42,9 +44,53 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
     };
 
+    const fetchTourismBookings = async () => {
+        try {
+            setLoading(true);
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/api/tourism/pending`, {
+                headers: { 'Authorization': token || '' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setTourismBookings(data.bookings || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch tourism bookings", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAcceptTour = async (bookingId: string) => {
+        try {
+            const token = getAuthToken();
+            const res = await fetch(`${API_BASE_URL}/api/tourism/accept`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token || '',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ bookingId })
+            });
+            if (res.ok) {
+                fetchTourismBookings();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to accept tour. Make sure you are registered as a Guide.');
+            }
+        } catch (err) {
+            console.error("Failed to accept tour", err);
+        }
+    };
+
     useEffect(() => {
-        fetchVendors();
-    }, []);
+        if (adminMode === 'VENDORS') {
+            fetchVendors();
+        } else {
+            fetchTourismBookings();
+        }
+    }, [adminMode]);
 
     const handleVerify = async (vendorId: string, status: 'APPROVED' | 'REJECTED') => {
         try {
@@ -87,29 +133,36 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <p className="text-xs text-slate-500 font-bold uppercase py-1 px-3 bg-slate-100 dark:bg-slate-800 rounded-full">Admin Panel</p>
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search vendors..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-luxe-sienna dark:text-white"
-                        />
-                    </div>
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                        {['PENDING', 'VERIFIED', 'ALL'].map(t => (
-                            <button
-                                key={t}
-                                onClick={() => setFilter(t)}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === t ? 'bg-white dark:bg-slate-700 text-luxe-sienna dark:text-white shadow-sm' : 'text-slate-500'}`}
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-4 w-full">
+                    <button onClick={() => setAdminMode('VENDORS')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${adminMode === 'VENDORS' ? 'bg-white dark:bg-slate-700 text-luxe-sienna dark:text-white shadow-sm' : 'text-slate-500'}`}>Vendor Approvals</button>
+                    <button onClick={() => setAdminMode('TOURISM')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${adminMode === 'TOURISM' ? 'bg-white dark:bg-slate-700 text-luxe-sienna dark:text-white shadow-sm' : 'text-slate-500'}`}>Tourism Requests</button>
                 </div>
+
+                {adminMode === 'VENDORS' && (
+                    <div className="flex gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search vendors..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-luxe-sienna dark:text-white"
+                            />
+                        </div>
+                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                            {['PENDING', 'VERIFIED', 'ALL'].map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => setFilter(t)}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === t ? 'bg-white dark:bg-slate-700 text-luxe-sienna dark:text-white shadow-sm' : 'text-slate-500'}`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
@@ -117,46 +170,85 @@ export const VendorAdmin: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="space-y-4">
                         {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-white dark:bg-slate-900 rounded-2xl animate-pulse"></div>)}
                     </div>
-                ) : filteredVendors.length === 0 ? (
-                    <div className="py-20 text-center">
-                        <Store size={48} className="mx-auto text-slate-200 mb-4" />
-                        <p className="text-slate-500">No vendors found matching criteria</p>
-                    </div>
-                ) : (
-                    filteredVendors.map(vendor => (
-                        <div key={vendor.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-xl flex items-center justify-center text-luxe-sienna">
-                                        <Store size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white">{vendor.stallName}</h3>
-                                        <p className="text-xs text-slate-500">{vendor.name} • {vendor.stallCategory}</p>
-                                    </div>
-                                </div>
-                                <div className={`px-3 py-1 rounded-full text-[10px] font-bold ${vendor.status === 'PENDING' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                    {vendor.status}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 text-xs text-slate-500 mb-6">
-                                <div className="flex items-center gap-2"><Phone size={14} /> {vendor.phone}</div>
-                                <div className="flex items-center gap-2"><Clock size={14} /> {new Date(vendor.createdAt).toLocaleDateString()}</div>
-                            </div>
-
-                            <div className="flex gap-2 border-t border-slate-50 dark:border-slate-800 pt-4">
-                                <Button variant="outline" size="sm" fullWidth className="gap-2" onClick={() => setSelectedVendor(vendor)}>
-                                    <FileText size={14} /> View Details
-                                </Button>
-                                {vendor.status === 'PENDING' && (
-                                    <Button size="sm" fullWidth className="gap-2 bg-luxe-teal hover:bg-luxe-teal/80 border-none" onClick={() => handleVerify(vendor.id, 'APPROVED')}>
-                                        <CheckCircle2 size={14} /> Approve
-                                    </Button>
-                                )}
-                            </div>
+                ) : adminMode === 'VENDORS' ? (
+                    filteredVendors.length === 0 ? (
+                        <div className="py-20 text-center">
+                            <Store size={48} className="mx-auto text-slate-200 mb-4" />
+                            <p className="text-slate-500">No vendors found matching criteria</p>
                         </div>
-                    ))
+                    ) : (
+                        filteredVendors.map(vendor => (
+                            <div key={vendor.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex gap-4">
+                                        <div className="w-12 h-12 bg-luxe-sienna/10 dark:bg-luxe-sienna/20 rounded-xl flex items-center justify-center text-luxe-sienna">
+                                            <Store size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 dark:text-white">{vendor.stallName}</h3>
+                                            <p className="text-xs text-slate-500">{vendor.name} • {vendor.stallCategory}</p>
+                                        </div>
+                                    </div>
+                                    <div className={`px-3 py-1 rounded-full text-[10px] font-bold ${vendor.status === 'PENDING' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                        {vendor.status}
+                                    </div>
+                                </div>
+    
+                                <div className="grid grid-cols-2 gap-4 text-xs text-slate-500 mb-6">
+                                    <div className="flex items-center gap-2"><Phone size={14} /> {vendor.phone}</div>
+                                    <div className="flex items-center gap-2"><Clock size={14} /> {new Date(vendor.createdAt).toLocaleDateString()}</div>
+                                </div>
+    
+                                <div className="flex gap-2 border-t border-slate-50 dark:border-slate-800 pt-4">
+                                    <Button variant="outline" size="sm" fullWidth className="gap-2" onClick={() => setSelectedVendor(vendor)}>
+                                        <FileText size={14} /> View Details
+                                    </Button>
+                                    {vendor.status === 'PENDING' && (
+                                        <Button size="sm" fullWidth className="gap-2 bg-luxe-teal hover:bg-luxe-teal/80 border-none" onClick={() => handleVerify(vendor.id, 'APPROVED')}>
+                                            <CheckCircle2 size={14} /> Approve
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )
+                ) : (
+                    tourismBookings.length === 0 ? (
+                        <div className="py-20 text-center">
+                            <MapPin size={48} className="mx-auto text-slate-200 mb-4" />
+                            <p className="text-slate-500">No pending tourism requests</p>
+                        </div>
+                    ) : (
+                        tourismBookings.map(booking => (
+                            <div key={booking._id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex gap-4">
+                                        <div className="w-12 h-12 bg-luxe-teal/10 dark:bg-luxe-teal/20 rounded-xl flex items-center justify-center text-luxe-teal">
+                                            <MapPin size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 dark:text-white">{booking.packageId?.name || 'Custom Tour'}</h3>
+                                            <p className="text-xs text-slate-500">Scheduled: {new Date(booking.scheduledDate).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-600">
+                                        {booking.bookingStatus}
+                                    </div>
+                                </div>
+    
+                                <div className="flex justify-between text-xs text-slate-500 mb-6 border-t border-slate-100 dark:border-slate-800 pt-4">
+                                    <div className="flex items-center gap-2"><Clock size={14} /> Created: {new Date(booking.createdAt).toLocaleDateString()}</div>
+                                    <div className="font-bold text-emerald-600 flex items-center"><CheckCircle2 size={14} className="mr-1" /> Earn ₹{Math.floor(booking.amount * 0.9)}</div>
+                                </div>
+    
+                                <div className="flex gap-2 border-t border-slate-50 dark:border-slate-800 pt-4">
+                                    <Button size="sm" fullWidth className="gap-2 bg-luxe-teal hover:bg-luxe-teal/80 border-none" onClick={() => handleAcceptTour(booking._id)}>
+                                        <CheckCircle2 size={14} /> Accept Tour
+                                    </Button>
+                                </div>
+                            </div>
+                        ))
+                    )
                 )}
             </div>
 

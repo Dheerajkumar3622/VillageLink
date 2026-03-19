@@ -464,6 +464,26 @@ router.post('/logistics/trip', Auth.authenticate, async (req, res) => {
     }
 });
 
+// Get my assigned trips (Driver)
+router.get('/logistics/trips/my', Auth.authenticate, async (req, res) => {
+    try {
+        const trips = await LogisticsTrip.find({ driverId: req.user.id }).sort({ createdAt: -1 });
+        res.json(trips);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get available trips (Unassigned)
+router.get('/logistics/trips/available', Auth.authenticate, async (req, res) => {
+    try {
+        const trips = await LogisticsTrip.find({ driverId: { $exists: false } }).sort({ createdAt: -1 });
+        res.json(trips);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Update trip status
 router.put('/logistics/trip/:tripId/status', Auth.authenticate, async (req, res) => {
     try {

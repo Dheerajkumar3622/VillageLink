@@ -90,6 +90,9 @@ const locationSchema = new mongoose.Schema({
 
 locationSchema.index({ geometry: '2dsphere' });
 locationSchema.index({ name: 'text' });
+// Phase 1 Optimization: Compound Geo + Attribute Indexing
+locationSchema.index({ geometry: '2dsphere', 'properties.DISTRICT': 1 });
+locationSchema.index({ geometry: '2dsphere', 'properties.SUB_DIST': 1 }); // Block
 
 export const Location = mongoose.model('Location', locationSchema);
 

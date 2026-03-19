@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { User as UserType } from '@villagelink/shared';
+import { User as UserType, Ticket } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
-import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck, ArrowLeft, LogOut, Settings, Edit3, Camera, KeyRound, MapPin, Mail, Languages, Check } from 'lucide-react';
+import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck, ArrowLeft, LogOut, Settings, Edit3, Camera, KeyRound, MapPin, Mail, Languages, Check, Phone, Paperclip, Send, Search } from 'lucide-react';
+import { LiveTracker } from './LiveTracker';
 
 // Import V5 Shared Components
 import { BentoCard } from './BentoCard';
@@ -56,6 +57,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     const [editAddress, setEditAddress] = useState(user?.address || '');
     const [editPhone, setEditPhone] = useState(user?.phone || '');
     const [editEmail, setEditEmail] = useState(user?.email || '');
+    const [activeTourismTracker, setActiveTourismTracker] = useState<Ticket | null>(null);
 
     const handleSaveProfile = () => {
         // Mock save for now
@@ -165,6 +167,27 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
         }
     }, [activeTab]);
 
+    // Mandi Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchFocused, setSearchFocused] = useState(false);
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const placeholders = [
+        "Search 'Organic Potatoes' 🥔",
+        "Find 'Dehri Traders' 🏪",
+        "Looking for 'Dairy Products' 🥛",
+        "Ask AI: 'Cheapest Wheat' 🌾"
+    ];
+
+    // Predictive search placeholder animation
+    useEffect(() => {
+        if (!searchFocused && activeTab === 'haat') {
+            const interval = setInterval(() => {
+                setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+            }, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [searchFocused, activeTab]);
+
     const renderHomeContent = () => (
         <div className="v5-home-content animate-fade-in px-5 bg-transparent min-h-screen" style={{ color: '#1A1035' }}>
 
@@ -192,13 +215,13 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </div>
 
             {/* Passenger View Content */}
-            <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} />
+            <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />
         </div>
     );
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} />;
+            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />;
             case 'reels': return <ReelsSection user={user!} />;
             case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />;
             case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />;
@@ -227,11 +250,17 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </div>
 
             {/* V5 Header */}
-            <header className={`v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto ${isScrolled ? '![border-radius:0_0_50%_50%/0_0_24px_24px] !shadow-lg border-b-border-subtle backdrop-blur-2xl' : '![border-radius:32px_32px_0_0] !border-b-transparent !shadow-none'}`}>
+            <header className="v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto border-b-border-subtle backdrop-blur-2xl">
                 <div className="flex items-center gap-3 animate-[pulseGlow_3s_ease-in-out_infinite] rounded-full transition-all duration-500">
                     {/* V5 Holographic Prism Logo or Back Button */}
-                    {activeTab === 'profile' ? (
-                        <button onClick={() => setActiveTab('rides')} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
+                    {(activeTab === 'profile' || activeTab === 'haat') ? (
+                        <button onClick={() => {
+                            if (activeTab === 'haat') {
+                                window.dispatchEvent(new Event('haat-back'));
+                            } else {
+                                setActiveTab('rides');
+                            }
+                        }} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
                             <ArrowLeft size={20} className="text-slate-900 dark:text-white" />
                         </button>
                     ) : (
@@ -242,8 +271,53 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                             <span>V</span>
                         </div>
                     )}
+                    
+                    {/* Integrated Mandi Search Bar (Only visible in 'haat' tab) */}
+                    {activeTab === 'haat' && (
+                        <div className="relative group flex-1 max-w-[200px] ml-2">
+                            {/* Search Input Container */}
+                            <div className={`relative flex items-center bg-white/70 dark:bg-slate-900/60 backdrop-blur-2xl rounded-2xl px-3 py-2 border transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] z-20 overflow-hidden ${searchFocused ? 'border-amber-400/50 shadow-[0_4px_15px_rgba(251,191,36,0.15)] scale-[1.02]' : 'border-white/40 dark:border-slate-800/60'}`}>
+                                
+                                {/* Shimmer Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite] pointer-events-none"></div>
+
+                                {/* Search Icon */}
+                                <Search className={`w-4 h-4 transition-colors duration-300 ${searchFocused ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`} />
+                                
+                                {/* Input Field */}
+                                <input 
+                                    type="text"
+                                    className="flex-1 bg-transparent border-none outline-none px-2 text-[11px] font-[800] text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 z-10 w-full"
+                                    onFocus={() => setSearchFocused(true)}
+                                    onBlur={() => setSearchFocused(false)}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                
+                                {/* Animated Predictive Placeholder */}
+                                {!searchQuery && !searchFocused && (
+                                    <div className="absolute left-8 pointer-events-none transition-all duration-300 transform -translate-y-1/2 top-1/2 overflow-hidden right-8">
+                                        <span className="text-[10px] whitespace-nowrap font-[800] text-slate-400 dark:text-slate-500 truncate block animate-[fadeSlideUp_3s_ease-in-out_infinite]">
+                                            {placeholders[placeholderIndex]}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* AI Sparkle / Clear Button */}
+                                {searchQuery ? (
+                                    <button onClick={() => setSearchQuery('')} className="p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10 shrink-0">
+                                        <div className="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-500 dark:text-slate-400">✕</div>
+                                    </button>
+                                ) : (
+                                    <div className="p-1 rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 text-amber-500 dark:text-amber-400 shrink-0">
+                                        <Sparkles size={12} className="animate-pulse" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div className="v5-living-header">
+                <div className="v5-living-header shrink-0">
                     {/* Breathing Avatar */}
                     <div className="v5-avatar-ecosystem" onClick={() => {
                         if (activeTab === 'profile') {
@@ -258,21 +332,24 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         </div>
                     </div>
                     
-                    {/* User Info + Wallet */}
-                    <div className="v5-user-info">
-                        <span className="v5-user-name">{user?.name?.split(' ')[0] || 'User'}</span>
-                        <div className="v5-wallet-section">
-                            <span className="v5-wallet-amount">₹{(user?.balance || 2440).toLocaleString()}</span>
-                            <div className="v5-wallet-health">
-                                <div className="v5-wallet-health-fill" style={{ width: '75%' }}></div>
+                    {/* User Info + Wallet (Hidden in Mandi view) */}
+                    {activeTab !== 'haat' && (
+                        <div className="v5-user-info">
+                            <span className="v5-user-name">{user?.name?.split(' ')[0] || 'User'}</span>
+                            <div className="v5-wallet-section">
+                                <span className="v5-wallet-amount">₹{(user?.balance || 2440).toLocaleString()}</span>
+                                <div className="v5-wallet-health">
+                                    <div className="v5-wallet-health-fill" style={{ width: '75%' }}></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                     
-                    <div className="v5-header-divider"></div>
+                    {activeTab !== 'haat' && <div className="v5-header-divider"></div>}
                     
-                    {/* Notification Orb */}
-                    <div className="relative">
+                    {/* Notification Orb (Hidden in Mandi view) */}
+                    {activeTab !== 'haat' && (
+                        <div className="relative">
                         <button 
                             className="v5-notification-orb" 
                             aria-label="Notifications"
@@ -314,6 +391,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                             </div>
                         )}
                     </div>
+                    )}
                     
                     {/* Eclipse Theme Toggle or Sign Out */}
                     {activeTab === 'profile' && (

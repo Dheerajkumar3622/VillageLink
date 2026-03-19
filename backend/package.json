@@ -8,6 +8,8 @@
     },
     "dependencies": {
         "@socket.io/redis-adapter": "^8.3.0",
+        "@villagelink/database": "*",
+        "@villagelink/shared": "*",
         "bcryptjs": "^2.4.3",
         "compression": "^1.8.1",
         "cors": "^2.8.5",
@@ -18,12 +20,12 @@
         "firebase-admin": "^13.6.0",
         "helmet": "^7.1.0",
         "jsonwebtoken": "^9.0.2",
+        "node-cron": "^4.2.1",
         "nodemailer": "^7.0.11",
         "redis": "^4.6.13",
+        "resend": "^6.9.3",
         "socket.io": "^4.7.5",
-        "xss-clean": "^0.1.4",
-        "@villagelink/shared": "*",
-        "@villagelink/database": "*"
+        "xss-clean": "^0.1.4"
     },
     "type": "module"
 }

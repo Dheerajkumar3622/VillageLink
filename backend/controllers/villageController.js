@@ -59,7 +59,15 @@ export const searchVillages = async (req, res) => {
                     // District Search
                     { "properties.DISTRICT": { $regex: regex } },
                     { "properties.dtname": { $regex: regex } },
-                    { district: { $regex: regex } }
+                    { district: { $regex: regex } },
+                    // State, Pincode, Thana
+                    { "properties.STATE": { $regex: regex } },
+                    { state: { $regex: regex } },
+                    { "properties.PINCODE": { $regex: regex } },
+                    { pincode: { $regex: regex } },
+                    { "properties.THANA": { $regex: regex } },
+                    { thana: { $regex: regex } },
+                    { "properties.POLICE_STATION": { $regex: regex } }
                 ]
             };
         });
@@ -83,6 +91,8 @@ export const searchVillages = async (req, res) => {
                 block: block,
                 panchayat: doc.properties?.GP_NAME || "Panchayat",
                 district: district,
+                state: doc.properties?.STATE || doc.state || "Bihar",
+                pincode: doc.properties?.PINCODE || doc.pincode || "",
                 villageCode: doc.properties?.VILL_CODE || doc.code || "V-000"
             };
         });

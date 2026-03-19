@@ -136,6 +136,38 @@ router.get('/calculate-price', async (req, res) => {
     }
 });
 
+// ==================== ECOSYSTEM CONVERGENCE ====================
+
+// POST /api/cargo/return-trip-match
+// Super App Feature: Automatically match drivers finishing a passenger trip with return-trip cargo
+router.post('/return-trip-match', async (req, res) => {
+    try {
+        const { driverId, currentLat, currentLng, homeVillage } = req.body;
+        
+        // 1. Find all PENDING cargo originating near driver's current dropoff 
+        // 2. Destined near driver's homeVillage (or route back)
+        let query = { status: 'POSTED' };
+        if (homeVillage) {
+            query['dropoffLocation.name'] = { $regex: homeVillage, $options: 'i' };
+        }
+
+        const pendingCargo = await CargoRequest.find(query).limit(5);
+
+        if (pendingCargo.length > 0) {
+            // Found a return trip cargo match!
+            res.json({
+                success: true,
+                message: "Return cargo available! Maximize your earnings.",
+                matches: pendingCargo
+            });
+        } else {
+            res.json({ success: true, message: "No return cargo found." });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ==================== MATCHING ENDPOINTS ====================
 
 // GET /api/cargo/match/:requestId - Find matching drivers

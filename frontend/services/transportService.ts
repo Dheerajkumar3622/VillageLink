@@ -15,6 +15,26 @@ let localTickets: Ticket[] = [];
 let localPasses: Pass[] = [];
 let activeBuses: BusState[] = [];
 
+// Helper: persist tickets to localStorage for offline/refresh survival
+const persistTicketsToStorage = () => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localTickets));
+    } catch (e) { /* localStorage full or unavailable */ }
+};
+
+// Helper: hydrate tickets from localStorage on first access
+const hydrateTicketsFromStorage = () => {
+    try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached) as Ticket[];
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                localTickets = parsed;
+            }
+        }
+    } catch (e) { /* corrupted cache, ignore */ }
+};
+
 // --- HELPER ---
 const getHeaders = () => {
     const token = getAuthToken();
@@ -106,6 +126,10 @@ export const subscribeToUpdates = (
 // --- API METHODS ---
 
 export const getStoredTickets = (): Ticket[] => {
+    // If in-memory is empty, try to hydrate from localStorage
+    if (localTickets.length === 0) {
+        hydrateTicketsFromStorage();
+    }
     return localTickets;
 };
 
@@ -157,6 +181,7 @@ export const saveTicket = async (ticket: Ticket): Promise<Ticket> => {
     // Optimistic UI Update: Show immediately in local list
     if (!ticket.recipientPhone && (!ticket.userId || (currentUser && ticket.userId === currentUser.id))) {
         localTickets = [ticket, ...localTickets];
+        persistTicketsToStorage();
     }
 
     try {
@@ -192,7 +217,7 @@ export const saveTicket = async (ticket: Ticket): Promise<Ticket> => {
 // Passenger Logic - Cancel Ticket
 export const cancelTicket = async (ticketId: string): Promise<{ success: boolean; message: string; refundAmount?: number }> => {
     try {
-        const res = await fetch(`${SERVER_URL}/api/tickets/cancel`, {
+        const res = await fetch(`${SERVER_URL}/api/ticket/cancel`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ ticketId })
@@ -203,6 +228,8 @@ export const cancelTicket = async (ticketId: string): Promise<{ success: boolean
             
             // Optimistically update local ticket status
             localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
+            persistTicketsToStorage();
+            window.dispatchEvent(new Event('tickets_changed'));
             if (socket && socket.connected) {
                  socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
             }
@@ -211,6 +238,8 @@ export const cancelTicket = async (ticketId: string): Promise<{ success: boolean
         } else {
              // Fallback local update if API missing but we want to simulate
              localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
+             persistTicketsToStorage();
+             window.dispatchEvent(new Event('tickets_changed'));
              if (socket && socket.connected) {
                  socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
              }
@@ -219,6 +248,8 @@ export const cancelTicket = async (ticketId: string): Promise<{ success: boolean
     } catch (e) {
         // Fallback for offline or no backend route
         localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
+        persistTicketsToStorage();
+        window.dispatchEvent(new Event('tickets_changed'));
         if (socket && socket.connected) {
              socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
         }

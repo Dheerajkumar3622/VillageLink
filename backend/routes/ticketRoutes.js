@@ -189,6 +189,61 @@ router.post('/book', Auth.authenticate, async (req, res) => {
   }
 });
 
+// --- 1000x: CANCEL TICKET ---
+router.post('/cancel', Auth.authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { ticketId } = req.body;
+        if (!ticketId) return res.status(400).json({ error: 'ticketId required' });
+
+        const ticket = await Ticket.findOne({ id: ticketId, userId });
+        if (!ticket) return res.status(404).json({ error: 'Ticket not found or unauthorized' });
+
+        if (ticket.status === 'COMPLETED' || ticket.status === 'CANCELLED') {
+            return res.status(400).json({ error: `Cannot cancel a ${ticket.status} ticket.` });
+        }
+
+        ticket.status = 'CANCELLED';
+        await ticket.save();
+
+        // 1000x: Check if GramCoin should be refunded
+        let refundAmount = 0;
+        if (ticket.paymentMethod === 'GRAMCOIN' && ticket.totalPrice) {
+             const user = await User.findOne({ id: userId });
+             if (user) {
+                 user.walletBalance = (user.walletBalance || 0) + ticket.totalPrice;
+                 await user.save();
+                 refundAmount = ticket.totalPrice;
+                 
+                 const txn = new Transaction({
+                    id: `TXN-REFUND-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                    userId: user.id,
+                    amount: refundAmount,
+                    type: 'EARN',
+                    desc: `Ticket Cancellation Refund: ${ticket.from} to ${ticket.to}`,
+                    timestamp: Date.now(),
+                    relatedEntityId: ticketId
+                 });
+                 await txn.save();
+             }
+        }
+
+        res.json({ success: true, message: 'Ticket cancelled successfully', refundAmount });
+
+        // Update stop demand back down if provisional/pending
+        if (ticket.status !== 'BOARDED' && ticket.routeId && ticket.from) {
+             await StopDemand.findOneAndUpdate(
+                { stopName: ticket.from, routeId: ticket.routeId },
+                { $inc: { waitingPassengers: -ticket.passengerCount }, lastUpdated: new Date() }
+             );
+        }
+
+    } catch (error) {
+        console.error('Cancel error:', error);
+        res.status(500).json({ error: 'Cancellation failed' });
+    }
+});
+
 // --- 1000x: MY TICKETS ---
 router.get('/my-tickets', Auth.authenticate, async (req, res) => {
   try {

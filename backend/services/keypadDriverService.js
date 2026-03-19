@@ -1,5 +1,5 @@
 
-import { User, Ticket, Transaction, SMSLog, Route, Parcel } from '../models.js';
+import { User, Ticket, Transaction, SMSLog, Route, Parcel, DriverLocation } from '../models.js';
 import crypto from 'crypto';
 const PART_INDEX = {
     COMMAND: 0,
@@ -92,7 +92,10 @@ export const handleDriverCommand = async (phoneNumber, message) => {
                 response = "✅ You are now OFFLINE.";
                 break;
             case 'HELP':
-                response = "Commands:\nSCAN [ID]\nBALANCE\nSTART [ROUTE]\nSTOP\nONLINE\nOFFLINE";
+                response = "Commands:\nSCAN [ID]\nBALANCE\nSTART [ROUTE]\nSTOP\nLOC [Lat] [Lng]\nONLINE\nOFFLINE";
+                break;
+            case 'LOC':
+                response = await handleLocationUpdate(driver, parts);
                 break;
             default:
                 response = `❓ Unknown command: ${mainCommand}. Send HELP for options.`;
@@ -189,4 +192,30 @@ async function handleStopTripCommand(driver) {
     await driver.save();
 
     return `🏁 TRIP COMPLETED: ${route}\nThank you for choosing VillageLink.`;
+}
+
+// Phase 3: Telemetry Engine - Offline Data Over SMS/USSD
+async function handleLocationUpdate(driver, parts) {
+    if (parts.length < 3) return "⚠️ Usage: LOC [Lat] [Lng]";
+    
+    const lat = parseFloat(parts[1]);
+    const lng = parseFloat(parts[2]);
+    
+    if (isNaN(lat) || isNaN(lng)) return "❌ Invalid Coordinates";
+    
+    if (User.db.readyState === 1) {
+        await DriverLocation.findOneAndUpdate(
+            { driverId: driver.id },
+            {
+                location: { type: 'Point', coordinates: [lng, lat] },
+                isOnline: true,
+                lastUpdated: Date.now(),
+                source: 'GPS_SMS_FALLBACK'
+            },
+            { upsert: true }
+        );
+    }
+    
+    // We confirm silently or with minimal text to save on SMS gateway fees
+    return `📍 Location Linked: ${lat}, ${lng}`;
 }

@@ -56,6 +56,32 @@ let fleetVehicles = [
         todayTrips: 6,
         todayRevenue: 2800,
         operatorId: 'op1'
+    },
+    {
+        id: 'v3',
+        registrationNumber: 'BR-24-XT-9012',
+        type: 'TRACTOR',
+        capacity: 2,
+        cargoCapacityKg: 3000,
+        permitType: 'AGRICULTURAL_CARGO',
+        status: 'ACTIVE',
+        todayKm: 45,
+        todayTrips: 2,
+        todayRevenue: 1500,
+        operatorId: 'op1'
+    },
+    {
+        id: 'v4',
+        registrationNumber: 'UP-65-ER-3333',
+        type: 'E_RICKSHAW',
+        capacity: 4,
+        cargoCapacityKg: 200,
+        permitType: 'LOCAL_PASSENGER',
+        status: 'ACTIVE',
+        todayKm: 65,
+        todayTrips: 12,
+        todayRevenue: 900,
+        operatorId: 'op1'
     }
 ];
 
