@@ -58,6 +58,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     const [editPhone, setEditPhone] = useState(user?.phone || '');
     const [editEmail, setEditEmail] = useState(user?.email || '');
     const [activeTourismTracker, setActiveTourismTracker] = useState<Ticket | null>(null);
+    const [passengerViewMode, setPassengerViewMode] = useState('DASHBOARD');
 
     const handleSaveProfile = () => {
         // Mock save for now
@@ -118,6 +119,15 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
 
         return () => controller.abort();
     }, [user]);
+
+    useEffect(() => {
+        const handlePvState = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            setPassengerViewMode(customEvent.detail);
+        };
+        window.addEventListener('passenger-view-state', handlePvState);
+        return () => window.removeEventListener('passenger-view-state', handlePvState);
+    }, []);
 
     const fetchUnreadCount = async (signal?: AbortSignal) => {
         try {
@@ -253,10 +263,12 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             <header className="v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto border-b-border-subtle backdrop-blur-2xl">
                 <div className="flex items-center gap-3 animate-[pulseGlow_3s_ease-in-out_infinite] rounded-full transition-all duration-500">
                     {/* V5 Holographic Prism Logo or Back Button */}
-                    {(activeTab === 'profile' || activeTab === 'haat') ? (
+                    {(activeTab === 'profile' || activeTab === 'haat' || (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD')) ? (
                         <button onClick={() => {
                             if (activeTab === 'haat') {
                                 window.dispatchEvent(new Event('haat-back'));
+                            } else if (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD') {
+                                window.dispatchEvent(new Event('passenger-back'));
                             } else {
                                 setActiveTab('rides');
                             }

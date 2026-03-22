@@ -22,5 +22,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo 🚀 Starting VillageLink Server...
-npm start
+echo 🚀 Starting VillageLink Server in background...
+wscript.exe start_hidden.vbs
+echo ✅ Server started! You can now close this window safely.
+pause

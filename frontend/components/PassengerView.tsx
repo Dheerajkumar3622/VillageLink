@@ -22,7 +22,7 @@ import { VectorRouteMap as RouteMap } from './VectorRouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap, Play } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap, Play, Navigation } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
 import { FlashPass } from './FlashPass';
@@ -34,6 +34,7 @@ import { TransitHubWidget } from './TransitHubWidget';
 import { TourismTracker } from './TourismTracker';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
+import { MapPickupSelector } from './MapPickupSelector';
 
 // Animated Wave Component for Ultrasonic Status
 const AnimatedWave = ({ isBroadcasting, isError = false }: { isBroadcasting: boolean, isError?: boolean }) => {
@@ -92,6 +93,24 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
     const [appMode, setAppMode] = useState<'TRANSPORT' | 'MARKET' | 'FOOD'>('TRANSPORT');
     const [currentView, setCurrentView] = useState<'DASHBOARD' | 'BOOK_RENTAL' | 'BOOK_PARCEL'>('DASHBOARD');
+
+    useEffect(() => {
+        const event = new CustomEvent('passenger-view-state', { detail: currentView });
+        window.dispatchEvent(event);
+    }, [currentView]);
+
+    useEffect(() => {
+        const handleBack = () => {
+            if (currentView !== 'DASHBOARD') {
+                setCurrentView('DASHBOARD');
+                setActiveTab('HOME');
+            }
+        };
+        window.addEventListener('passenger-back', handleBack);
+        return () => window.removeEventListener('passenger-back', handleBack);
+    }, [currentView]);
+
+    const [showMapSelector, setShowMapSelector] = useState<'from' | 'to' | null>(null);
     const [showFoodDashboard, setShowFoodDashboard] = useState(false);
     const [activeTab, setActiveTab] = useState<'HOME' | 'PASSES' | 'LOGISTICS' | 'COMMUNITY' | 'PROFILE'>('HOME');
     const [isOfflineMode, setIsOfflineMode] = useState(!isOnline());
@@ -712,6 +731,26 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
     return (
         <>
+            {showMapSelector && (
+                <div className="fixed inset-0 z-[9999] bg-white">
+                    <MapPickupSelector 
+                        onConfirm={(details) => {
+                            const locData = {
+                                name: details.formattedAddress,
+                                lat: details.lat,
+                                lng: details.lng,
+                                rawName: details.formattedAddress,
+                            };
+                            if (showMapSelector === 'from') setFromLocation(locData as any);
+                            else setToLocation(locData as any);
+                            setShowMapSelector(null);
+                        }} 
+                        onBack={() => setShowMapSelector(null)}
+                        initialLat={showMapSelector === 'from' && fromLocation ? fromLocation.lat : showMapSelector === 'to' && toLocation ? toLocation.lat : 24.7913}
+                        initialLng={showMapSelector === 'from' && fromLocation ? fromLocation.lng : showMapSelector === 'to' && toLocation ? toLocation.lng : 84.9913}
+                    />
+                </div>
+            )}
             <div className="max-w-md mx-auto pb-32 relative min-h-screen font-sans">
                 {showAR && <ARFinder onClose={() => setShowAR(false)} targetName={calculatedPath[1] || 'Bus Stop'} />}
 
@@ -722,12 +761,17 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                         <FloatingVehicle size="300px" />
                     </div>
 
-                    {/* V5 SMART TRANSIT HUB WIDGET (Shows only if no active tickets) */}
-                    {activeTab === 'HOME' && activeTickets.length === 0 && (!activeTourismTracker) && (
+                    {/* V5 SMART TRANSIT HUB WIDGET (Shows only if no active tickets and on Dashboard) */}
+                    {activeTab === 'HOME' && currentView === 'DASHBOARD' && activeTickets.length === 0 && (!activeTourismTracker) && (
                         <TransitHubWidget 
                             fromLocationName={fromLocation?.name}
                             lat={fromLocation?.lat}
                             lng={fromLocation?.lng}
+                            onTicketBooked={(ticket) => {
+                                setActiveTickets(prev => [ticket as any, ...prev]);
+                                setShowToast(true);
+                                setTimeout(() => setShowToast(false), 2500);
+                            }}
                         />
                     )}
 
@@ -849,8 +893,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                     {(activeTab === 'LOGISTICS' || currentView === 'BOOK_PARCEL') && (
                         <div className="px-4 py-6 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => { setActiveTab('HOME'); setCurrentView('DASHBOARD'); }} aria-label="Go Back" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 transition-colors"><ArrowLeft size={20} /></button>
-                                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                                {/* Header back button was moved to UserApp.tsx */}
+                                <h2 className="text-xl font-bold dark:text-white flex items-center justify-center w-full gap-2">
                                     <div className="bg-luxe-teal p-1.5 rounded-lg text-white shadow-lg shadow-luxe-teal/20"><Package size={20} /></div>
                                     CargoLink
                                 </h2>
@@ -859,8 +903,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 super-rounded shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-white/20 dark:border-slate-800 animate-fade-in-up">
                                 <div className="space-y-6">
                                     <div className="space-y-3">
-                                        <LocationSelector label="Pickup Terminal" onSelect={setFromLocation} />
-                                        <LocationSelector label="Drop-off Point" onSelect={setToLocation} />
+                                        <LocationSelector label="Pickup Terminal" value={fromLocation} onSelect={setFromLocation as any} onMapTrigger={() => setShowMapSelector('from')} labelClassName="text-slate-700 dark:text-slate-300" />
+                                        <LocationSelector label="Drop-off Point" value={toLocation} onSelect={setToLocation as any} onMapTrigger={() => setShowMapSelector('to')} labelClassName="text-slate-700 dark:text-slate-300" />
                                     </div>
 
                                     {/* Whisk 2.0: Cargo Vehicle Selection (Inspired by Image 2) */}
@@ -868,9 +912,9 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Load Capacity</label>
                                         <div className="grid grid-cols-3 gap-3">
                                             {[
-                                                { id: 'BOX_SMALL', label: 'Mini Van', cap: '50kg', icon: Package, color: 'text-luxe-teal' },
-                                                { id: 'SACK_GRAIN', label: 'E-Rickshaw', cap: '200kg', icon: Bike, color: 'text-luxe-gold' },
-                                                { id: 'HEAVY_LORRY', label: 'Truck', cap: '2000kg', icon: Bus, color: 'text-luxe-sienna' }
+                                                { id: 'BOX_SMALL', label: 'Mini Van', cap: '50kg', icon: Package, color: 'text-luxe-teal', eta: 3 },
+                                                { id: 'SACK_GRAIN', label: 'E-Rickshaw', cap: '200kg', icon: Bike, color: 'text-luxe-gold', eta: 5 },
+                                                { id: 'HEAVY_LORRY', label: 'Truck', cap: '2000kg', icon: Bus, color: 'text-luxe-sienna', eta: 12 }
                                             ].map((v) => (
                                                 <button
                                                     key={v.id}
@@ -890,6 +934,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                     <div className="text-center">
                                                         <p className="text-[9px] font-bold text-slate-800 dark:text-white uppercase leading-none mb-0.5">{v.label}</p>
                                                         <p className="text-[8px] font-bold text-slate-400">Up to {v.cap}</p>
+                                                        <p className="text-[7px] font-bold text-emerald-500 mt-1 flex items-center justify-center gap-0.5"><span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span> {v.eta} min away</p>
                                                     </div>
                                                 </button>
                                             ))}
@@ -962,53 +1007,68 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                     )}
 
                     {currentView === 'BOOK_RENTAL' && activeTab === 'HOME' && (
-                        <div className="px-4 py-6 space-y-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <button onClick={() => setCurrentView('DASHBOARD')} aria-label="Go Back" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><ArrowLeft size={20} /></button>
-                                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><Car className="text-indigo-500" /> Book Charter</h2>
-                            </div>
+                        <div className="px-4 pt-2 pb-6 space-y-6">
+                            {/* Header back button was moved to UserApp.tsx */}
 
                             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 rounded-[32px] shadow-xl hover:shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500 hover:-translate-y-1">
                                 <div className="space-y-4 mb-6">
-                                    <LocationSelector label="Pickup Point" onSelect={setFromLocation} />
-                                    <LocationSelector label="Destination" onSelect={setToLocation} />
+                                    <LocationSelector 
+                                        label="Pickup Point" 
+                                        value={fromLocation}
+                                        onSelect={setFromLocation as any} 
+                                        onMapTrigger={() => setShowMapSelector('from')}
+                                        labelClassName="text-slate-700 dark:text-slate-300" 
+                                    />
+                                    <LocationSelector 
+                                        label="Destination" 
+                                        value={toLocation}
+                                        onSelect={setToLocation as any} 
+                                        onMapTrigger={() => setShowMapSelector('to')}
+                                        labelClassName="text-slate-700 dark:text-slate-300" 
+                                    />
 
-                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                                        <button onClick={() => setTripType('ONE_WAY')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white' : 'text-slate-500'}`}>One Way</button>
-                                        <button onClick={() => setTripType('ROUND_TRIP')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white' : 'text-slate-500'}`}>Round Trip</button>
+                                    <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
+                                        <button onClick={() => setTripType('ONE_WAY')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tripType === 'ONE_WAY' ? 'bg-white dark:bg-slate-600 shadow-md text-indigo-600 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>One Way</button>
+                                        <button onClick={() => setTripType('ROUND_TRIP')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tripType === 'ROUND_TRIP' ? 'bg-white dark:bg-slate-600 shadow-md text-indigo-600 dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}>Round Trip</button>
                                     </div>
                                 </div>
 
-                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-3">Select Vehicle</h3>
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-300 uppercase mb-3">Select Vehicle</h3>
                                 <div className="space-y-3 mb-6">
-                                    {RENTAL_FLEET.map(v => (
+                                    {RENTAL_FLEET.map(v => {
+                                        const stableEta = (v.id.charCodeAt(v.id.length - 1) % 5) + 2;
+                                        return (
                                         <div
                                             key={v.id}
                                             onClick={() => setSelectedVehicle(v)}
-                                            className={`relative overflow-hidden p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 flex justify-between items-center group ${selectedVehicle?.id === v.id ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-900/30 shadow-xl -translate-y-1 scale-[1.02]' : 'border-slate-100 dark:border-slate-800 hover:border-indigo-300 hover:shadow-lg hover:-translate-y-1 bg-white/50 dark:bg-slate-900/50'}`}
+                                            className={`relative overflow-hidden p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 flex justify-between items-center group ${selectedVehicle?.id === v.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/60 shadow-xl -translate-y-1 scale-[1.02]' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:shadow-lg hover:-translate-y-1 bg-white dark:bg-slate-800/80'}`}
                                         >
-                                            {selectedVehicle?.id === v.id && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent -translate-x-[150%] skew-x-12 animate-[shimmer_2s_infinite]"></div>}
+                                            {selectedVehicle?.id === v.id && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent -translate-x-[150%] skew-x-12 animate-[shimmer_2s_infinite]"></div>}
                                             <div className="flex items-center gap-3">
-                                                <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm">
-                                                    {v.imageIcon === 'car' ? <Car size={20} className="text-slate-600" /> : <Bus size={20} className="text-slate-600" />}
+                                                <div className="bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg shadow-inner">
+                                                    {v.imageIcon === 'car' ? <Car size={20} className="text-indigo-600 dark:text-indigo-400" /> : v.imageIcon === 'suv' ? <Car size={20} className="text-indigo-600 dark:text-indigo-400" /> : v.imageIcon === 'bike' ? <Bike size={20} className="text-indigo-600 dark:text-indigo-400" /> : <Bus size={20} className="text-indigo-600 dark:text-indigo-400" />}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-sm dark:text-white">{v.model}</h4>
-                                                    <p className="text-[10px] text-slate-500">{v.capacity} Seater • ₹{v.ratePerKm}/km</p>
+                                                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">{v.model}</h4>
+                                                    <p className="text-[10px] text-slate-600 dark:text-slate-300">{v.capacity} {v.capacity === 1 ? 'Person' : 'Seater'} • ₹{v.ratePerKm}/km</p>
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Nearby • {stableEta} mins away</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {selectedVehicle?.id === v.id && <div className="bg-indigo-500 text-white p-1 rounded-full"><Check size={12} /></div>}
+                                            {selectedVehicle?.id === v.id && <div className="bg-indigo-600 text-white p-1.5 rounded-full z-10"><Check size={14} /></div>}
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
 
                                 {selectedVehicle && tripDistance && (
-                                    <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50 mb-4 shadow-sm">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-xs text-slate-500 font-bold uppercase">Estimated Fare</span>
-                                            <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">₹{rentalPrice}</span>
+                                            <span className="text-xs text-indigo-900 dark:text-indigo-200 font-bold uppercase tracking-wider">Estimated Fare</span>
+                                            <span className="text-xl font-black text-indigo-700 dark:text-indigo-300">₹{rentalPrice}</span>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 text-center">Includes Base Fare + Distance Charge</p>
+                                        <p className="text-[10px] text-indigo-600/70 dark:text-indigo-300/70 text-center font-medium">Includes Base Fare + Distance Charge</p>
                                     </div>
                                 )}
 
@@ -1147,8 +1207,11 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                             <LocationSelector
                                                 label="Pickup Point"
                                                 defaultAutoDetect={true}
-                                                onSelect={setFromLocation}
+                                                value={fromLocation}
+                                                onSelect={setFromLocation as any}
+                                                onMapTrigger={() => setShowMapSelector('from')}
                                                 placeholder="Start"
+                                                labelClassName="text-slate-700 dark:text-slate-300"
                                             />
 
                                             {upcomingBuses.length > 0 && fromLocation && (
@@ -1166,8 +1229,11 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
                                             <LocationSelector
                                                 label="Destination"
-                                                onSelect={setToLocation}
+                                                value={toLocation}
+                                                onSelect={setToLocation as any}
+                                                onMapTrigger={() => setShowMapSelector('to')}
                                                 placeholder="End"
+                                                labelClassName="text-slate-700 dark:text-slate-300"
                                             />
                                         </div>
 

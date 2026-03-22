@@ -36,11 +36,21 @@ export const searchVillages = async (req, res) => {
         }
 
         // SMART SEARCH LOGIC: 
-        // 1. Split query by spaces to allow "VillageName BlockName" refinement
-        //    Example: "Rasulpur Sasaram" -> ["Rasulpur", "Sasaram"]
-        const terms = query.trim().split(/\s+/);
+        // 1. Clean query by replacing commas with spaces
+        // 2. Filter out common descriptor words (case-insensitive)
+        const stopwords = ['village', 'gaon', 'gav', 'block', 'district', 'zila', 'jila', 'thana', 'panchayat', 'ps', 'dist'];
+        const cleanQuery = query.replace(/,/g, ' ').toLowerCase();
         
-        // 2. Create an AND condition where EACH term must match at least ONE field
+        const rawTerms = cleanQuery.split(/\s+/);
+        const terms = rawTerms.filter(t => t.length > 1 && !stopwords.includes(t));
+
+        if (terms.length === 0) {
+            // Revert back to original splitting if filtering left nothing (rare case)
+            terms.push(...query.replace(/,/g, ' ').trim().split(/\s+/).filter(t => t.length > 1));
+            if (terms.length === 0) return res.json([]);
+        }
+        
+        // 3. Create an AND condition where EACH term must match at least ONE field
         //    This ensures that adding "Sasaram" filters the results to only those related to Sasaram.
         const searchConditions = terms.map(term => {
             // Escape regex special characters

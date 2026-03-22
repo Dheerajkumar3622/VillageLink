@@ -10,10 +10,13 @@ interface LocationSelectorProps {
   disabled?: boolean;
   defaultAutoDetect?: boolean;
   placeholder?: string;
+  labelClassName?: string;
+  value?: LocationData | null;
+  onMapTrigger?: () => void;
 }
 
 export const LocationSelector: React.FC<LocationSelectorProps> = ({ 
-  label, onSelect, icon, disabled = false, defaultAutoDetect = false, placeholder = "Search Village, Block, District..."
+  label, onSelect, value, onMapTrigger, icon, disabled = false, defaultAutoDetect = false, placeholder = "Search Village, Block, District...", labelClassName
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +76,12 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
          }
       };
   }, []);
+
+  useEffect(() => {
+      if (value) {
+          setSearchTerm(value.name || value.rawName || '');
+      }
+  }, [value]);
 
   // Web Worker Powered Zero-Latency Search Algorithm
   useEffect(() => {
@@ -182,7 +191,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   return (
     <div className={`relative space-y-1.5 ${disabled ? 'opacity-60 pointer-events-none' : ''}`} ref={wrapperRef}>
       <div className="flex justify-between items-center px-1">
-        <label className="label-match uppercase text-xs font-bold drop-shadow-md" style={{ color: 'white', textShadow: '0px 1px 3px rgba(0,0,0,0.8)' }}>{label}</label>
+        <label className={`uppercase text-xs font-bold ${labelClassName || 'drop-shadow-md'}`} style={labelClassName ? {} : { color: 'white', textShadow: '0px 1px 3px rgba(0,0,0,0.8)' }}>{label}</label>
       </div>
       
       <div className="relative group">
@@ -222,9 +231,16 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
           )}
           {!disabled && (
             <button 
-              onClick={(e) => { e.stopPropagation(); handleAutoDetect(); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (onMapTrigger) {
+                   onMapTrigger();
+                } else {
+                   handleAutoDetect(); 
+                }
+              }}
               className={`p-1.5 rounded-full transition-all text-[#4F46E5]/70 hover:text-[#4F46E5] hover:bg-[#4F46E5]/10`}
-              title="Auto Detect Location"
+              title={onMapTrigger ? "Select on Map" : "Auto Detect Location"}
             >
               {isLocating ? <span className="animate-spin inline-block text-[14px]">⌛</span> : <Navigation size={18} />}
             </button>

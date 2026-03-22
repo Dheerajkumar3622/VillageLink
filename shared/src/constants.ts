@@ -111,6 +111,7 @@ export const TRANSLATIONS = {
 };
 
 export const RENTAL_FLEET: RentalVehicle[] = [
+  { id: "V-000", type: "MOTO", model: "Moto Taxi / Bike", capacity: 1, baseRate: 50, ratePerKm: 8, imageIcon: "bike", available: true },
   { id: "V-001", type: "HATCHBACK", model: "Alto 800 / Kwid", capacity: 4, baseRate: 800, ratePerKm: 12, imageIcon: "car", available: true },
   { id: "V-002", type: "SUV", model: "Scorpio N / Bolero", capacity: 7, baseRate: 2500, ratePerKm: 18, imageIcon: "suv", available: true },
   { id: "V-003", type: "TRAVELER", model: "Force Traveler", capacity: 14, baseRate: 4500, ratePerKm: 25, imageIcon: "bus", available: false }

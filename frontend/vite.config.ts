@@ -12,12 +12,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/socket.io': {
-        target: 'https://backendlink-0xjs.onrender.com',
+        target: 'http://127.0.0.1:3001',
         ws: true,
         changeOrigin: true
       },
       '/api': {
-        target: 'https://backendlink-0xjs.onrender.com',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true
       }
     }
