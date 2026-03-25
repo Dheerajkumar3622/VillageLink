@@ -4,11 +4,6 @@ import { AuthView } from './AuthView';
 import { ViewSkeleton, ProfileSkeleton } from './LoadingSkeleton';
 import { User } from '@villagelink/shared';
 import { getCurrentUser, logoutUser, getAuthToken } from '../services/authService';
-import { initSocketConnection } from '../services/transportService';
-import { getRoutes } from '../services/adminService';
-import { setUniversalRoutes } from '../services/graphService';
-import { initializeGeoData } from '@villagelink/shared';
-import { initErrorReporting } from '../services/errorReportingService';
 import { Moon, Sun, LogOut, Languages } from 'lucide-react';
 
 // ========================================
@@ -74,32 +69,18 @@ const App: React.FC = () => {
     }
     setIsInitialized(true);
 
-    // Initialize error reporting system
-    initErrorReporting();
+    // Initialize error reporting system (lazy loaded)
+    import('../services/errorReportingService').then(m => m.initErrorReporting()).catch(() => {});
 
-    // Defer non-critical initialization to after first paint
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => {
-        initializeGeoData();
-        getRoutes().then(routes => {
-          if (routes.length > 0) setUniversalRoutes(routes);
-        });
-        if (currentUser && token) {
-          initSocketConnection();
-        }
-      }, { timeout: 2000 });
-    } else {
-      // Fallback for browsers without requestIdleCallback
-      setTimeout(() => {
-        initializeGeoData();
-        getRoutes().then(routes => {
-          if (routes.length > 0) setUniversalRoutes(routes);
-        });
-        if (currentUser && token) {
-          initSocketConnection();
-        }
-      }, 100);
-    }
+    // Defer ALL non-critical initialization to well after first paint
+    const deferTimeout = setTimeout(() => {
+      // GeoData is heavy - load only after paint is complete
+      import('@villagelink/shared').then(m => m.initializeGeoData?.()).catch(() => {});
+
+      if (currentUser && token) {
+        import('../services/transportService').then(m => m.initSocketConnection()).catch(() => {});
+      }
+    }, 3000);
 
     const handleAuthError = () => {
       alert("Session Expired: You have logged in on another device.");
@@ -110,7 +91,10 @@ const App: React.FC = () => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setDarkMode(true);
     }
-    return () => window.removeEventListener('auth_error', handleAuthError);
+    return () => {
+      window.removeEventListener('auth_error', handleAuthError);
+      clearTimeout(deferTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -132,12 +116,16 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = (u: User) => {
     setUser(u);
-    // Defer socket connection to not block main thread
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => initSocketConnection(), { timeout: 1000 });
-    } else {
-      setTimeout(() => initSocketConnection(), 100);
-    }
+    // Defer socket connection and route loading to not block main thread
+    setTimeout(() => {
+      import('../services/transportService').then(m => m.initSocketConnection()).catch(() => {});
+      // Load routes only after successful login (not on cold start)
+      import('../services/adminService').then(m => m.getRoutes()).then(routes => {
+        if (routes && routes.length > 0) {
+          import('../services/graphService').then(g => g.setUniversalRoutes(routes));
+        }
+      }).catch(() => {});
+    }, 300);
   };
 
   // Render role-based view with lazy loading

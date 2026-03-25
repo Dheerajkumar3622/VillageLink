@@ -1,6 +1,6 @@
-
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import mongoose from 'mongoose';
 import Models from './models.js';
 const { User, Shop } = Models;
 import crypto from 'crypto';
@@ -219,6 +219,9 @@ export const register = async (req, res) => {
 // --- 1000x: LOGIN (unified, returns panelType for auto-redirect) ---
 export const login = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: "Database offline. Please whitelist your IP in MongoDB Atlas (Network Access -> Add IP -> 0.0.0.0/0)." });
+    }
     const { loginId, password } = loginSchema.parse(req.body);
 
     const user = await User.findOne({

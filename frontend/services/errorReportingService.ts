@@ -542,8 +542,4 @@ export function destroyErrorReporting(): void {
     isInitialized = false;
 }
 
-// Auto-initialize
-if (typeof window !== 'undefined') {
-    // Delay init to not block page load
-    setTimeout(initErrorReporting, 1000);
-}
+// Auto-init removed - initialization is handled explicitly by App.tsx

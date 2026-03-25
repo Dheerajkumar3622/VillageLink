@@ -42,11 +42,8 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-async function main() {
-  // 1. Clean up old tmp debris BEFORE mounting UI
-  await bootstrapOTA();
-  
-  // 2. Mount React App
+function main() {
+  // 1. Mount React App IMMEDIATELY - never block on non-critical tasks
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
@@ -54,10 +51,15 @@ async function main() {
     </React.StrictMode>
   );
 
+  // 2. Non-blocking: clean up old OTA tmp debris in background
+  requestAnimationFrame(() => {
+    bootstrapOTA().catch(() => {});
+  });
+
   // 3. Check for updates in the background (Non-blocking)
   setTimeout(() => {
     OTAService.getInstance().checkForUpdate().catch(console.error);
-  }, 5000);
+  }, 8000);
 }
 
 main();

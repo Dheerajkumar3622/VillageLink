@@ -61,7 +61,7 @@ export default defineConfig({
     cssCodeSplit: true,
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'lucide-react', 'long'],
+    include: ['react', 'react-dom', 'lucide-react', 'long', 'socket.io-client', 'firebase/app', 'firebase/auth'],
     exclude: ['@tensorflow/tfjs', '@tensorflow-models/mobilenet', 'ethers']
   },
   esbuild: {

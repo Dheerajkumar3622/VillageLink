@@ -234,6 +234,17 @@ function startKeepAlive() {
         }
     }, KEEP_ALIVE_INTERVAL);
 }
+// --- DATABASE HEALTH MIDDLEWARE ---
+app.use('/api', (req, res, next) => {
+    // Prevent 10-second Mongoose timeout hangs when DB is unreachable (e.g., due to IP whitelist)
+    if (mongoose.connection.readyState !== 1 && mongoose.connection.readyState !== 2) {
+        return res.status(503).json({ 
+            error: "Database offline. Please whitelist your IP in MongoDB Atlas (Network Access -> Add IP -> 0.0.0.0/0).",
+            code: "DB_OFFLINE"
+        });
+    }
+    next();
+});
 
 // --- AUTH ROUTES ---
 app.post('/api/auth/register', Auth.register);              // Legacy
@@ -613,6 +624,29 @@ app.post('/api/admin/pricing', Auth.requireAdmin, async (req, res) => {
     try {
         const { baseFare, perKmRate } = req.body;
         await SystemSetting.findOneAndUpdate({ key: 'PRICING_CONFIG' }, { value: { baseFare, perKmRate }, updatedAt: Date.now() }, { upsert: true });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- ROUTE DEFINITIONS (Admin Route CRUD) ---
+app.get('/api/routes', async (req, res) => {
+    try {
+        const routes = await Route.find({}).lean();
+        res.json(routes);
+    } catch (e) { res.json([]); }
+});
+
+app.post('/api/routes', Auth.authenticate, async (req, res) => {
+    try {
+        const route = new Route(req.body);
+        await route.save();
+        res.json(route);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/routes/:id', Auth.authenticate, async (req, res) => {
+    try {
+        await Route.findOneAndDelete({ id: req.params.id });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

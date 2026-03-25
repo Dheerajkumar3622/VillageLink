@@ -2,9 +2,18 @@
 import React, { useState } from 'react';
 import { UserRole, VehicleType } from '@villagelink/shared';
 import { loginUser, registerUser, requestPasswordReset, resetPassword, resetPasswordViaFirebase, loginViaFirebase, registerViaFirebase } from '../services/authService';
-import { auth } from './firebaseConfig';
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { Button } from './Button';
+
+// Firebase is loaded LAZILY to avoid blocking the login form render
+// Type-only import for TS (erased at runtime)
+type ConfirmationResult = import('firebase/auth').ConfirmationResult;
+const getFirebase = async () => {
+  const [{ auth }, firebaseAuth] = await Promise.all([
+    import('./firebaseConfig'),
+    import('firebase/auth')
+  ]);
+  return { auth, ...firebaseAuth };
+};
 import { User, Lock, Bus, Car, ArrowRight, Loader2, Armchair, Mail, Phone, ArrowLeft, Key, Bike, Truck, Mic, Activity, ShieldAlert, Store, MicOff, Utensils, Languages, Sun, Moon } from 'lucide-react';
 import { TRANSLATIONS } from '@villagelink/shared';
 
@@ -59,14 +68,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
     setOtpLoading(true); setError(null); setInfoMsg(null);
     try {
       // Try Firebase first
+      const fb = await getFirebase();
       if ((window as any).recaptchaVerifier) {
         try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
       }
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-login', {
+      (window as any).recaptchaVerifier = new fb.RecaptchaVerifier(fb.auth, 'recaptcha-login', {
         'size': 'invisible'
       });
       const phoneNumber = loginId.startsWith('+') ? loginId : `+91${loginId}`;
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, (window as any).recaptchaVerifier);
+      const confirmation = await fb.signInWithPhoneNumber(fb.auth, phoneNumber, (window as any).recaptchaVerifier);
       setConfirmationResult(confirmation);
       setViewState('LOGIN_VERIFY');
       setInfoMsg(`OTP sent to ${phoneNumber}`);
@@ -105,7 +115,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
       if (confirmationResult) {
         // Firebase flow
         await confirmationResult.confirm(loginOtp);
-        const idToken = await auth.currentUser?.getIdToken();
+        const fb = await getFirebase();
+        const idToken = await fb.auth.currentUser?.getIdToken();
         if (!idToken) throw new Error("No ID Token available");
         
         const res = await loginViaFirebase(idToken);
@@ -227,14 +238,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
     setLoading(true); setError(null);
     if (regPhone) {
       try {
-        if ((window as any).recaptchaVerifier) {
+        const fb = await getFirebase();
+      if ((window as any).recaptchaVerifier) {
           try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
         }
-        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-reg', {
+        (window as any).recaptchaVerifier = new fb.RecaptchaVerifier(fb.auth, 'recaptcha-reg', {
           'size': 'invisible'
         });
         const phoneNumber = regPhone.startsWith('+') ? regPhone : `+91${regPhone}`;
-        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, (window as any).recaptchaVerifier);
+        const confirmation = await fb.signInWithPhoneNumber(fb.auth, phoneNumber, (window as any).recaptchaVerifier);
         setConfirmationResult(confirmation);
         setViewState('REGISTER_VERIFY');
         setInfoMsg(`OTP sent to ${phoneNumber} for secure registration`);
@@ -264,7 +276,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
     setLoading(true); setError(null);
     try {
       await confirmationResult.confirm(regOtp);
-      const idToken = await auth.currentUser?.getIdToken();
+      const fb = await getFirebase();
+      const idToken = await fb.auth.currentUser?.getIdToken();
       if (!idToken) throw new Error("No ID Token available");
       
       const capacity = regRole === 'DRIVER' ? parseInt(regCapacity) : undefined;
@@ -294,11 +307,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
     if (isPhone) {
       // Use Firebase Phone Auth
       try {
+        const fb = await getFirebase();
         // Always create a fresh RecaptchaVerifier
         if ((window as any).recaptchaVerifier) {
           try { (window as any).recaptchaVerifier.clear(); } catch (e) { }
         }
-        (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        (window as any).recaptchaVerifier = new fb.RecaptchaVerifier(fb.auth, 'recaptcha-container', {
           'size': 'invisible',
           'callback': () => console.log('reCAPTCHA solved')
         });
@@ -307,7 +321,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
         const phoneNumber = resetIdentifier.startsWith('+') ? resetIdentifier : `+91${resetIdentifier}`;
 
         console.log('Sending OTP to:', phoneNumber);
-        const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        const confirmation = await fb.signInWithPhoneNumber(fb.auth, phoneNumber, appVerifier);
         setConfirmationResult(confirmation);
         setInfoMsg(`OTP sent to ${phoneNumber} via Firebase`);
         setViewState('RESET');
@@ -345,7 +359,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
       try {
         await confirmationResult.confirm(resetToken);
         // Success: Get ID Token
-        const idToken = await auth.currentUser?.getIdToken();
+        const fb = await getFirebase();
+        const idToken = await fb.auth.currentUser?.getIdToken();
         if (!idToken) throw new Error("Failed to retrieve token");
 
         // Send to backend to update password
