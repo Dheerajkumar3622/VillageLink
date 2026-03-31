@@ -210,10 +210,19 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         window.addEventListener('online', () => setIsOfflineMode(false));
         window.addEventListener('offline', () => setIsOfflineMode(true));
 
-        getMandiRates().then(rates => setMandiRates(rates));
-        getJobs().then(j => setJobs(j));
-        getMarketItems().then(items => setMarketItems(items));
-        getPackages().then(p => setPackages(p));
+        // Defer heavy background fetches to avoid blocking the main thread on mount (Zero Latency)
+        const fetchSecondaryData = () => {
+            getMandiRates().then(rates => setMandiRates(rates));
+            getJobs().then(j => setJobs(j));
+            getMarketItems().then(items => setMarketItems(items));
+            getPackages().then(p => setPackages(p));
+        };
+        
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(fetchSecondaryData, { timeout: 2000 });
+        } else {
+            setTimeout(fetchSecondaryData, 1000);
+        }
 
         setLostItems([
             { id: 'L1', item: 'Red School Bag', location: 'Bus 404', date: 'Yesterday', contact: '9988...', status: 'LOST' },

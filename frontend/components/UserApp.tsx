@@ -14,21 +14,21 @@ import { BentoCard } from './BentoCard';
 import { ProfilePill } from './ProfilePill';
 import { StatRing } from './StatRing';
 import V5BottomNav from './V5BottomNav';
-import FoodLinkHome from './FoodLinkHome';
-import LogisticsApp from './LogisticsApp';
-
 // Extended TabType for User App
 export type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile' | 'chat' | 'scan';
 
-// Import Views
-import PassengerView from './PassengerView';
-import GramMandiHome from './GramMandiHome';
-import ReelsSection from './ReelsSection';
-import ChatSection from './ChatSection';
-import UniversalQRScanner from './UniversalQRScanner';
-import UserProfile from './UserProfile';
-import ScratchCard from './ScratchCard';
 import { Moon, Sun } from 'lucide-react';
+
+// Lazy Load Heavy Views for Zero Latency Start
+const PassengerView = React.lazy(() => import('./PassengerView'));
+const GramMandiHome = React.lazy(() => import('./GramMandiHome'));
+const ReelsSection = React.lazy(() => import('./ReelsSection'));
+const ChatSection = React.lazy(() => import('./ChatSection'));
+const UniversalQRScanner = React.lazy(() => import('./UniversalQRScanner'));
+const UserProfile = React.lazy(() => import('./UserProfile'));
+const ScratchCard = React.lazy(() => import('./ScratchCard'));
+const FoodLinkHome = React.lazy(() => import('./FoodLinkHome'));
+const LogisticsApp = React.lazy(() => import('./LogisticsApp'));
 
 interface UserAppProps {
     user: UserType | any;
@@ -416,7 +416,14 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
 
             {/* Scrollable Content */}
             <main className="v5-scroll-view v5-main-content pb-24 overflow-y-auto h-screen" style={{ scrollBehavior: 'smooth' }}>
-                {renderContent()}
+                <React.Suspense fallback={
+                    <div className="flex flex-col items-center justify-center p-8 mt-32 opacity-60 animate-[pulse_2s_ease-in-out_infinite]">
+                        <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)] mb-4" />
+                        <p className="text-[10px] uppercase font-[900] tracking-widest text-[#0F172A] dark:text-[#F8FAFC]">Loading Module...</p>
+                    </div>
+                }>
+                    {renderContent()}
+                </React.Suspense>
             </main>
 
             {/* V5 Bottom Navigation - Integrated Quick Actions */}

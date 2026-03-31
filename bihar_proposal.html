@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VillageLink - Bihar Government Proposal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FFB300; /* Nano Banana */
+            --secondary: #FF8F00;
+            --dark: #1A1A1D;
+            --text-light: #F5F5F7;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #1A1A1D 0%, #2D2D35 100%);
+            color: var(--text-light);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 80px 0 60px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            margin: 0;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 10px 30px rgba(255, 179, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #A0A0A5;
+            margin-top: 15px;
+            font-weight: 300;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 50px;
+            margin-bottom: 40px;
+            transform-style: preserve-3d;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: skewX(-25deg);
+            transition: 0.5s;
+        }
+
+        .glass-card:hover::before {
+            left: 150%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px) rotateX(2deg) rotateY(2deg);
+            box-shadow: 0 20px 50px rgba(255, 179, 0, 0.15);
+            border-color: rgba(255, 179, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+        }
+
+        h2 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-top: 0;
+            margin-bottom: 30px;
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: -8px;
+            width: 50%; height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            font-size: 1.15rem;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 40px;
+            line-height: 1.5;
+            color: #E0E0E5;
+        }
+
+        li::before {
+            content: '✓';
+            position: absolute;
+            left: 0; top: 2px;
+            color: var(--dark);
+            background: var(--primary);
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .feature-box {
+            background: rgba(0,0,0,0.2); 
+            padding: 30px; 
+            border-radius: 20px;
+            transition: 0.3s;
+            border: 1px solid transparent;
+        }
+        
+        .feature-box:hover {
+            background: rgba(0,0,0,0.4);
+            border-color: rgba(255, 179, 0, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 80px;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            border: none;
+            padding: 20px 60px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(255, 179, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 179, 0, 0.4);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 179, 0, 0.1);
+            border: 1px solid rgba(255, 179, 0, 0.3);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">A Proposal for Government of Bihar</div>
+            <h1>VillageLink</h1>
+            <p class="subtitle">The Digital Backbone of Rural Bihar's Logistics & Agriculture</p>
+        </header>
+
+        <div class="glass-card">
+            <h2>🌟 Vision for Digital Bihar</h2>
+            <p style="font-size: 1.3rem; line-height: 1.8; color: #E0E0E5;">
+                VillageLink ek krantikari <span class="highlight">'Super App'</span> hai jo Bihar ke kisano, chhote vyapariyon aur aam janta ko ek modern digital platform par jodata hai. 
+                Hamara udeshya Bihar ke har gaon ko smart, connected aur aatmanirbhar banana hai, jisse supply chain mazboot ho aur rural economy ko nayi raftar mile.
+            </p>
+        </div>
+
+        <div class="grid">
+            <div class="glass-card">
+                <h2>🧑‍🌾 Benefits for Public & Farmers</h2>
+                <ul>
+                    <li><strong>GramMandi Access:</strong> Kisan apna anaj aur sabji seedhe vendors ko uchit daam par bech payenge. Bichauliyon (middlemen) ka khatma.</li>
+                    <li><strong>Seamless Logistics:</strong> Gaon se shahar tak sasti gaadi booking (Charter) aur parcel bhejna ab mobile par ek click se sambhav.</li>
+                    <li><strong>Mandi Khabar:</strong> Local mandi ke daily rates aur agriculture se judi zaroori news real-time mein kisan ke phone par.</li>
+                    <li><strong>Digital & Cashless:</strong> Razorpay integration se turant, surakshit aur cashless digital bhugtan.</li>
+                </ul>
+            </div>
+
+            <div class="glass-card">
+                <h2>🏛️ Benefits for Bihar Government</h2>
+                <ul>
+                    <li><strong>Economic Empowerment:</strong> Kisano ki aay (income) me vriddhi hogi, jisse "Krishi Vikas" aur rural economy majboot hogi.</li>
+                    <li><strong>Data-Driven Governance:</strong> AI/ML se demand-supply ki predictive analytics milegi, jisse sarkar aakdo ke aadhar par sateek policy bana sake.</li>
+                    <li><strong>Employment Generation:</strong> Gaon ke hazaron yuvaon ke liye driver, logistics aur delivery partner ke roop mein naye rozgar ke avsar.</li>
+                    <li><strong>Food Quality & Compliance:</strong> FSSAI standard compliance aur logistics track karne mein sarkar ko madad milegi.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h2>🚀 Technical Superiority & Features</h2>
+            <div class="grid" style="gap: 20px;">
+                <div class="feature-box">
+                    <h3 style="color: var(--primary); margin-top: 0; font-size: 1.4rem;">📍 Geospatial Engine</h3>
+                    <p style="color: #bbb; line-height: 1.6;">OpenStreetMap aur Google Maps integration jinhe gaon ke kachhe raaston ko bhi precisely track karne ke liye design kiya gaya hai.</p>
+                </div>
+                <div class="feature-box">
+                    <h3 style="color: var(--primary); margin-top: 0; font-size: 1.4rem;">⚡ Offline Telemetry</h3>
+                    <p style="color: #bbb; line-height: 1.6;">Kharab network wale gramin kshetro mein bhi SMS fallback technology ke zariye app nirantar kaam karta hai.</p>
+                </div>
+                <div class="feature-box">
+                    <h3 style="color: var(--primary); margin-top: 0; font-size: 1.4rem;">📉 AI Dynamic Pricing</h3>
+                    <p style="color: #bbb; line-height: 1.6;">Machine Learning algorithms jo route, weather aur demand ke hisaab se logistics ki sabse fair pricing tay karte hain.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta">
+            <button class="btn" onclick="alert('Thank you! Initiating the pilot phase presentation for the Bihar IT & Agriculture Department...')">
+                Start Pilot Presentation
+            </button>
+        </div>
+    </div>
+</body>
+</html>
