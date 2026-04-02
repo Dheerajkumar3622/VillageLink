@@ -140,8 +140,40 @@ let isDbConnected = false;
 const MONGO_URI_SRV = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
 const MONGO_URI_STANDARD = 'mongodb://dheerakumar3622:Dheeraj123@ac-klokthx-shard-00-00.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-01.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-02.j9op0nf.mongodb.net:27017/test?ssl=true&replicaSet=atlas-2yklok-shard-0&authSource=admin&retryWrites=true&w=majority';
 
+// --- AUTO-SEED DEFAULT ADMIN ON DB CONNECT ---
+async function seedDefaultAdmin() {
+    try {
+        const existing = await User.findOne({ phone: '9999999999' });
+        if (!existing) {
+            const admin = new User({
+                id: 'admin_' + Date.now(),
+                name: 'Super Admin',
+                phone: '9999999999',
+                email: 'admin@villagelink.com',
+                password: 'Admin@123',
+                role: 'ADMIN',
+                panelType: 'USER',
+                isVerified: true,
+                walletBalance: 0
+            });
+            await admin.save();
+            console.log('✅ Default Admin Seeded (9999999999 / Admin@123)');
+        } else if (existing.role !== 'ADMIN') {
+            existing.role = 'ADMIN';
+            existing.isVerified = true;
+            await existing.save();
+            console.log('✅ Existing user upgraded to ADMIN');
+        }
+    } catch (e) {
+        console.error('⚠️ Admin seed error (non-fatal):', e.message);
+    }
+}
+
 mongoose.connection.on('connecting', () => console.log('⏳ Connecting to MongoDB...'));
-mongoose.connection.on('connected', () => console.log('✅ MongoDB Connected'));
+mongoose.connection.on('connected', () => {
+    console.log('✅ MongoDB Connected');
+    seedDefaultAdmin(); // Auto-create admin on connect
+});
 mongoose.connection.on('error', (err) => console.error('❌ MongoDB Connection Error:', err));
 mongoose.connection.on('disconnected', () => console.log('🔌 MongoDB Disconnected'));
 
@@ -167,6 +199,20 @@ const connectWithRetry = (uri) => {
 };
 
 connectWithRetry(MONGO_URI_SRV);
+
+// --- SECURE ONE-TIME ADMIN SETUP (accessible via browser/API) ---
+app.get('/api/setup-admin', async (req, res) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(503).json({ error: 'Database not connected' });
+        }
+        await seedDefaultAdmin();
+        res.json({ success: true, message: 'Admin account ready! Login with Phone: 9999999999, Password: Admin@123' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 
 // --- MIDDLEWARE: ACTIVITY LOGGER ---
 const logActivity = async (req, res, next) => {
