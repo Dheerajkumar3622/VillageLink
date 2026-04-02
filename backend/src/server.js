@@ -158,11 +158,13 @@ async function seedDefaultAdmin() {
             });
             await admin.save();
             console.log('✅ Default Admin Seeded (9999999999 / Admin@123)');
-        } else if (existing.role !== 'ADMIN') {
+        } else {
+            // Force reset password and role to ensure we can always log in
             existing.role = 'ADMIN';
             existing.isVerified = true;
+            existing.password = 'Admin@123'; 
             await existing.save();
-            console.log('✅ Existing user upgraded to ADMIN');
+            console.log('✅ Existing user upgraded to ADMIN and password reset to Admin@123');
         }
     } catch (e) {
         console.error('⚠️ Admin seed error (non-fatal):', e.message);
