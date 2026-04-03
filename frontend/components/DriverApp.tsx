@@ -115,7 +115,7 @@ export const DriverApp: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const result = await loginUser(loginId, password);
+            const result = await loginUser(loginId, password, 'PROVIDER');
             if (result.success && result.user) {
                 setUser(result.user);
                 setViewState('DASHBOARD');
@@ -163,14 +163,45 @@ export const DriverApp: React.FC = () => {
     };
 
     const fetchData = async () => {
-        // Mock data for demo
-        setStats({
-            todayTrips: 5,
-            todayEarnings: 1250,
-            weekEarnings: 8500,
-            rating: 4.8,
-            totalTrips: 234
-        });
+        try {
+            const token = getAuthToken();
+            const headers = { Authorization: `Bearer ${token}` };
+            const [walletRes, historyRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/user/wallet`, { headers }),
+                fetch(`${API_BASE_URL}/api/user/history`, { headers })
+            ]);
+
+            const wallet = walletRes.ok ? await walletRes.json() : null;
+            const history = historyRes.ok ? await historyRes.json() : [];
+            const trips = Array.isArray(history)
+                ? history.filter((h: any) => h.historyType === 'TICKET')
+                : [];
+
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - 7);
+
+            const todayTrips = trips.filter((t: any) => (t.sortDate || t.timestamp || 0) >= todayStart.getTime()).length;
+            const weekEarnings = trips
+                .filter((t: any) => (t.sortDate || t.timestamp || 0) >= weekStart.getTime())
+                .reduce((acc: number, t: any) => acc + (Number(t.totalPrice) || 0), 0);
+
+            setStats({
+                todayTrips,
+                todayEarnings: 0,
+                weekEarnings,
+                rating: 4.8,
+                totalTrips: trips.length
+            });
+            setPendingRequests([]);
+            if (wallet?.balance != null) {
+                setStats((prev) => ({ ...prev, todayEarnings: Number(wallet.balance) || 0 }));
+            }
+        } catch (e) {
+            console.error('Driver dashboard fetch failed:', e);
+            setStats({ todayTrips: 0, todayEarnings: 0, weekEarnings: 0, rating: 4.8, totalTrips: 0 });
+        }
     };
 
     const toggleOnline = () => {

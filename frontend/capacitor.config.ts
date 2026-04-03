@@ -1,9 +1,28 @@
 
 import { CapacitorConfig } from '@capacitor/cli';
 
+const variant = (process.env.APP_VARIANT || 'user').toLowerCase();
+
+const appMetaByVariant: Record<string, { appId: string; appName: string }> = {
+  user: {
+    appId: 'com.villagelink.user',
+    appName: 'VillageLink User',
+  },
+  provider: {
+    appId: 'com.villagelink.provider',
+    appName: 'VillageLink Provider',
+  },
+  admin: {
+    appId: 'com.villagelink.admin',
+    appName: 'VillageLink Admin',
+  },
+};
+
+const selectedMeta = appMetaByVariant[variant] || appMetaByVariant.user;
+
 const config: CapacitorConfig = {
-  appId: 'com.villagelink.app',
-  appName: 'VillageLink',
+  appId: selectedMeta.appId,
+  appName: selectedMeta.appName,
   webDir: 'dist',
   server: {
     // PRODUCTION MODE - using Render URL:

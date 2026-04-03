@@ -119,8 +119,12 @@ export async function storeErrors(errors) {
         }
     }
 
-    // Check for alert conditions
-    await checkAlertConditions();
+    // Optional analytics — must not fail the whole ingest if DB hiccups
+    try {
+        await checkAlertConditions();
+    } catch (e) {
+        console.error('[ErrorAggregator] checkAlertConditions failed:', e?.message || e);
+    }
 
     return results;
 }

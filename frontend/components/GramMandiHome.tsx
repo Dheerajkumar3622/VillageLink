@@ -516,14 +516,9 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             </div>
                         </div>
 
-                        {/* Produce Grid - Dynamic from API with mock fallback */}
+                        {/* Produce Grid - Dynamic from API only */}
                         <div className="grid grid-cols-2 gap-3">
-                            {(filteredListings.length > 0 ? filteredListings : [
-                                { id: 'mock-1', crop: "Red Tomatoes", farmerName: "Ramesh S.", pricePerUnit: 25, unit: "kg", category: 'VEGETABLE', organic: true, quantity: 50, location: { village: 'Dehri', district: 'Rohtas' }, status: 'ACTIVE' },
-                                { id: 'mock-2', crop: "Fresh Cow Milk", farmerName: "Sita D.", pricePerUnit: 50, unit: "L", category: 'DAIRY', organic: false, quantity: 15, location: { village: 'Amuar', district: 'Rohtas' }, status: 'ACTIVE' },
-                                { id: 'mock-3', crop: "Desi Potatoes", farmerName: "Vinay P.", pricePerUnit: 20, unit: "kg", category: 'VEGETABLE', organic: false, quantity: 100, location: { village: 'Parsa', district: 'Rohtas' }, status: 'ACTIVE' },
-                                { id: 'mock-4', crop: "Wheat (Lok1)", farmerName: "Kishan K.", pricePerUnit: 30, unit: "kg", category: 'GRAIN', organic: false, quantity: 200, location: { village: 'Dehri', district: 'Rohtas' }, status: 'ACTIVE' }
-                            ] as any[]).map((item: any, idx: number) => (
+                            {filteredListings.map((item: any, idx: number) => (
                                 <div key={item.id || idx} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[20px] p-3 border border-white/50 dark:border-slate-800 shadow-sm flex flex-col justify-between">
                                     <div>
                                         <div className="flex justify-between items-start mb-2">
@@ -552,6 +547,11 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                                 </div>
                             ))}
                         </div>
+                        {filteredListings.length === 0 && (
+                            <div className="mt-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 p-4 text-center text-sm text-slate-500">
+                                No live produce listings available right now. Pull to refresh and try again.
+                            </div>
+                        )}
                     </div>
                 ) : null}
                 {activeSection === 'KIRANA' && (

@@ -43,9 +43,10 @@ const UserAppRoot: React.FC = () => {
             if (currentUser.role === 'PASSENGER' || !currentUser.role) {
                 setUser(currentUser);
             } else {
-                // Wrong app - redirect to provider
-                window.location.href = '/provider.html';
-                return;
+                // Wrong session from Provider App - clear it and show User login
+                // DO NOT redirect to provider.html (causes infinite loop on shared localStorage)
+                localStorage.removeItem('villagelink_token');
+                localStorage.removeItem('villagelink_user');
             }
         }
         setIsInitialized(true);
@@ -69,6 +70,11 @@ const UserAppRoot: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = (u: User) => {
+        if (u.role !== 'PASSENGER' && u.role !== undefined) {
+            logoutUser();
+            alert("Error: This account is registered as a Partner. Please use the Provider App.");
+            return;
+        }
         setUser(u);
         if (typeof requestIdleCallback !== 'undefined') {
             requestIdleCallback(() => initSocketConnection(), { timeout: 1000 });

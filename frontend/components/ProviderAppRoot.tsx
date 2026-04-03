@@ -22,15 +22,16 @@ const ProviderAppRoot: React.FC = () => {
 
         if (currentUser && token) {
             // Only allow provider roles in Provider App
-            const providerRoles = ['DRIVER', 'FARMER', 'VENDOR', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR', 'RESTAURANT_MANAGER', 'STORAGE_OPERATOR', 'LOGISTICS_PARTNER', 'VILLAGE_MANAGER'];
+            const providerRoles = ['DRIVER', 'FARMER', 'VENDOR', 'SHOPKEEPER', 'MESS_MANAGER', 'FOOD_VENDOR', 'RESTAURANT_MANAGER', 'STORAGE_OPERATOR', 'LOGISTICS_PARTNER', 'VILLAGE_MANAGER', 'COLD_STORAGE', 'ESS_OPERATOR', 'ADMIN'];
             if (currentUser.role && providerRoles.includes(currentUser.role)) {
                 setUser(currentUser);
             } else if (currentUser.role === 'PASSENGER') {
-                // Wrong app - redirect to user app
-                window.location.href = '/user.html';
-                return;
+                // Wrong session from User App - clear it and show Provider login
+                // DO NOT redirect to user.html (causes infinite loop on shared localStorage)
+                localStorage.removeItem('villagelink_token');
+                localStorage.removeItem('villagelink_user');
             } else {
-                // Unknown role, allow in provider app (for role registration)
+                // Unknown role, allow in provider app (for pending verification etc.)
                 setUser(currentUser);
             }
         }
@@ -47,6 +48,11 @@ const ProviderAppRoot: React.FC = () => {
     }, []);
 
     const handleLoginSuccess = (u: User) => {
+        if (u.role === 'PASSENGER') {
+            logoutUser();
+            alert("Error: This account is registered as a regular User. Please register as a Partner or use the User App.");
+            return;
+        }
         setUser(u);
         if (typeof requestIdleCallback !== 'undefined') {
             requestIdleCallback(() => initSocketConnection(), { timeout: 1000 });

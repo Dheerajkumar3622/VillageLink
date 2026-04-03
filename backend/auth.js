@@ -1,4 +1,7 @@
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import Models from './models.js';
@@ -54,7 +57,8 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   loginId: z.string(),
-  password: z.string()
+  password: z.string(),
+  expectedPanelType: z.string().optional()
 });
 
 // --- REAL FAST2SMS INTEGRATION ---
@@ -167,10 +171,16 @@ export const registerProvider = async (req, res) => {
 
     if (validated.phone) console.log(`🔵 New PROVIDER (${validated.role}) registered: ${validated.phone}`);
 
-    const token = jwt.sign({ id: user.id, role: user.role, panelType: 'PROVIDER' }, JWT_SECRET, { expiresIn: '7d' });
+    // DO NOT issue a token - provider must wait for admin verification
     const { password, ...safeUser } = user.toObject();
 
-    res.json({ success: true, user: safeUser, token, panelType: 'PROVIDER' });
+    res.json({
+      success: true,
+      pendingVerification: true,
+      user: safeUser,
+      panelType: 'PROVIDER',
+      message: `Registration successful! Your ${validated.role} account is pending admin verification. You will be able to login once an admin verifies your account.`
+    });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ error: error.errors[0].message });
     res.status(500).json({ error: error.message });
@@ -222,11 +232,32 @@ export const login = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: "Database offline. Please whitelist your IP in MongoDB Atlas (Network Access -> Add IP -> 0.0.0.0/0)." });
     }
-    const { loginId, password } = loginSchema.parse(req.body);
+    const { loginId, password, expectedPanelType } = loginSchema.parse(req.body);
 
-    const user = await User.findOne({
+    const query = {
       $or: [{ id: loginId }, { email: loginId }, { phone: loginId }]
-    });
+    };
+
+    let user;
+    if (expectedPanelType === 'PROVIDER') {
+        user = await User.findOne({
+            $and: [
+                query,
+                { $or: [{ panelType: 'PROVIDER' }, { role: { $ne: 'PASSENGER' } }] }
+            ]
+        });
+    } else if (expectedPanelType === 'USER') {
+        user = await User.findOne({
+            $and: [
+                query,
+                { $or: [{ panelType: 'USER' }, { role: 'PASSENGER' }] }
+            ]
+        });
+    }
+
+    if (!user) {
+        user = await User.findOne(query);
+    }
 
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -234,6 +265,11 @@ export const login = async (req, res) => {
 
     if (user.isBanned) {
       return res.status(403).json({ error: "Account Suspended by Administrator" });
+    }
+
+    // Block unverified providers from logging in
+    if (user.role !== 'PASSENGER' && user.role !== 'ADMIN' && !user.isVerified) {
+      return res.status(403).json({ error: "Your account is pending admin verification. Please wait for approval before logging in.", pendingVerification: true });
     }
 
     // Determine panel type from user role
@@ -244,7 +280,11 @@ export const login = async (req, res) => {
 
     res.json({ success: true, user: safeUser, token, panelType });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0]?.message || 'Invalid request' });
+    }
+    console.error('[auth.login]', error);
+    res.status(500).json({ error: error.message || 'Login failed' });
   }
 };
 
@@ -309,15 +349,37 @@ export const updateFCMToken = async (req, res) => {
 
 // ...
 
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const requestPasswordReset = async (req, res) => {
   try {
-    const { identifier } = req.body;
-    // Search by email or phone
-    const user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+    const id = (req.body.identifier || '').trim();
+    if (!id) {
+      return res.status(400).json({ error: 'Email or phone is required.' });
+    }
+
+    const orConditions = [{ email: id }, { phone: id }];
+    if (id.includes('@')) {
+      orConditions.push({ email: { $regex: new RegExp(`^${escapeRegex(id)}$`, 'i') } });
+    } else {
+      const d = id.replace(/\D/g, '');
+      if (d.length >= 10) {
+        const last10 = d.slice(-10);
+        orConditions.push({ phone: last10 }, { phone: `+91${last10}` }, { phone: `91${last10}` });
+      }
+    }
+
+    const user = await User.findOne({ $or: orConditions });
 
     if (!user) {
-      // Security: Don't reveal user existence
-      return res.json({ message: "If an account exists with this detail, an OTP has been sent." });
+      console.warn(`[PASSWORD RESET] No user matched identifier: ${id}`);
+      const payload = { message: "If an account exists with this detail, an OTP has been sent." };
+      if (process.env.NODE_ENV !== 'production') {
+        payload.devHint =
+          'Dev: koi account is email/phone se match nahi hua — spelling check karo ya pehle register karo. Spam folder bhi dekho agar account hai.';
+        payload.matchedAccount = false;
+      }
+      return res.json(payload);
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -325,32 +387,38 @@ export const requestPasswordReset = async (req, res) => {
     user.resetOTPExpiry = Date.now() + 300000; // 5 mins validity
     await user.save();
 
+    const htmlBody = `<h3>Password Reset Request</h3><p>Your OTP is: <b>${otp}</b></p><p>Valid for 5 minutes.</p><p>If you did not request this, ignore this email.</p>`;
+
     if (user.email) {
-      // REAL EMAIL SENDING
-      const emailSuccess = await sendEmail(user.email, "Password Reset OTP - VillageLink",
-        `<h3>Password Reset Request</h3><p>Your OTP is: <b>${otp}</b></p><p>Valid for 5 minutes.</p>`);
+      const emailSuccess = await sendEmail(user.email, 'Password Reset OTP - VillageLink', htmlBody);
 
       if (emailSuccess) {
         return res.json({ message: `OTP sent to ${user.email}` });
-      } else {
-        console.log(`[EMAIL FAIL] OTP for ${user.email}: ${otp}`);
-        // Fallback to phone if email fails and phone exists
       }
+
+      console.warn(`[PASSWORD RESET] Email delivery failed for ${user.email}. OTP=${otp} (check RESEND_API_KEY / Gmail EMAIL_USER+EMAIL_PASS in backend .env)`);
     }
 
     if (user.phone) {
-      const success = false; // Mocking SMS failure since Fast2SMS usually isn't set up
+      const success = false; // Wire sendFast2SMS when Fast2SMS is configured
       // const success = await sendFast2SMS(user.phone, otp);
       if (success) {
         return res.json({ message: `OTP sent to mobile ending in ${user.phone.slice(-4)}` });
-      } else {
-        // If both email and phone fail, still provide a backdoor for testing in terminal
-        console.log(`[OTP GENERATED] Development OTP for ${user.phone}: ${otp}`);
-        return res.json({ message: "OTP sent in development mode (check console output)." });
       }
+      console.log(`[PASSWORD RESET] SMS not configured. OTP for phone ${user.phone}: ${otp}`);
     }
-    
-    return res.status(500).json({ error: "Could not send OTP. Contact support." });
+
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (isDev) {
+      return res.json({
+        message: 'Email/SMS not configured — OTP is in the API server terminal (dev only). Add RESEND_API_KEY or EMAIL_USER+EMAIL_PASS.',
+        otp,
+      });
+    }
+
+    return res.status(503).json({
+      error: 'OTP could not be delivered. Try again later or contact support.',
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

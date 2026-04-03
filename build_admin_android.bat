@@ -1,9 +1,9 @@
 @echo off
 echo ==========================================
-echo 🚀 Starting USER APK Build Process
+echo 🚀 Starting ADMIN APK Build Process
 echo ==========================================
 
-echo [1/3] Building React App...
+echo [1/4] Building React App...
 call npm run build
 if %errorlevel% neq 0 (
     echo ❌ Build Failed!
@@ -11,28 +11,32 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
-echo [2/3] Preparing USER entry + syncing Capacitor...
+echo [2/4] Switching Entry Point to Admin...
 cd frontend\dist
-copy /Y user.html index.html >nul
+copy /Y admin.html index.html >nul
 cd ..\..
+
+echo [3/4] Syncing Capacitor to Android...
 cd frontend
-set APP_VARIANT=user
-set VL_APP_ID=com.villagelink.user
+set APP_VARIANT=admin
+set VL_APP_ID=com.villagelink.admin
 call npx cap sync android
 if %errorlevel% neq 0 (
     echo ❌ Sync Failed!
     cd ..
+    set APP_VARIANT=
+set VL_APP_ID=
     pause
     exit /b %errorlevel%
 )
 
-echo [3/3] Opening Android Studio...
+echo [4/4] Opening Android Studio...
 call npx cap open android
 cd ..
 set APP_VARIANT=
 set VL_APP_ID=
 
 echo ==========================================
-echo ✅ Process Complete! Android Studio should open shortly.
+echo ✅ Admin Process Complete! Android Studio will open for APK Generation.
 echo ==========================================
 pause

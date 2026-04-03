@@ -3,6 +3,7 @@ import { Ticket, TicketStatus, PaymentMethod, BusState, User, Pass, RentalBookin
 import { io } from 'socket.io-client';
 import { getAuthToken, getCurrentUser } from './authService';
 import { API_BASE_URL } from '../config';
+import { toRoom, RealtimePayload } from './realtimeContract';
 
 const STORAGE_KEY = 'villagelink_tickets_cache';
 const PASSES_KEY = 'villagelink_passes_cache';
@@ -14,6 +15,7 @@ let socket: any = null;
 let localTickets: Ticket[] = [];
 let localPasses: Pass[] = [];
 let activeBuses: BusState[] = [];
+const emitQueue = new Map<string, number>();
 
 // Helper: persist tickets to localStorage for offline/refresh survival
 const persistTicketsToStorage = () => {
@@ -79,19 +81,54 @@ export const initSocketConnection = () => {
     });
 
     socket.on('connect', () => {
-        // console.log("Socket Connected via " + socket.io.engine.transport.name);
+        const currentUser = getCurrentUser();
+        if (currentUser?.id) {
+            socket.emit('join_user_room', currentUser.id);
+            if (currentUser.role && currentUser.role !== 'PASSENGER') {
+                socket.emit('join_provider_room', currentUser.id);
+            }
+        }
     });
 
     attachListeners();
+    attachGlobalSocketHandlers();
 };
 
 let listeners: { onTickets: Function, onBuses: Function } | null = null;
+
+/** Socket events that must work even before `subscribeToUpdates` (e.g. passenger acoustic ACK). */
+const attachGlobalSocketHandlers = () => {
+    if (!socket) return;
+    socket.off('acoustic_verification_ack');
+    socket.on('acoustic_verification_ack', (data: unknown) => {
+        window.dispatchEvent(new CustomEvent('acoustic_verification_ack', { detail: data }));
+    });
+
+    socket.off('tickets_updated');
+    socket.on('tickets_updated', (tickets: Ticket[]) => {
+        const incoming = Array.isArray(tickets) ? tickets : [];
+        if (incoming.length === 0) return;
+
+        const byId = new Map<string, Ticket>();
+        for (const t of localTickets) {
+            if (t?.id) byId.set(String(t.id), t);
+        }
+        for (const t of incoming) {
+            if (!t?.id) continue;
+            const id = String(t.id);
+            byId.set(id, { ...(byId.get(id) || ({} as any)), ...t });
+        }
+        localTickets = Array.from(byId.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        persistTicketsToStorage();
+        window.dispatchEvent(new Event('tickets_changed'));
+        listeners?.onTickets(localTickets);
+    });
+};
 
 const attachListeners = () => {
     if (!socket || !listeners) return;
 
     socket.off('sync_state');
-    socket.off('tickets_updated');
     socket.off('vehicles_update');
 
     socket.on('sync_state', (data: { tickets: Ticket[], activeBuses: BusState[] }) => {
@@ -101,11 +138,6 @@ const attachListeners = () => {
             listeners.onTickets(localTickets);
             listeners.onBuses(activeBuses);
         }
-    });
-
-    socket.on('tickets_updated', (tickets: Ticket[]) => {
-        localTickets = tickets;
-        listeners?.onTickets();
     });
 
     socket.on('vehicles_update', (buses: BusState[]) => {
@@ -120,7 +152,45 @@ export const subscribeToUpdates = (
 ) => {
     listeners = { onTickets, onBuses };
     if (!socket) initSocketConnection();
+    attachGlobalSocketHandlers();
     attachListeners();
+};
+
+export const joinOrderRoom = (orderId: string) => {
+    if (!socket) initSocketConnection();
+    socket?.emit('join_order_room', orderId);
+};
+
+export const replayOrderEvents = (orderId: string, sinceTimestamp: number) => {
+    if (!socket) initSocketConnection();
+    socket?.emit('replay_events_since', { room: toRoom.order(orderId), sinceTimestamp });
+};
+
+export const onRealtimeEvent = (event: string, cb: (payload: RealtimePayload) => void) => {
+    if (!socket) initSocketConnection();
+    socket?.off(event);
+    socket?.on(event, cb);
+};
+
+export const updateOrderStatusRealtime = (payload: { orderId: string; status: string; userId?: string; providerId?: string; meta?: any }) => {
+    if (!socket) initSocketConnection();
+    socket?.emit('order_status_update', payload);
+};
+
+/** After driver decodes ultrasonic payload — server validates ticket and notifies passenger. */
+export const emitUltrasonicVerifyRequest = (payload: string, driverId: string) => {
+    if (!driverId || !payload) return;
+    if (!socket) initSocketConnection();
+    socket?.emit('ultrasonic_verify_request', { payload, driverId });
+};
+
+export const emitThrottled = (eventName: string, payload: Record<string, any>, throttleMs = 400) => {
+    const key = `${eventName}_${payload.driverId || payload.providerId || 'global'}`;
+    const now = Date.now();
+    const lastAt = emitQueue.get(key) || 0;
+    if (now - lastAt < throttleMs) return;
+    emitQueue.set(key, now);
+    socket?.emit(eventName, payload);
 };
 
 // --- API METHODS ---
@@ -222,38 +292,37 @@ export const cancelTicket = async (ticketId: string): Promise<{ success: boolean
             headers: getHeaders(),
             body: JSON.stringify({ ticketId })
         });
-        
+
+        let body: Record<string, unknown> = {};
+        try {
+            body = (await res.json()) as Record<string, unknown>;
+        } catch {
+            /* non-JSON */
+        }
+
         if (res.ok) {
-            const data = await res.json();
-            
-            // Optimistically update local ticket status
             localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
             persistTicketsToStorage();
             window.dispatchEvent(new Event('tickets_changed'));
             if (socket && socket.connected) {
-                 socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
+                socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
             }
-            
-            return { success: true, message: 'Ticket cancelled successfully', refundAmount: data.refundAmount };
-        } else {
-             // Fallback local update if API missing but we want to simulate
-             localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
-             persistTicketsToStorage();
-             window.dispatchEvent(new Event('tickets_changed'));
-             if (socket && socket.connected) {
-                 socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
-             }
-             return { success: true, message: 'Ticket cancelled (Local mode)' };
+            const refundAmount = typeof body.refundAmount === 'number' ? body.refundAmount : undefined;
+            return {
+                success: true,
+                message: (typeof body.message === 'string' && body.message) || 'Ticket cancelled successfully',
+                refundAmount
+            };
         }
+
+        const err =
+            (typeof body.error === 'string' && body.error) ||
+            (typeof body.message === 'string' && body.message) ||
+            `Cancel failed (${res.status})`;
+        return { success: false, message: err };
     } catch (e) {
-        // Fallback for offline or no backend route
-        localTickets = localTickets.map(t => t.id === ticketId ? { ...t, status: 'CANCELLED' as TicketStatus } : t);
-        persistTicketsToStorage();
-        window.dispatchEvent(new Event('tickets_changed'));
-        if (socket && socket.connected) {
-             socket.emit('update_ticket', { ticketId, status: 'CANCELLED' });
-        }
-        return { success: true, message: 'Ticket cancelled locally' };
+        const msg = e instanceof Error ? e.message : 'Network error';
+        return { success: false, message: msg };
     }
 };
 
@@ -448,8 +517,146 @@ export const disconnectDriver = (userId: string) => {
 
 export const broadcastBusLocation = (state: Partial<BusState> & { driverId: string }) => {
     if (socket) {
-        socket.emit('driver_location_update', state);
+        const loc = (state as any).currentLocation || (state as any).location;
+        emitThrottled('driver_location_update', state, 500);
+        emitThrottled('driver_location_stream', {
+            driverId: state.driverId,
+            lat: loc?.lat,
+            lng: loc?.lng,
+            speed: state.speed || 0,
+            heading: state.heading || 0,
+            timestamp: Date.now(),
+            isStationary: !state.speed || state.speed < 2
+        }, 400);
     }
+};
+
+/** Register polyline + stop names on server for segment matching (call after route is computed). */
+export const registerDriverTripTrajectory = (payload: {
+    driverId: string;
+    startLat: number;
+    startLng: number;
+    endLat: number;
+    endLng: number;
+    pathDetails: { name?: string; lat: number; lng: number }[];
+    stopNames: string[];
+    driverName?: string;
+    vehicleType?: string;
+    startName?: string;
+    endName?: string;
+    distanceKm?: number;
+    durationMin?: number;
+}) => {
+    initSocketConnection();
+    if (socket) {
+        socket.emit('driver_go_online', payload.driverId);
+        socket.emit('driver_start_trip', payload);
+    }
+};
+
+export const endDriverTripTrajectory = (driverId: string) => {
+    initSocketConnection();
+    socket?.emit('driver_end_trip', { driverId });
+};
+
+/** Find vehicles whose current route includes this stop segment in order (within maxEtaMinutes). */
+export const findVehiclesForStopSegment = (
+    fromStop: string,
+    toStop: string,
+    maxEtaMinutes = 30
+): Promise<{ vehicles?: any[]; count?: number; searchedAt?: number; timeout?: boolean }> => {
+    initSocketConnection();
+    return new Promise((resolve) => {
+        const handler = (data: any) => {
+            socket?.off('segment_vehicles', handler);
+            resolve(data || { vehicles: [], count: 0 });
+        };
+        const run = () => {
+            socket?.once('segment_vehicles', handler);
+            socket?.emit('find_segment_by_stops', { fromStop: fromStop.trim(), toStop: toStop.trim(), maxEtaMinutes });
+        };
+        if (socket?.connected) run();
+        else socket?.once('connect', run);
+        setTimeout(() => {
+            socket?.off('segment_vehicles', handler);
+            resolve({ vehicles: [], count: 0, timeout: true });
+        }, 12000);
+    });
+};
+
+export const subscribeToDriverLive = (driverId: string) => {
+    initSocketConnection();
+    socket?.emit('subscribe_driver', driverId);
+};
+
+export const unsubscribeFromDriverLive = (driverId: string) => {
+    socket?.emit('unsubscribe_driver', driverId);
+};
+
+export const onDriverLocationBroadcast = (handler: (data: {
+    driverId: string;
+    lat: number;
+    lng: number;
+    heading?: number;
+    speed?: number;
+    timestamp?: number;
+}) => void) => {
+    initSocketConnection();
+    socket?.on('driver_location_broadcast', handler);
+    return () => socket?.off('driver_location_broadcast', handler);
+};
+
+/** REST v1 — same contract as AI agents (human + agent). */
+export const findUpcomingVehiclesRest = async (fromStop: string, toStop: string, maxEtaMinutes = 30) => {
+    const res = await fetch(`${SERVER_URL}/api/v1/transport/find-upcoming-vehicles`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ fromStop, toStop, maxEtaMinutes })
+    });
+    const json = await res.json();
+    if (json.success && json.data) return json.data;
+    return json;
+};
+
+export const bookSegmentRide = async (params: {
+    fromStop: string;
+    toStop: string;
+    driverId?: string;
+    passengerCount?: number;
+    totalPrice?: number;
+    paymentMethod?: string;
+    idempotencyKey?: string;
+}) => {
+    const headers: Record<string, string> = { ...getHeaders() };
+    if (params.idempotencyKey) headers['x-idempotency-key'] = params.idempotencyKey;
+    const { idempotencyKey, ...body } = params;
+    const res = await fetch(`${SERVER_URL}/api/v1/transport/book-segment-ride`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error?.message || json.error || 'Book segment failed');
+    if (json.success && json.data) return json.data;
+    return json;
+};
+
+export const getTransportOrderStatusRest = async (ticketId: string) => {
+    const res = await fetch(`${SERVER_URL}/api/v1/transport/order/${encodeURIComponent(ticketId)}/status`, {
+        headers: getHeaders()
+    });
+    const json = await res.json();
+    if (json.success && json.data) return json.data;
+    return json;
+};
+
+export const getDriverRouteStateRest = async (driverId: string) => {
+    const res = await fetch(`${SERVER_URL}/api/v1/transport/driver/${encodeURIComponent(driverId)}/route-state`, {
+        headers: getHeaders()
+    });
+    const json = await res.json();
+    if (json.success && json.data) return json.data;
+    return json;
 };
 
 export const updateTicketStatus = (ticketId: string, method: PaymentMethod, newStatus: TicketStatus, driverId?: string): Ticket[] => {

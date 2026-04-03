@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles, checkKinematicLock } from '../services/transportService';
+import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles, checkKinematicLock, registerDriverTripTrajectory, endDriverTripTrajectory, initSocketConnection, emitUltrasonicVerifyRequest } from '../services/transportService';
 import { fetchSmartRoute } from '../services/graphService';
 import { getRoutes } from '../services/adminService';
 import { getWallet } from '../services/blockchainService';
@@ -8,12 +8,16 @@ import { Ticket, TicketStatus, User, LocationData, DeviationProposal, RentalBook
 import { checkForRouteDeviations, analyzeDriverDrowsiness, analyzeBusAudioOccupancy, initFatigueMonitoring, stopFatigueMonitoring } from '../services/mlService';
 import { startPotholeMonitoring, stopPotholeMonitoring } from '../services/iotService';
 import { playSonicToken } from '../services/advancedFeatures';
+import { startUltrasonicListener, stopUltrasonicListener } from '../services/UltrasonicVerificationService';
 import { Button } from './Button';
-import { Camera, Activity, Check, MapPin, Clock, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Volume2, VolumeX, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight } from 'lucide-react';
+import { HeartHandshake, PhoneIcon, XIcon, ShieldOffIcon, AlertTriangleIcon, CheckCircle2, Navigation, Volume2, VolumeX, MenuSquare, ArrowUpRight, ArrowDownRight, Clock, MapPin, Search, Camera, Activity, Check, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight } from 'lucide-react';
 import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
 import { TRANSLATIONS } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
+import { getAuthToken } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
+import { getOfficialRoutes, simulateDemand, TripConfig, getLiveDemandHeatmap } from '../services/transportService';
 import CargoDriverView from './CargoDriverView';
 import { QRScanner } from './QRScanner';
 import { DriverProfileModal } from './DriverProfileModal';
@@ -24,14 +28,6 @@ interface DriverViewProps {
 }
 
 // ... (Interface definitions remain the same) ...
-interface TripConfig {
-    isActive: boolean;
-    startLocation: LocationData | null;
-    endLocation: LocationData | null;
-    path: string[];
-    pathDetails: { name: string, lat: number, lng: number }[];
-    totalDistance: number;
-}
 
 export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const t = (key: keyof typeof TRANSLATIONS.EN) => TRANSLATIONS[lang][key] || TRANSLATIONS.EN[key];
@@ -76,8 +72,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
     // Bus Mode State
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [showVerifyModal, setShowVerifyModal] = useState(false);
-    const [showDriverProfile, setShowDriverProfile] = useState(false);
+    const { user: authUser, walletBalance, isMobileATM } = useAuth();
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [verifyId, setVerifyId] = useState('');
     const [verifyResult, setVerifyResult] = useState<any>(null);
@@ -119,6 +114,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [currentGPS, setCurrentGPS] = useState<{ lat: number, lng: number, speed?: number } | null>(null);
     const [provisionalTickets, setProvisionalTickets] = useState<Ticket[]>([]);
     const [pathDemand, setPathDemand] = useState<Record<string, number>>({});
+    const [serverStopDemand, setServerStopDemand] = useState<Record<string, number>>({});
     const [aheadCompetitors, setAheadCompetitors] = useState<any[]>([]);
     const [profitWarning, setProfitWarning] = useState<string | null>(null);
     const [logisticsAdvice, setLogisticsAdvice] = useState<any>(null);
@@ -253,6 +249,30 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             stopFatigueMonitoring();
         };
     }, [isOnline, tripConfig, user.id, currentStopIndex, isMobileATM, currentOccupancy, deviation]);
+
+    useEffect(() => {
+        if (!tripConfig.isActive || !tripConfig.path?.length) {
+            setServerStopDemand({});
+            return;
+        }
+        const q = tripConfig.path.join(',');
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const token = getAuthToken();
+                const res = await fetch(`${API_BASE_URL}/api/v1/transport/stop-demand?stops=${encodeURIComponent(q)}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
+                if (!res.ok) return;
+                const json = await res.json();
+                const demand = json.data?.demand ?? json.demand;
+                if (demand && !cancelled) setServerStopDemand(demand);
+            } catch { /* ignore */ }
+        };
+        load();
+        const id = setInterval(load, 20000);
+        return () => { cancelled = true; clearInterval(id); };
+    }, [tripConfig.isActive, tripConfig.path.join('|')]);
 
     useEffect(() => {
         setTickets(getStoredTickets());
@@ -525,7 +545,8 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                 if (payload.startsWith("TK|")) {
                     const parts = payload.split("|");
                     const ticketId = parts[1];
-                    
+                    emitUltrasonicVerifyRequest(payload, user.id);
+
                     setProvisionalTickets(prev => {
                         if (prev.find(t => t.id === ticketId)) return prev;
                         announce("Acoustic ping valid. Tracking speed match.");
@@ -714,40 +735,6 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
     return (
         <div className="max-w-5xl mx-auto pb-32 animate-fade-in font-sans relative">
-                {showDriverProfile && <DriverProfileModal user={user} onClose={() => setShowDriverProfile(false)} />}
-                
-                {/* Header HUD — Sticky Top */}
-                <div className="sticky top-4 z-50 mb-6 px-4 lg:px-0">
-                    <div className="glass-3 p-4 rounded-[28px] border-slate-200 dark:border-white/10 shadow-whisk-float relative overflow-hidden">
-                        <div className="flex justify-between items-center relative">
-                            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setShowDriverProfile(true)}>
-                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-luxe-sienna to-luxe-gold flex items-center justify-center font-black text-lg text-white shadow-glow-md group-hover:rotate-3 transition-transform">{user.name.charAt(0)}</div>
-                                <div>
-                                    <h2 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-none">{user.name.split(' ')[0]}</h2>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <span className="flex items-center gap-1 text-[9px] font-black text-slate-500 uppercase tracking-wider">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                                            {viewMode}
-                                        </span>
-                                        {isMobileATM && <span className="text-emerald-600 text-[9px] font-black flex items-center gap-0.5"><Coins size={9} /> ATM</span>}
-                                        <span className="flex items-center gap-1 text-[9px] font-bold text-slate-400">
-                                            <Wifi size={9} className="text-emerald-500" /> Live
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div onClick={() => setVoiceAssist(!voiceAssist)} className={`cursor-pointer w-10 h-10 rounded-xl border flex items-center justify-center transition-all hover:scale-110 active:scale-90 ${voiceAssist ? 'bg-luxe-teal/10 border-luxe-teal/30 text-luxe-teal shadow-glow-sm' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-500'}`}>
-                                    {voiceAssist ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                                </div>
-                                <div onClick={() => setShowWithdrawModal(true)} className="cursor-pointer glass-3 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/5 flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-white/10 transition-all hover:scale-105 active:scale-95">
-                                    <WalletIcon size={14} className="text-slate-400" />
-                                    <span className="font-black text-luxe-teal text-base">₹{walletBalance.toFixed(0)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <div className="flex flex-col-reverse lg:flex-row gap-6">
                 {/* Left Side: Journey Timeline */}
@@ -767,8 +754,11 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                 {tripConfig.path.map((stop, idx) => {
                                     const isCurrent = idx === currentStopIndex;
                                     const isPassed = idx < currentStopIndex;
-                                    const waitingCount = pathDemand[stop] || 0;
+                                    const waitingCount = (pathDemand[stop] || 0) + (serverStopDemand[stop] || 0);
                                     const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
+                                    const parcelsAtThisStop = parcels.filter(p => p.status === 'PENDING' && p.from === stop);
+                                    const estPerPassenger = 15;
+                                    const stopBenefit = waitingCount * estPerPassenger + parcelsAtThisStop.reduce((s, p) => s + (Number(p.price) || 0), 0);
 
                                     return (
                                         <div key={idx} className={`relative pl-8 pb-6 last:pb-0 transition-opacity duration-500 ${isCurrent ? 'opacity-100 scale-105' : 'opacity-80'}`}>
@@ -791,8 +781,13 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                                 </div>
                                                 <div className="flex items-center gap-1.5 opacity-60">
                                                     <Package size={10} className="text-luxe-teal" />
-                                                    <span className="text-[10px] font-bold text-slate-500">{Math.floor(Math.random() * 3)} parcels</span>
+                                                    <span className="text-[10px] font-bold text-slate-500">{parcelsAtThisStop.length} parcel{parcelsAtThisStop.length !== 1 ? 's' : ''}</span>
                                                 </div>
+                                                {!isPassed && (
+                                                    <div className="mt-1 text-[9px] font-black text-emerald-600 dark:text-emerald-400">
+                                                        ~₹{Math.round(stopBenefit)} est. at this stop
+                                                    </div>
+                                                )}
                                             </div>
                                             {isCurrent && (
                                                 <div className="mt-2 flex gap-2">
@@ -1324,15 +1319,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                 </div>
             </div>
 
-            {/* Bottom Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md border-t border-slate-200 dark:border-white/10 pb-safe">
-                <div className="max-w-5xl mx-auto flex bg-slate-200 dark:bg-white/10 p-1.5 rounded-2xl overflow-x-auto scrollbar-hide gap-2 shadow-whisk-float">
-                    <button onClick={() => setViewMode('BUS')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'BUS' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Bus</button>
-                    <button onClick={() => setViewMode('CARGO')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'CARGO' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Cargo</button>
-                    <button onClick={() => setViewMode('CHARTER')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'CHARTER' ? 'bg-luxe-sienna text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Charter</button>
-                    <button onClick={() => setViewMode('UTILITIES')} className={`flex-1 py-3 px-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center ${viewMode === 'UTILITIES' ? 'bg-luxe-rust text-white shadow-glow-sm scale-[1.02]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10'}`}>Tools</button>
-                </div>
-            </div>
+
 
             {/* Modals */}
             <Modal

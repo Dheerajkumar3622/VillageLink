@@ -12,6 +12,7 @@
  *   driver_location_stream → speedBuffer update (already exists in server.js)
  */
 
+import mongoose from 'mongoose';
 import { Ticket, DriverLocation, User, StopDemand, Notification } from '../models.js';
 
 // --- CONFIGURATION ---
@@ -295,7 +296,8 @@ const autoVerifyTicket = async (ticketId, driverId, passengerId) => {
  */
 export const checkAlighting = async (passengerId, lat, lng, speed) => {
   if (speed > MIN_MOVING_SPEED) return; // Still moving, not alighting
-  
+  if (mongoose.connection.readyState !== 1) return;
+
   try {
     // Find active BOARDED tickets for this passenger
     const activeTickets = await Ticket.find({
@@ -366,6 +368,7 @@ export const checkAlighting = async (passengerId, lat, lng, speed) => {
  * Main check loop: Find all pending online-paid tickets and try to match
  */
 const checkAllPendingMatches = async () => {
+  if (mongoose.connection.readyState !== 1) return;
   try {
     // Find tickets that are PAID online and not yet boarded
     const pendingTickets = await Ticket.find({

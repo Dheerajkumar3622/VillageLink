@@ -3,6 +3,7 @@
  * Monitors active trips for traffic conditions and suggests alternate routes
  */
 
+import mongoose from 'mongoose';
 import Models from '../models.js';
 const { ActiveTrip } = Models;
 
@@ -41,6 +42,7 @@ export const initializeReroutingService = (socketIo) => {
  * Check all active trips for potential re-routing
  */
 const checkAllActiveTrips = async () => {
+    if (mongoose.connection.readyState !== 1) return;
     try {
         const activeTrips = await ActiveTrip.find({
             status: 'TRIP_ACTIVE'

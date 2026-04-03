@@ -59,7 +59,7 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
 
         setLoading(true);
         setError(null);
-        const res = await loginUser(loginId, password);
+        const res = await loginUser(loginId, password, 'PROVIDER');
         setLoading(false);
 
         if (res.success && res.user) {
@@ -88,7 +88,10 @@ const ProviderAuthView: React.FC<ProviderAuthViewProps> = ({ onSuccess }) => {
         const res = await registerUser(regName, regRole, regPass, regEmail, regPhone, capacity, vehicleType);
         setLoading(false);
 
-        if (res.success && res.user) {
+        if (res.success && res.pendingVerification) {
+            setViewState('LOGIN');
+            setError("Registration successful! Your account is pending admin verification. Please try logging in after some time.");
+        } else if (res.success && res.user) {
             onSuccess(res.user);
         } else {
             setError(res.message || 'Registration failed');

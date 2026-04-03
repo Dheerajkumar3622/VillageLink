@@ -3,14 +3,14 @@
  * USS v3.0 - Single app for all service providers (Driver, Farmer, Vendor, Mess, etc.)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { User } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { Button } from './Button';
 import {
     Truck, Wheat, Store, UtensilsCrossed, ShoppingCart, Box, Check,
     Sparkles, X, MessageSquare, LayoutDashboard, Package, Wallet, Film, Settings,
-    QrCode, Bell, ChevronDown, Plus, Loader2
+    QrCode, Bell, ChevronDown, Plus, Loader2, Bus, Plane, Wrench
 } from 'lucide-react';
 
 // Import Shared Components
@@ -20,6 +20,7 @@ import { ProfilePill } from './ProfilePill';
 
 // Import Role-specific Views
 import DriverView from './DriverView';
+import { DriverProfileModal } from './DriverProfileModal';
 import KisanApp from './KisanApp';
 import VendorView from './VendorView';
 import MessManagerView from './MessManagerView';
@@ -29,13 +30,15 @@ import ReelsSection from './ReelsSection';
 import MyQRCode from './MyQRCode';
 import RoleSelector from './RoleSelector';
 
+const AdminView = lazy(() => import('./AdminView').then((m) => ({ default: m.AdminView })));
+
 interface ProviderAppProps {
     user: User | null;
     onLogout: () => void;
 }
 
 type ProviderRole = 'DRIVER' | 'FARMER' | 'VENDOR' | 'RETAILER' | 'MESS_OWNER' | 'SHOPKEEPER' | 'LOGISTICS';
-type TabType = 'dashboard' | 'orders' | 'earnings' | 'reels' | 'settings';
+type TabType = 'bus' | 'cargo' | 'charter' | 'tool';
 
 interface RoleConfig {
     icon: React.ReactNode;
@@ -54,9 +57,11 @@ const ROLE_CONFIGS: Record<ProviderRole, RoleConfig> = {
 };
 
 import { Geolocation } from '@capacitor/geolocation';
+import { Capacitor } from '@capacitor/core';
 
 const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
-    const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+    const [showDriverProfile, setShowDriverProfile] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabType>('bus');
     const [activeRole, setActiveRole] = useState<ProviderRole>('DRIVER');
     const [userRoles, setUserRoles] = useState<ProviderRole[]>([]);
     const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -87,8 +92,13 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
         if (user) {
             loadUserRoles();
 
-            // 1. Request GPS Permissions via Capacitor explicitly on App Load
+            // 1. Request GPS Permissions via Capacitor explicitly on App Load (native only)
             const requestGPS = async () => {
+                // Skip GPS on web - Capacitor Geolocation is not implemented for browser
+                if (!Capacitor.isNativePlatform()) {
+                    console.log('ℹ️ GPS: Skipping Capacitor GPS on web platform.');
+                    return;
+                }
                 try {
                     const status = await Geolocation.checkPermissions();
                     if (status.location !== 'granted') {
@@ -97,7 +107,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     // Trigger a dummy fetch to warm up the GPS sensor
                     await Geolocation.getCurrentPosition({ enableHighAccuracy: true });
                 } catch (e) {
-                    console.error("GPS Init Error - Provider might have denied:", e);
+                    console.warn('GPS Init Warning:', e);
                 }
             };
             requestGPS();
@@ -118,9 +128,36 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const loadUserRoles = async () => {
         try {
             const token = localStorage.getItem('villagelink_token');
+            if (!token) {
+                setShowRoleSelector(true);
+                return;
+            }
             const res = await fetch(`${API_BASE_URL}/api/user/me`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            // Guard: Check if response is valid JSON before parsing
+            if (!res.ok) {
+                console.warn(`/api/user/me returned ${res.status}. Using local role fallback.`);
+                // Fallback to user's stored role or default
+                if (user?.role && user.role !== 'PASSENGER') {
+                    setUserRoles([user.role as ProviderRole]);
+                    setActiveRole(user.role as ProviderRole);
+                } else {
+                    setUserRoles(['DRIVER']);
+                    setActiveRole('DRIVER');
+                }
+                return;
+            }
+
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.warn('/api/user/me returned non-JSON response. Using local fallback.');
+                setUserRoles(['DRIVER']);
+                setActiveRole('DRIVER');
+                return;
+            }
+
             const data = await res.json();
 
             if (data.providerRoles && data.providerRoles.length > 0) {
@@ -139,16 +176,21 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 setShowRoleSelector(true);
             }
         } catch (error) {
-            console.error('Load roles error:', error);
+            console.warn('Load roles (network error, using fallback):', error);
             // Default to driver for existing users
-            setUserRoles(['DRIVER']);
+            if (user?.role && user.role !== 'PASSENGER') {
+                setUserRoles([user.role as ProviderRole]);
+                setActiveRole(user.role as ProviderRole);
+            } else {
+                setUserRoles(['DRIVER']);
+            }
         }
     };
 
     const switchRole = async (role: ProviderRole) => {
         setActiveRole(role);
         setShowRoleSwitcher(false);
-        setActiveTab('dashboard');
+        setActiveTab('bus');
 
         // Save to server
         try {
@@ -198,15 +240,13 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'dashboard':
+            case 'bus':
                 return renderDashboard();
-            case 'orders':
+            case 'cargo':
                 return <OrdersView role={activeRole} user={user!} />;
-            case 'earnings':
+            case 'charter':
                 return <EarningsView role={activeRole} user={user!} />;
-            case 'reels':
-                return <ReelsSection user={user!} isCreator={true} />;
-            case 'settings':
+            case 'tool':
                 return <SettingsView user={user!} onLogout={onLogout} />;
             default:
                 return null;
@@ -219,6 +259,21 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
                 <p>Loading...</p>
             </div>
+        );
+    }
+
+    if (user.role === 'ADMIN') {
+        return (
+            <Suspense
+                fallback={
+                    <div className="min-h-screen flex flex-col items-center justify-center gap-2 bg-slate-950 text-white">
+                        <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+                        <p className="text-sm opacity-70">Loading admin…</p>
+                    </div>
+                }
+            >
+                <AdminView user={user} />
+            </Suspense>
         );
     }
 
@@ -293,6 +348,11 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     <ProfilePill
                         name={user?.name || 'Provider'}
                         balance={user?.walletBalance || 0}
+                        onClick={() => {
+                            if (activeRole === 'DRIVER') {
+                                setShowDriverProfile(true);
+                            }
+                        }}
                     />
                     <button className="relative w-10 h-10 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl flex items-center justify-center hover:border-[var(--border-glow)] transition-colors" title="Notifications">
                         <Bell size={18} className="opacity-70" />
@@ -320,6 +380,10 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
             </div>
 
             {/* Main Content */}
+            {showDriverProfile && activeRole === 'DRIVER' && user && (
+                <DriverProfileModal user={user} onClose={() => setShowDriverProfile(false)} />
+            )}
+            
             <main className="v5-scroll-view flex-1 pb-24 relative z-10 px-5">
                 {renderContent()}
             </main>
@@ -336,35 +400,29 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
             {/* Bottom Navigation */}
             <nav className="v5-bottom-nav">
                 <ProviderNavItem
-                    icon={<LayoutDashboard size={22} />}
-                    label="Dashboard"
-                    active={activeTab === 'dashboard'}
-                    onClick={() => setActiveTab('dashboard')}
+                    icon={<Bus size={22} />}
+                    label="Bus"
+                    active={activeTab === 'bus'}
+                    onClick={() => setActiveTab('bus')}
                 />
                 <ProviderNavItem
-                    icon={<Package size={22} />}
-                    label="Orders"
-                    active={activeTab === 'orders'}
-                    onClick={() => setActiveTab('orders')}
+                    icon={<Truck size={22} />}
+                    label="Cargo"
+                    active={activeTab === 'cargo'}
+                    onClick={() => setActiveTab('cargo')}
                     badge={pendingOrders}
                 />
                 <ProviderNavItem
-                    icon={<Wallet size={22} />}
-                    label="Earnings"
-                    active={activeTab === 'earnings'}
-                    onClick={() => setActiveTab('earnings')}
+                    icon={<Plane size={22} />}
+                    label="Charter"
+                    active={activeTab === 'charter'}
+                    onClick={() => setActiveTab('charter')}
                 />
                 <ProviderNavItem
-                    icon={<Film size={22} />}
-                    label="Reels"
-                    active={activeTab === 'reels'}
-                    onClick={() => setActiveTab('reels')}
-                />
-                <ProviderNavItem
-                    icon={<Settings size={22} />}
-                    label="Settings"
-                    active={activeTab === 'settings'}
-                    onClick={() => setActiveTab('settings')}
+                    icon={<Wrench size={22} />}
+                    label="Tool"
+                    active={activeTab === 'tool'}
+                    onClick={() => setActiveTab('tool')}
                 />
             </nav>
 
@@ -372,7 +430,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
             <GramSahayakBubble
                 user={user!}
                 onOpenChat={() => {
-                    setActiveTab('reels'); // Shift focus to chat
+                    setActiveTab('bus'); // Shift focus back safely
                     setShowAIChat(true);
                 }}
             />

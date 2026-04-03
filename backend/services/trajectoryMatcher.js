@@ -112,6 +112,86 @@ export function removeTrajectory(driverId) {
  * 
  * Returns: Array of matching driver objects with ETA info
  */
+function normalizeStopName(s) {
+    return String(s || '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+function stopMatches(query, candidate) {
+    const q = normalizeStopName(query);
+    const c = normalizeStopName(candidate);
+    if (!q || !c) return false;
+    return c.includes(q) || q.includes(c);
+}
+
+/** Map stop list index [0..n-1] to polyline index */
+function stopIndexToTrajIndex(stopIdx, numStops, trajLen) {
+    if (trajLen < 2) return 0;
+    if (numStops <= 1) return 0;
+    return Math.min(trajLen - 1, Math.round((stopIdx / (numStops - 1)) * (trajLen - 1)));
+}
+
+function trajSegmentDistanceKm(traj, fromIdx, toIdx) {
+    if (!traj || fromIdx >= toIdx) return 0;
+    let d = 0;
+    for (let i = fromIdx; i < toIdx && i < traj.length - 1; i++) {
+        d += haversine(traj[i].lat, traj[i].lng, traj[i + 1].lat, traj[i + 1].lng);
+    }
+    return d;
+}
+
+/**
+ * Match drivers by ordered stop names (same direction as registered trajectory).
+ * Example: route A..H forward or H..A reverse — stop order in meta.stopNames must match travel order.
+ */
+export function findMatchingVehiclesByStops(fromStop, toStop, maxEtaMinutes = 30, avgSpeedKmh = 38) {
+    const results = [];
+    for (const [driverId, driver] of activeDrivers) {
+        const stops = driver.meta?.stopNames;
+        const traj = driver.trajectory;
+        if (!stops || stops.length < 2 || !traj || traj.length < 2) continue;
+
+        let idxFrom = -1;
+        let idxTo = -1;
+        for (let i = 0; i < stops.length; i++) {
+            if (idxFrom < 0 && stopMatches(fromStop, stops[i])) idxFrom = i;
+            if (stopMatches(toStop, stops[i])) idxTo = i;
+        }
+        if (idxFrom < 0 || idxTo < 0 || idxFrom >= idxTo) continue;
+
+        const nStops = stops.length;
+        const startTrajIdx = stopIndexToTrajIndex(idxFrom, nStops, traj.length);
+        const endTrajIdx = stopIndexToTrajIndex(idxTo, nStops, traj.length);
+        const currentIdx = driver.activeIndex;
+
+        if (!(currentIdx < startTrajIdx && startTrajIdx < endTrajIdx)) continue;
+
+        const distPickupKm = trajSegmentDistanceKm(traj, currentIdx, startTrajIdx);
+        const etaMinutes = Math.max(1, Math.round((distPickupKm / Math.max(avgSpeedKmh, 5)) * 60));
+        if (etaMinutes > maxEtaMinutes) continue;
+
+        const segmentDistKm = trajSegmentDistanceKm(traj, startTrajIdx, endTrajIdx);
+
+        results.push({
+            driverId,
+            meta: driver.meta,
+            etaMinutes,
+            segmentDistKm: Math.round(segmentDistKm * 10) / 10,
+            pickupStopIndex: idxFrom,
+            dropStopIndex: idxTo,
+            currentPosition: {
+                lat: driver.lastLat || traj[currentIdx].lat,
+                lng: driver.lastLng || traj[currentIdx].lng
+            }
+        });
+    }
+
+    results.sort((a, b) => a.etaMinutes - b.etaMinutes);
+    return results;
+}
+
 export function findMatchingVehicles(startLat, startLng, endLat, endLng, maxSnapKm = 1.5) {
     const results = [];
 
@@ -179,6 +259,27 @@ export function getActiveTrajectoryCount() {
     return activeDrivers.size;
 }
 
+/** Driver HUD + agent tools: snapshot of active trajectory for a driver */
+export function getDriverRouteState(driverId) {
+    const driver = activeDrivers.get(driverId);
+    if (!driver) return null;
+    const traj = driver.trajectory;
+    const currentIdx = driver.activeIndex;
+    return {
+        driverId,
+        active: true,
+        activeIndex: currentIdx,
+        trajectoryPointCount: traj.length,
+        meta: driver.meta || {},
+        stopNames: driver.meta?.stopNames || [],
+        currentPosition: {
+            lat: driver.lastLat ?? traj[Math.min(currentIdx, traj.length - 1)]?.lat,
+            lng: driver.lastLng ?? traj[Math.min(currentIdx, traj.length - 1)]?.lng
+        },
+        lastUpdate: driver.lastUpdate || null
+    };
+}
+
 // --- INITIALIZE ---
 export function initializeTrajectoryMatcher(io) {
     ioRef = io;
@@ -191,5 +292,7 @@ export default {
     updateDriverPosition,
     removeTrajectory,
     findMatchingVehicles,
-    getActiveTrajectoryCount
+    findMatchingVehiclesByStops,
+    getActiveTrajectoryCount,
+    getDriverRouteState
 };

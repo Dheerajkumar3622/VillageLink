@@ -10,6 +10,21 @@ import './index.css';
 // Import the Provider App Root (with auth handling)
 import ProviderAppRoot from './components/ProviderAppRoot';
 
+// Global Fetch Interceptor for 401 Unauthorized (Invalid Token)
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    if (response.status === 401) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        if (!url.includes('/login') && !url.includes('/register') && !url.includes('/forgot-password')) {
+            localStorage.removeItem('villagelink_token');
+            localStorage.removeItem('villagelink_user');
+            window.location.reload();
+        }
+    }
+    return response;
+};
+
 const container = document.getElementById('root');
 if (container) {
     const root = createRoot(container);

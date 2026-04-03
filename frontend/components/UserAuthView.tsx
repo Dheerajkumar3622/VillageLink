@@ -40,7 +40,7 @@ const UserAuthView: React.FC<UserAuthViewProps> = ({ onSuccess, lang = 'EN' }) =
 
         setLoading(true);
         setError(null);
-        const res = await loginUser(loginId, password);
+        const res = await loginUser(loginId, password, 'USER');
         setLoading(false);
 
         if (res.success && res.user) {

@@ -58,6 +58,8 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
+  if (candidatePassword == null || candidatePassword === '') return false;
+  if (this.password == null || this.password === '') return false;
   const isHashed = this.password.startsWith('$2a$') || this.password.startsWith('$2b$');
 
   if (!isHashed) {
@@ -2073,6 +2075,17 @@ Models.Notification = Notification;
 Models.StopDemand = StopDemand;
 Models.CropListing = CropListing;
 Models.ProcurementOrder = ProcurementOrder;
+
+/** Write-ahead log for realtime emit consistency (Phase B). */
+const outboxEventSchema = new mongoose.Schema({
+    id: { type: String, unique: true },
+    eventType: String,
+    payload: mongoose.Schema.Types.Mixed,
+    createdAt: { type: Number, default: () => Date.now() },
+    status: { type: String, enum: ['PENDING', 'SENT'], default: 'PENDING' }
+});
+export const OutboxEvent = mongoose.model('OutboxEvent', outboxEventSchema);
+Models.OutboxEvent = OutboxEvent;
 
 export default Models;
 

@@ -206,6 +206,15 @@ router.post('/cancel', Auth.authenticate, async (req, res) => {
         ticket.status = 'CANCELLED';
         await ticket.save();
 
+        const emitTicketsDelta = req.app.get('emitTicketsDelta');
+        if (typeof emitTicketsDelta === 'function') {
+            try {
+                emitTicketsDelta(ticket);
+            } catch (err) {
+                console.warn('emitTicketsDelta (cancel):', err?.message || err);
+            }
+        }
+
         // 1000x: Check if GramCoin should be refunded
         let refundAmount = 0;
         if (ticket.paymentMethod === 'GRAMCOIN' && ticket.totalPrice) {

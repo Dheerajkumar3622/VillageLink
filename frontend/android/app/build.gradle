@@ -4,7 +4,7 @@ android {
     namespace = "com.villagelink.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.villagelink.app"
+        applicationId System.getenv('VL_APP_ID') ?: (project.findProperty('VL_APP_ID') ?: "com.villagelink.user")
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 4
@@ -18,10 +18,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('villagelink-release.keystore')
-            storePassword 'VillageLink2026'
-            keyAlias 'villagelink'
-            keyPassword 'VillageLink2026'
+            storeFile file(System.getenv('VL_KEYSTORE_FILE') ?: 'villagelink-release.keystore')
+            storePassword System.getenv('VL_KEYSTORE_PASSWORD') ?: (project.findProperty('VL_KEYSTORE_PASSWORD') ?: '')
+            keyAlias System.getenv('VL_KEY_ALIAS') ?: (project.findProperty('VL_KEY_ALIAS') ?: 'villagelink')
+            keyPassword System.getenv('VL_KEY_PASSWORD') ?: (project.findProperty('VL_KEY_PASSWORD') ?: '')
         }
     }
     buildTypes {

@@ -31,6 +31,7 @@ import { TourismCarousel } from './Tourism/TourismCarousel';
 import { TourismDetailView } from './Tourism/TourismDetailView';
 import { TourismSpot, TourismPackage } from '../utils/tourism/tourismData';
 import { TransitHubWidget } from './TransitHubWidget';
+import { SegmentRidePanel } from './SegmentRidePanel';
 import { TourismTracker } from './TourismTracker';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
@@ -126,6 +127,8 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
     const [myPasses, setMyPasses] = useState<Pass[]>([]);
     const [passengerCount, setPassengerCount] = useState(1);
     const [showToast, setShowToast] = useState(false);
+    /** Server ACK after driver acoustic verify (non-blocking snackbar). */
+    const [snackbar, setSnackbar] = useState<string | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [isBooking, setIsBooking] = useState(false);
     
@@ -284,6 +287,26 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             window.removeEventListener('offline', () => setIsOfflineMode(true));
         };
     }, [user.id, fromLocation]);
+
+    useEffect(() => {
+        const onAcousticAck = (e: Event) => {
+            const d = (e as CustomEvent<{ success?: boolean; reason?: string; alreadyVerified?: boolean }>).detail;
+            if (!d) return;
+            if (d.success) {
+                setSnackbar(
+                    d.alreadyVerified
+                        ? 'Ticket already verified with driver'
+                        : 'Driver verified your ticket (acoustic)'
+                );
+            } else {
+                setSnackbar(`Acoustic verify failed: ${d.reason || 'unknown'}`);
+            }
+            window.dispatchEvent(new Event('tickets_changed'));
+            window.setTimeout(() => setSnackbar(null), 5000);
+        };
+        window.addEventListener('acoustic_verification_ack', onAcousticAck);
+        return () => window.removeEventListener('acoustic_verification_ack', onAcousticAck);
+    }, []);
 
     // ULTRASONIC AUDIO BROADCAST LOGIC
     useEffect(() => {
@@ -1244,6 +1267,25 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                 placeholder="End"
                                                 labelClassName="text-slate-700 dark:text-slate-300"
                                             />
+
+                                            {fromLocation && toLocation && !isBuyingPass && (
+                                                <SegmentRidePanel
+                                                    user={user}
+                                                    embedded
+                                                    initialFromStop={
+                                                        calculatedPath.length >= 2 ? calculatedPath[0] : fromLocation.name
+                                                    }
+                                                    initialToStop={
+                                                        calculatedPath.length >= 2
+                                                            ? calculatedPath[calculatedPath.length - 1]
+                                                            : toLocation.name
+                                                    }
+                                                    onBooked={() => {
+                                                        setShowToast(true);
+                                                        setTimeout(() => setShowToast(false), 2500);
+                                                    }}
+                                                />
+                                            )}
                                         </div>
 
                                         {calculatedPath.length > 0 && (
@@ -1524,7 +1566,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                 </div>
             )}
 
-
+            {snackbar && (
+                <div
+                    role="status"
+                    className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[90vw] rounded-2xl bg-slate-900 text-white text-sm font-medium px-4 py-3 shadow-xl border border-slate-700"
+                >
+                    {snackbar}
+                </div>
+            )}
 
         </>
     );

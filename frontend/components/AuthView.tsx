@@ -338,13 +338,23 @@ export const AuthView: React.FC<AuthViewProps> = ({ onSuccess, lang = 'EN', togg
       }
     } else {
       // Use Legacy Email/SMS Flow
-      const res = await requestPasswordReset(resetIdentifier);
+      const res = await requestPasswordReset(resetIdentifier) as {
+        error?: string;
+        message?: string;
+        otp?: string;
+        devHint?: string;
+        matchedAccount?: boolean;
+      };
       setLoading(false);
       if (res.error) {
         setError(res.error);
+      } else if (res.matchedAccount === false) {
+        setError(res.devHint || 'No account found for this email. Register first or check spelling.');
+        setInfoMsg(null);
       } else {
-        const otpMsg = res.otp ? ` (Simulated OTP: ${res.otp})` : '';
-        setInfoMsg(res.message + otpMsg);
+        const otpMsg = res.otp ? ` (Dev OTP: ${res.otp})` : '';
+        const hint = res.devHint ? ` ${res.devHint}` : '';
+        setInfoMsg((res.message || '') + otpMsg + hint);
         setViewState('RESET');
       }
     }

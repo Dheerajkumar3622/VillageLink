@@ -5,6 +5,34 @@ import { authenticate } from '../auth.js';
 
 const router = express.Router();
 
+// Get current user profile (roles, status)
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.user.id }).lean();
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Transform simplified role to providerRoles array if missing
+        let providerRoles = user.providerRoles || [];
+        if (providerRoles.length === 0 && user.role !== 'PASSENGER') {
+            providerRoles = [{
+                roleType: user.role,
+                status: user.isVerified ? 'VERIFIED' : 'PENDING'
+            }];
+        }
+
+        res.json({
+            id: user.id,
+            name: user.name,
+            role: user.role,
+            isVerified: user.isVerified,
+            activeRole: user.role,
+            providerRoles: providerRoles
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get user wallet balance and NFT passes
 router.get('/wallet', authenticate, async (req, res) => {
     try {
@@ -71,6 +99,31 @@ router.post('/register-roles', authenticate, async (req, res) => {
             role: mappedRole,
             providerRoles: user.providerRoles
         });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Set active provider role
+router.post('/active-role', authenticate, async (req, res) => {
+    try {
+        const { activeRole } = req.body;
+        if (!activeRole) return res.status(400).json({ error: "activeRole is required" });
+
+        const user = await User.findOne({ id: req.user.id });
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Verify the user has this role in their providerRoles and it is VERIFIED
+        const roleData = user.providerRoles?.find(r => r.roleType === activeRole);
+        
+        if (!roleData && user.role !== activeRole) {
+             return res.status(403).json({ error: "You do not have this role registered" });
+        }
+
+        user.activeRole = activeRole;
+        await user.save();
+
+        res.json({ success: true, activeRole });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

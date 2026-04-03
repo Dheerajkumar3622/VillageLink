@@ -1,0 +1,98 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "VillageLink Transport API v1",
+    "version": "1.0.0",
+    "description": "Human apps and AI agents share the same contracts. Use Bearer JWT for users; x-agent-api-key + x-user-id for agents."
+  },
+  "servers": [{ "url": "/api/v1/transport" }],
+  "paths": {
+    "/find-upcoming-vehicles": {
+      "post": {
+        "summary": "List vehicles serving a stop segment within ETA window",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fromStop", "toStop"],
+                "properties": {
+                  "fromStop": { "type": "string" },
+                  "toStop": { "type": "string" },
+                  "maxEtaMinutes": { "type": "integer", "default": 30 }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Envelope with data.vehicles" } }
+      }
+    },
+    "/book-segment-ride": {
+      "post": {
+        "summary": "Book segment ride (creates ticket + realtime)",
+        "security": [{ "bearerAuth": [] }, { "agentKey": [] }],
+        "parameters": [{ "name": "x-idempotency-key", "in": "header", "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["fromStop", "toStop"],
+                "properties": {
+                  "fromStop": { "type": "string" },
+                  "toStop": { "type": "string" },
+                  "driverId": { "type": "string" },
+                  "passengerCount": { "type": "integer" },
+                  "totalPrice": { "type": "number" },
+                  "paymentMethod": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "ticket + orderId" } }
+      }
+    },
+    "/order/{ticketId}/status": {
+      "get": {
+        "summary": "Order status by ticket id",
+        "security": [{ "bearerAuth": [] }, { "agentKey": [] }],
+        "parameters": [{ "name": "ticketId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "status" } }
+      }
+    },
+    "/driver/{driverId}/route-state": {
+      "get": {
+        "summary": "Active trajectory snapshot for driver",
+        "security": [{ "bearerAuth": [] }, { "agentKey": [] }],
+        "parameters": [{ "name": "driverId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "route state or inactive" } }
+      }
+    },
+    "/stop-demand": {
+      "get": {
+        "summary": "Pending ticket counts by boarding stop",
+        "parameters": [{ "name": "stops", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Comma-separated stop names" }],
+        "responses": { "200": { "description": "demand map" } }
+      }
+    },
+    "/features": {
+      "get": {
+        "summary": "Feature flags for clients",
+        "responses": { "200": { "description": "flags" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer" },
+      "agentKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-agent-api-key"
+      }
+    }
+  }
+}

@@ -18,6 +18,7 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import compression from 'compression';
+import jwt from 'jsonwebtoken';
 
 // Security Imports
 import helmet from 'helmet';
@@ -62,7 +63,7 @@ import kisanRoutes from './routes/kisanRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import { initializeSpeedMatchEngine, updateSpeedBuffer, clearSpeedBuffer, checkAlighting } from './services/speedMatchEngine.js';
 import { initializeSeatTracking } from './services/seatTrackingService.js';
-import { initializeTrajectoryMatcher, registerTrajectory, updateDriverPosition, removeTrajectory, findMatchingVehicles, getActiveTrajectoryCount } from './services/trajectoryMatcher.js';
+import { initializeTrajectoryMatcher, registerTrajectory, updateDriverPosition, removeTrajectory, findMatchingVehicles, findMatchingVehiclesByStops, getActiveTrajectoryCount } from './services/trajectoryMatcher.js';
 import { harvestTrajectoryData } from './services/AISmartRoutingService.js';
 import { initRouteAnalyzerCron } from './services/tripAnalysisCron.js';
 
@@ -93,8 +94,49 @@ const { initializeReroutingService, acceptReroute, declineReroute, checkTripForR
 
 import ErrorAggregator from './services/errorAggregatorService.js';
 const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDeviceStats } = ErrorAggregator;
+import { RT_EVENT, toRoom, normalizeRealtimePayload } from './services/realtimeContract.js';
+import { traceMiddleware } from './services/apiEnvelope.js';
+import { registerTransportV1Routes } from './routes/transportV1Routes.js';
 
 const app = express();
+const FEATURE_FLAGS = {
+    realtimeContractV1: process.env.FEATURE_RT_CONTRACT_V1 !== 'false',
+    replaySync: process.env.FEATURE_RT_REPLAY_SYNC !== 'false',
+    dualPathLegacyEmit: process.env.FEATURE_DUAL_PATH_LEGACY !== 'false',
+    autonomyPhaseD: process.env.FEATURE_AUTONOMY_D === 'true'
+};
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_12345';
+const metrics = {
+    httpRequests: 0,
+    idempotencyHits: 0,
+    socketConnections: 0,
+    socketEventsReplayed: 0
+};
+const inMemoryCache = new Map();
+const idempotencyCache = new Map();
+/** Per-route latency samples for /api/metrics/latency (method + path key → ms durations). */
+const routeLatencies = new Map();
+
+function latencyPercentile(samples, p) {
+    if (!samples?.length) return 0;
+    const sorted = [...samples].sort((a, b) => a - b);
+    const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+    return sorted[idx];
+}
+
+const cacheGet = (key) => {
+    const entry = inMemoryCache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt < Date.now()) {
+        inMemoryCache.delete(key);
+        return null;
+    }
+    return entry.value;
+};
+
+const cacheSet = (key, value, ttlMs = 15000) => {
+    inMemoryCache.set(key, { value, expiresAt: Date.now() + ttlMs });
+};
 
 app.use(compression());
 app.set('trust proxy', 1);
@@ -104,6 +146,14 @@ setImmediate(() => {
     refreshMarketPrices();
     initializeJobs(); // Seed jobs if empty
     initRouteAnalyzerCron(); // Start AI Route analyzer schedule
+    Promise.allSettled([
+        Ticket.collection.createIndex({ userId: 1, timestamp: -1 }),
+        Ticket.collection.createIndex({ id: 1 }, { unique: true, sparse: true }),
+        Pass.collection.createIndex({ userId: 1, purchaseDate: -1 }),
+        Parcel.collection.createIndex({ userId: 1, timestamp: -1 }),
+        Route.collection.createIndex({ id: 1 }, { sparse: true }),
+        User.collection.createIndex({ id: 1 }, { unique: true, sparse: true })
+    ]).catch(() => { });
 });
 
 // --- SECURITY MIDDLEWARE ---
@@ -111,8 +161,8 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
-    message: 'Too many requests from this IP, please try again after 15 minutes',
+    max: 5000,
+    message: { success: false, error: 'Too many requests from this IP, please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -122,9 +172,55 @@ app.use(mongoSanitize());
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+app.use(traceMiddleware);
+app.use((req, res, next) => {
+    metrics.httpRequests += 1;
+    next();
+});
+
+app.use((req, res, next) => {
+    if (!req.path.startsWith('/api')) return next();
+    const t0 = Date.now();
+    res.on('finish', () => {
+        const key = `${req.method} ${req.path.split('?')[0]}`;
+        if (!routeLatencies.has(key)) routeLatencies.set(key, []);
+        const arr = routeLatencies.get(key);
+        arr.push(Date.now() - t0);
+        if (arr.length > 800) arr.shift();
+    });
+    next();
+});
+
+app.use((req, res, next) => {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+    const key = req.headers['x-idempotency-key'];
+    if (!key || typeof key !== 'string') return next();
+    const cacheKey = `${req.method}:${req.path}:${key}`;
+    const cached = idempotencyCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+        metrics.idempotencyHits += 1;
+        return res.status(cached.status).json(cached.body);
+    }
+
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+        idempotencyCache.set(cacheKey, {
+            status: res.statusCode || 200,
+            body,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        });
+        return originalJson(body);
+    };
+    next();
+});
 
 // Static directory for routing graphs
 app.use('/routing_data', express.static(path.join(__dirname, 'public', 'routing_data')));
+/** OpenAPI 3 spec for transport v1 (Phase B contract surface). */
+app.get('/api/v1/openapi.json', (req, res) => {
+    res.type('application/json');
+    res.sendFile(path.join(__dirname, 'public', 'openapi-v1.json'));
+});
 
 // --- RAZORPAY CONFIGURATION ---
 const razorpayKeyId = process.env.RAZORPAY_KEY_ID?.trim();
@@ -147,36 +243,74 @@ app.get('/api/config/razorpay', (req, res) => {
 
 // --- DATABASE STATE ---
 let isDbConnected = false;
-const MONGO_URI_SRV = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
-const MONGO_URI_STANDARD = 'mongodb://dheerakumar3622:Dheeraj123@ac-klokthx-shard-00-00.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-01.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-02.j9op0nf.mongodb.net:27017/test?ssl=true&replicaSet=atlas-2yklok-shard-0&authSource=admin&retryWrites=true&w=majority';
+
+/** Atlas: `host.net/?query` needs a DB name → `host.net/test?query`; add retryWrites + w=majority if missing. */
+function normalizeMongoUri(uri) {
+    if (!uri || typeof uri !== 'string') return uri;
+    let u = uri.trim();
+    u = u.replace(/\.mongodb\.net\/\?/i, '.mongodb.net/test?');
+    u = u.replace(/\.mongodb\.net\?(?!\/)/i, '.mongodb.net/test?');
+    if (!/retryWrites\s*=/i.test(u)) {
+        u += (u.includes('?') ? '&' : '?') + 'retryWrites=true&w=majority';
+    }
+    return u;
+}
+
+const MONGO_URI_SRV = normalizeMongoUri(process.env.MONGO_URI || '');
+/** Optional alternate connection string from the same Atlas cluster (must match SRV cluster; do not use a random hardcoded host). */
+const MONGO_URI_STANDARD = (process.env.MONGO_URI_STANDARD || '').trim();
+
+function printMongoAtlasHelp(reason) {
+    console.error('\n════════════════════════════════════════════════════════════');
+    console.error(' MongoDB: connection failed — /api routes will return 503 until fixed.');
+    console.error(' • Atlas → Network Access → Add IP Address → your current IP');
+    console.error('   (or 0.0.0.0/0 for dev only — not for production)');
+    console.error(' • Confirm MONGO_URI in backend/.env matches this cluster');
+    console.error(' • Optional: set MONGO_URI_STANDARD if you use a second URI for the same cluster');
+    console.error(` • Last error: ${reason}`);
+    console.error('════════════════════════════════════════════════════════════\n');
+}
 
 mongoose.connection.on('connecting', () => console.log('⏳ Connecting to MongoDB...'));
-mongoose.connection.on('connected', () => console.log('✅ MongoDB Connected'));
+mongoose.connection.on('connected', () => {
+    console.log('✅ MongoDB Connected');
+    isDbConnected = true;
+});
 mongoose.connection.on('error', (err) => console.error('❌ MongoDB Connection Error:', err));
-mongoose.connection.on('disconnected', () => console.log('🔌 MongoDB Disconnected'));
+mongoose.connection.on('disconnected', () => {
+    console.log('🔌 MongoDB Disconnected');
+    isDbConnected = false;
+});
 
-const connectWithRetry = (uri) => {
-    console.log(`📡 Connecting to: ${uri.includes('+srv') ? 'SRV Cluster' : 'Standard Nodes'}`);
+const connectWithRetry = (uri, isFallback = false) => {
+    console.log(`📡 Connecting to: ${uri.includes('+srv') ? 'SRV (MONGO_URI)' : 'Standard (MONGO_URI_STANDARD)'}`);
     mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 5000,
-        connectTimeoutMS: 10000,
-        maxPoolSize: 500, // Handle up to 500 concurrent connections
-        family: 4, // Force IPv4
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 15000,
+        maxPoolSize: 500,
+        family: 4,
     })
         .then(() => {
             isDbConnected = true;
         })
-        .catch(err => {
-            console.warn(`❌ Connection to ${uri.includes('+srv') ? 'SRV' : 'Standard'} failed:`, err.message);
+        .catch((err) => {
+            console.warn(`❌ MongoDB connect failed (${isFallback ? 'fallback' : 'primary'}):`, err.message);
             isDbConnected = false;
-            if (uri === MONGO_URI_SRV) {
-                console.log('🔄 Retrying with Standard URI...');
-                connectWithRetry(MONGO_URI_STANDARD);
+            if (!isFallback && uri === MONGO_URI_SRV && MONGO_URI_STANDARD) {
+                console.log('🔄 Retrying with MONGO_URI_STANDARD from env...');
+                connectWithRetry(MONGO_URI_STANDARD, true);
+            } else {
+                printMongoAtlasHelp(err.message);
             }
         });
 };
 
-connectWithRetry(MONGO_URI_SRV);
+if (MONGO_URI_SRV) {
+    connectWithRetry(MONGO_URI_SRV);
+} else {
+    console.error('❌ MONGO_URI is not set. Add it to backend/.env (or repo root .env loaded by Node).');
+    printMongoAtlasHelp('MONGO_URI empty');
+}
 
 // --- MIDDLEWARE: ACTIVITY LOGGER ---
 const logActivity = async (req, res, next) => {
@@ -207,11 +341,37 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+app.get('/api/metrics/latency', (req, res) => {
+    const httpRouteSamples = {};
+    for (const [key, samples] of routeLatencies.entries()) {
+        if (!samples.length) continue;
+        httpRouteSamples[key] = {
+            n: samples.length,
+            p50ms: Math.round(latencyPercentile(samples, 50)),
+            p95ms: Math.round(latencyPercentile(samples, 95))
+        };
+    }
+    res.json({
+        ...metrics,
+        featureFlags: FEATURE_FLAGS,
+        inMemoryCacheKeys: inMemoryCache.size,
+        idempotencyCacheKeys: idempotencyCache.size,
+        recentRealtimeEvents: typeof recentRealtimeEvents !== 'undefined' ? recentRealtimeEvents.length : 0,
+        httpRouteSamples,
+        uptimeSeconds: Math.floor(process.uptime())
+    });
+});
+
 function startKeepAlive() {
-    // Priority: Environment Variable -> Production Fallback -> Localhost
+    // Pings a deployed URL to reduce Render cold-starts. Not useful on local dev — causes noisy 503s when Render sleeps.
+    if (process.env.NODE_ENV !== 'production' && process.env.KEEP_ALIVE_REMOTE !== 'true') {
+        console.log('⏰ Remote keep-alive skipped in development (set KEEP_ALIVE_REMOTE=true to ping Render from this machine).');
+        return;
+    }
+
     const PRODUCTION_URL = 'https://villagelink-jh20.onrender.com';
     const serverUrl = process.env.RENDER_EXTERNAL_URL || PRODUCTION_URL || `http://localhost:${process.env.PORT || 3001}`;
-    
+
     console.log(`⏰ Keep-Alive Service started (interval: ${KEEP_ALIVE_INTERVAL / 60000} min)`);
     console.log(`📡 Target URL: ${serverUrl}`);
 
@@ -219,17 +379,16 @@ function startKeepAlive() {
         try {
             const response = await fetch(`${serverUrl}/api/health`);
             if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-            
+
             const data = await response.json();
             console.log(`💓 Heartbeat: [${data.status.toUpperCase()}] | DB: ${data.database} | ${new Date().toLocaleTimeString()}`);
         } catch (error) {
-            console.error('❌ Heartbeat Error:', error.message);
-            // Fallback attempt if previous URL failed and wasn't already the production one
+            console.warn('⚠️ Heartbeat:', error.message);
             if (serverUrl !== PRODUCTION_URL) {
                 try {
                     await fetch(`${PRODUCTION_URL}/api/health`);
-                    console.log('🔄 Fallback Heartbeat Successful');
-                } catch (e) { }
+                    console.log('🔄 Fallback Heartbeat OK');
+                } catch (e) { /* remote may be sleeping */ }
             }
         }
     }, KEEP_ALIVE_INTERVAL);
@@ -463,17 +622,23 @@ app.post('/api/payment/verify', Auth.authenticate, async (req, res) => {
 // --- MARKET DATA (REAL DB PERISTENCE) ---
 app.get('/api/market/commodities', async (req, res) => {
     try {
+        const cacheKey = 'market:commodities';
+        const cached = cacheGet(cacheKey);
+        if (cached) return res.json(cached);
+
         // Fetch strictly from DB. No random generation.
         const items = await MarketItem.find({ type: 'COMMODITY' }).sort({ name: 1 }).lean();
         if (items.length === 0) {
             return res.json([]); // Return empty if no data, don't fake it
         }
-        res.json(items.map(i => ({
+        const payload = items.map(i => ({
             crop: i.name,
             price: i.price,
             trend: i.properties?.trend || 'STABLE',
             satelliteInsight: i.properties?.insight || "Standard Market Rate"
-        })));
+        }));
+        cacheSet(cacheKey, payload, 30000);
+        res.json(payload);
     } catch (e) {
         res.status(500).json({ error: "Market Data Unavailable" });
     }
@@ -631,7 +796,11 @@ app.post('/api/admin/pricing', Auth.requireAdmin, async (req, res) => {
 // --- ROUTE DEFINITIONS (Admin Route CRUD) ---
 app.get('/api/routes', async (req, res) => {
     try {
+        const cacheKey = 'routes:all';
+        const cached = cacheGet(cacheKey);
+        if (cached) return res.json(cached);
         const routes = await Route.find({}).lean();
+        cacheSet(cacheKey, routes, 20000);
         res.json(routes);
     } catch (e) { res.json([]); }
 });
@@ -738,6 +907,28 @@ app.post('/api/routes/find-vehicles', async (req, res) => {
     }
 });
 
+app.post('/api/routes/match-segment-stops', async (req, res) => {
+    try {
+        const { fromStop, toStop, maxEtaMinutes } = req.body;
+        if (!fromStop || !toStop) {
+            return res.status(400).json({ error: 'fromStop and toStop required' });
+        }
+        const vehicles = findMatchingVehiclesByStops(
+            String(fromStop).trim(),
+            String(toStop).trim(),
+            Math.min(120, Math.max(5, parseInt(maxEtaMinutes, 10) || 30))
+        );
+        res.json({
+            count: vehicles.length,
+            activeDriversTotal: getActiveTrajectoryCount(),
+            vehicles
+        });
+    } catch (e) {
+        console.error('Segment stop match error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.get('/api/user/wallet', Auth.authenticate, async (req, res) => {
     try {
         const user = await User.findOne({ id: req.user.id });
@@ -783,10 +974,6 @@ app.get('/api/user/history', Auth.authenticate, async (req, res) => {
         console.error("❌ History fetch error:", e);
         res.status(500).json({ error: e.message });
     }
-});
-
-app.post('/api/tickets/book', Auth.authenticate, async (req, res) => {
-    try { const ticket = new Ticket(req.body); await ticket.save(); res.json({ success: true, ticket }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Admin Routes
@@ -866,6 +1053,25 @@ app.get('/api/trip/:tripId/status', Auth.authenticate, async (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+const RECENT_RT_EVENTS_LIMIT = 1000;
+const DRIVER_STREAM_THROTTLE_MS = 400;
+const recentRealtimeEvents = [];
+const lastDriverBroadcastAt = new Map();
+
+const pushRealtimeEvent = (room, event, payload = {}) => {
+    const message = normalizeRealtimePayload(event, payload);
+    recentRealtimeEvents.push({ room, ...message });
+    if (recentRealtimeEvents.length > RECENT_RT_EVENTS_LIMIT) {
+        recentRealtimeEvents.shift();
+    }
+    io.to(room).emit(event, message);
+    return message;
+};
+
+const replayRealtimeEvents = (room, sinceTimestamp) => {
+    if (!sinceTimestamp) return [];
+    return recentRealtimeEvents.filter((evt) => evt.room === room && evt.timestamp > sinceTimestamp);
+};
 
 // SUPER APP PHASE 3: Massive Clustering via Redis Pub/Sub
 if (process.env.REDIS_URL) {
@@ -882,10 +1088,81 @@ if (process.env.REDIS_URL) {
     console.log('⚠️ REDIS_URL not provided. Socket.IO running in single-instance memory mode.');
 }
 
+registerTransportV1Routes(app, { io, pushRealtimeEvent });
+
+/** Providers who joined `join_provider_room` also join this room — ticket demand deltas (no global `io.emit`). */
+const PROVIDERS_TRANSPORT_DEMAND = 'providers_transport_demand';
+
+function emitTicketsUpdated(ioInstance, ticketDoc) {
+    if (!ticketDoc || !ioInstance) return;
+    const plain = ticketDoc.toObject
+        ? ticketDoc.toObject()
+        : typeof ticketDoc === 'object'
+            ? { ...ticketDoc }
+            : null;
+    if (!plain?.id) return;
+    const uid = plain.userId;
+    const did = plain.driverId;
+    if (uid) ioInstance.to(toRoom.user(String(uid))).emit('tickets_updated', [plain]);
+    if (did) ioInstance.to(toRoom.provider(String(did))).emit('tickets_updated', [plain]);
+    ioInstance.to(PROVIDERS_TRANSPORT_DEMAND).emit('tickets_updated', [plain]);
+}
+
+app.post('/api/tickets/book', Auth.authenticate, async (req, res) => {
+    try {
+        const ticket = new Ticket(req.body);
+        await ticket.save();
+        res.json({ success: true, ticket });
+        emitTicketsUpdated(io, ticket);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.set('emitTicketsDelta', (doc) => emitTicketsUpdated(io, doc));
+
 // ---------------------------------------------------------
 // WebSocket Event Handlers
 io.on('connection', (socket) => {
+    metrics.socketConnections += 1;
     console.log(`🔌 Socket connected: ${socket.id}`);
+    let socketUser = null;
+    try {
+        const token = socket.handshake?.auth?.token || '';
+        if (token) {
+            const raw = token.startsWith('Bearer ') ? token.slice(7) : token;
+            socketUser = jwt.verify(raw, JWT_SECRET);
+        }
+    } catch (e) {
+        socket.emit('auth_error', { message: 'Invalid socket token' });
+    }
+
+    socket.on('join_user_room', (userId) => {
+        if (!userId) return;
+        if (!socketUser || socketUser.id !== userId) return;
+        socket.join(toRoom.user(userId));
+    });
+
+    socket.on('join_provider_room', (providerId) => {
+        if (!providerId) return;
+        if (!socketUser || socketUser.id !== providerId) return;
+        if (socketUser.role === 'PASSENGER') return;
+        socket.join(toRoom.provider(providerId));
+        socket.join(PROVIDERS_TRANSPORT_DEMAND);
+    });
+
+    socket.on('join_order_room', (orderId) => {
+        if (!orderId) return;
+        socket.join(toRoom.order(orderId));
+    });
+
+    socket.on('replay_events_since', ({ room, sinceTimestamp }) => {
+        if (!FEATURE_FLAGS.replaySync) return;
+        if (!room || !sinceTimestamp) return;
+        const events = replayRealtimeEvents(room, Number(sinceTimestamp));
+        metrics.socketEventsReplayed += events.length;
+        socket.emit('events_replay', { room, events });
+    });
 
     // Legacy handler
     socket.on('driver_location_update', (data) => io.emit('vehicles_update', [data]));
@@ -920,6 +1197,11 @@ io.on('connection', (socket) => {
     // Driver location stream (high frequency updates)
     socket.on('driver_location_stream', async (data) => {
         try {
+            const lastTs = lastDriverBroadcastAt.get(data.driverId) || 0;
+            const now = Date.now();
+            if (now - lastTs < DRIVER_STREAM_THROTTLE_MS) return;
+            lastDriverBroadcastAt.set(data.driverId, now);
+
             const { updateDriverLocation } = await import('./services/driverAllocationService.js');
             await updateDriverLocation(data.driverId, data);
 
@@ -937,7 +1219,7 @@ io.on('connection', (socket) => {
             });
 
             // Broadcast to passengers subscribed to this driver
-            io.to(`tracking_${data.driverId}`).emit('driver_location_broadcast', {
+            io.to(toRoom.tracking(data.driverId)).emit('driver_location_broadcast', {
                 driverId: data.driverId,
                 lat: data.lat,
                 lng: data.lng,
@@ -946,15 +1228,22 @@ io.on('connection', (socket) => {
                 timestamp: data.timestamp,
                 isStationary: data.isStationary
             });
+            pushRealtimeEvent(
+                toRoom.provider(data.driverId),
+                RT_EVENT.PROVIDER_LOCATION_UPDATED,
+                { data: { driverId: data.driverId, lat: data.lat, lng: data.lng, speed: data.speed } }
+            );
 
             // Also emit for legacy vehicle tracking
-            io.emit('vehicles_update', [{
-                id: data.driverId,
-                lat: data.lat,
-                lng: data.lng,
-                heading: data.heading,
-                speed: data.speed
-            }]);
+            if (FEATURE_FLAGS.dualPathLegacyEmit) {
+                io.emit('vehicles_update', [{
+                    id: data.driverId,
+                    lat: data.lat,
+                    lng: data.lng,
+                    heading: data.heading,
+                    speed: data.speed
+                }]);
+            }
 
             // Phase 5: Snap driver position on their active trajectory
             updateDriverPosition(data.driverId, data.lat, data.lng);
@@ -965,12 +1254,12 @@ io.on('connection', (socket) => {
 
     // Passenger subscribes to driver location
     socket.on('subscribe_driver', (driverId) => {
-        socket.join(`tracking_${driverId}`);
+        socket.join(toRoom.tracking(driverId));
         console.log(`👁️ Socket ${socket.id} subscribed to driver ${driverId}`);
     });
 
     socket.on('unsubscribe_driver', (driverId) => {
-        socket.leave(`tracking_${driverId}`);
+        socket.leave(toRoom.tracking(driverId));
     });
 
     // --- 1000x: PASSENGER LOCATION STREAM (for Speed Match Engine) ---
@@ -994,11 +1283,11 @@ io.on('connection', (socket) => {
 
     // --- 1000x: JOIN ROUTE ROOM (for live seat updates) ---
     socket.on('join_route', (routeId) => {
-        socket.join(`route_${routeId}`);
+        socket.join(toRoom.route(routeId));
     });
 
     socket.on('leave_route', (routeId) => {
-        socket.leave(`route_${routeId}`);
+        socket.leave(toRoom.route(routeId));
     });
 
     // --- PHASE 5: TRAJECTORY MATCHING SOCKET EVENTS ---
@@ -1006,27 +1295,43 @@ io.on('connection', (socket) => {
     // Driver starts a trip and registers their trajectory polyline
     socket.on('driver_start_trip', async (data) => {
         try {
-            // data = { driverId, startLat, startLng, endLat, endLng, vehicleType, driverName }
-            const routeData = await Logic.getRealRoadPath(data.startLat, data.startLng, data.endLat, data.endLng);
-            
-            if (routeData && routeData.pathDetails && routeData.pathDetails.length > 0) {
-                registerTrajectory(data.driverId, routeData.pathDetails, {
+            let pathDetails = data.pathDetails;
+            let distanceKm = data.distanceKm;
+            let durationMin = data.durationMin;
+
+            if (!pathDetails || pathDetails.length < 2) {
+                const routeData = await Logic.getRealRoadPath(data.startLat, data.startLng, data.endLat, data.endLng);
+                if (routeData && routeData.pathDetails && routeData.pathDetails.length > 0) {
+                    pathDetails = routeData.pathDetails;
+                    distanceKm = routeData.distance;
+                    durationMin = routeData.duration;
+                }
+            }
+
+            const trajPoints = (pathDetails || []).map((p) => ({
+                lat: p.lat,
+                lng: p.lng
+            }));
+
+            if (trajPoints.length >= 2) {
+                registerTrajectory(data.driverId, trajPoints, {
                     driverName: data.driverName || 'Driver',
                     vehicleType: data.vehicleType || 'AUTO',
                     startName: data.startName || '',
                     endName: data.endName || '',
-                    distanceKm: routeData.distance,
-                    durationMin: routeData.duration
+                    stopNames: Array.isArray(data.stopNames) ? data.stopNames : [],
+                    distanceKm: distanceKm || 0,
+                    durationMin: durationMin || 0
                 });
-                
+
                 socket.emit('trip_trajectory_ready', {
                     success: true,
-                    pointCount: routeData.pathDetails.length,
-                    distanceKm: routeData.distance,
-                    durationMin: routeData.duration
+                    pointCount: trajPoints.length,
+                    distanceKm: distanceKm || 0,
+                    durationMin: durationMin || 0
                 });
-                
-                console.log(`🛣️ Trip started: ${data.driverId} (${routeData.pathDetails.length} pts, ${routeData.distance.toFixed(1)}km)`);
+
+                console.log(`🛣️ Trip started: ${data.driverId} (${trajPoints.length} pts) stopNames=${(data.stopNames || []).length}`);
             } else {
                 socket.emit('trip_trajectory_ready', { success: false, error: 'Could not calculate route' });
             }
@@ -1061,6 +1366,30 @@ io.on('connection', (socket) => {
         console.log(`🏁 Trip ended: ${data.driverId}`);
     });
     
+    socket.on('find_segment_by_stops', (data) => {
+        try {
+            const { fromStop, toStop, maxEtaMinutes } = data || {};
+            if (!fromStop || !toStop) return;
+            const vehicles = findMatchingVehiclesByStops(
+                String(fromStop).trim(),
+                String(toStop).trim(),
+                Math.min(120, Math.max(5, parseInt(maxEtaMinutes, 10) || 30))
+            );
+            socket.emit('segment_vehicles', {
+                count: vehicles.length,
+                vehicles,
+                fromStop,
+                toStop,
+                searchedAt: Date.now()
+            });
+            for (const v of vehicles) {
+                socket.join(toRoom.tracking(v.driverId));
+            }
+        } catch (e) {
+            console.error('find_segment_by_stops', e);
+        }
+    });
+
     // Passenger searches for vehicles on their route
     socket.on('find_vehicles_on_route', (data) => {
         // data = { startLat, startLng, endLat, endLng, passengerId }
@@ -1078,7 +1407,7 @@ io.on('connection', (socket) => {
         
         // Auto-subscribe passenger to matching drivers for live tracking
         for (const v of vehicles) {
-            socket.join(`tracking_${v.driverId}`);
+            socket.join(toRoom.tracking(v.driverId));
         }
         
         // Notify matched drivers about waiting passenger
@@ -1143,6 +1472,11 @@ io.on('connection', (socket) => {
                         vehicleType: driver.vehicleType
                     }
                 });
+                pushRealtimeEvent(
+                    toRoom.order(tripId),
+                    RT_EVENT.ORDER_ASSIGNED,
+                    { data: { tripId, providerId: driver.driverId, passengerId: data.passengerId, status: 'ASSIGNED' } }
+                );
             } else {
                 socket.emit('no_drivers_available', { tripId });
             }
@@ -1168,10 +1502,27 @@ io.on('connection', (socket) => {
                     driverId: data.driverId,
                     eta: data.etaMinutes
                 });
+                pushRealtimeEvent(
+                    toRoom.order(data.tripId),
+                    RT_EVENT.ORDER_ACCEPTED,
+                    { data: { tripId: data.tripId, providerId: data.driverId, passengerId: trip.passengerId, eta: data.etaMinutes } }
+                );
             }
         } catch (e) {
             console.error('Accept ride error:', e);
         }
+    });
+
+    socket.on('order_status_update', (payload) => {
+        if (!FEATURE_FLAGS.realtimeContractV1) return;
+        if (!payload?.orderId || !payload?.status) return;
+        const message = pushRealtimeEvent(
+            toRoom.order(payload.orderId),
+            RT_EVENT.ORDER_STATUS_CHANGED,
+            { data: payload }
+        );
+        if (payload.userId) io.to(toRoom.user(payload.userId)).emit(RT_EVENT.ORDER_STATUS_CHANGED, message);
+        if (payload.providerId) io.to(toRoom.provider(payload.providerId)).emit(RT_EVENT.ORDER_STATUS_CHANGED, message);
     });
 
     socket.on('reject_ride', async (data) => {
@@ -1251,14 +1602,121 @@ io.on('connection', (socket) => {
                 }
             }
         } catch (e) { console.error("Socket Booking Save Error", e); }
-        io.emit('tickets_updated', [data]);
+        if (data && data.id) {
+            const row = await Ticket.findOne({ id: data.id }).lean();
+            if (row) emitTicketsUpdated(io, row);
+        }
+    });
+
+    /** Driver device decoded ultrasonic payload — server authorizes and notifies passenger. */
+    socket.on('ultrasonic_verify_request', async (body) => {
+        try {
+            const payload = body?.payload;
+            const driverId = body?.driverId;
+            if (typeof payload !== 'string' || !driverId) return;
+            if (!socketUser || String(socketUser.id) !== String(driverId)) return;
+
+            let ticketId;
+            let userIdFromPayload;
+            if (payload.startsWith('TK|')) {
+                const parts = payload.split('|');
+                ticketId = parts[1]?.trim();
+                userIdFromPayload = parts[2]?.trim();
+            } else {
+                ticketId = payload.trim();
+            }
+            if (!ticketId) return;
+
+            const ticket = await Ticket.findOne({ id: ticketId });
+            if (!ticket) {
+                socket.emit('acoustic_verification_ack', { success: false, ticketId, reason: 'NOT_FOUND', version: 'v1' });
+                return;
+            }
+            if (userIdFromPayload && String(ticket.userId) !== String(userIdFromPayload)) {
+                const bad = { success: false, ticketId, reason: 'USER_MISMATCH', version: 'v1' };
+                socket.emit('acoustic_verification_ack', bad);
+                io.to(toRoom.user(String(ticket.userId))).emit('acoustic_verification_ack', bad);
+                return;
+            }
+            if (ticket.driverId && String(ticket.driverId) !== String(driverId)) {
+                socket.emit('acoustic_verification_ack', { success: false, ticketId, reason: 'WRONG_DRIVER', version: 'v1' });
+                return;
+            }
+            if (ticket.status === 'BOARDED' || ticket.status === 'COMPLETED') {
+                const ack = { success: true, ticketId, driverId, alreadyVerified: true, version: 'v1' };
+                io.to(toRoom.user(String(ticket.userId))).emit('acoustic_verification_ack', ack);
+                socket.emit('acoustic_verification_ack', ack);
+                return;
+            }
+            if (ticket.status !== 'PENDING' && ticket.status !== 'PAID') {
+                socket.emit('acoustic_verification_ack', {
+                    success: false,
+                    ticketId,
+                    reason: 'INVALID_STATUS',
+                    status: ticket.status,
+                    version: 'v1'
+                });
+                return;
+            }
+
+            ticket.status = 'BOARDED';
+            if (!ticket.driverId) ticket.driverId = driverId;
+            await ticket.save();
+            const plain = ticket.toObject ? ticket.toObject() : ticket;
+            emitTicketsUpdated(io, plain);
+
+            const ack = { success: true, ticketId, driverId, version: 'v1' };
+            io.to(toRoom.user(String(ticket.userId))).emit('acoustic_verification_ack', ack);
+            socket.emit('acoustic_verification_ack', ack);
+        } catch (e) {
+            console.error('ultrasonic_verify_request', e);
+            socket.emit('acoustic_verification_ack', { success: false, reason: 'SERVER_ERROR', version: 'v1' });
+        }
+    });
+
+    // Keep ticket status synchronized across user and provider clients.
+    socket.on('update_ticket', async (payload) => {
+        try {
+            const ticketId = payload?.ticketId;
+            const status = payload?.status;
+            if (!ticketId || !status) return;
+
+            const existing = await Ticket.findOne({ id: ticketId });
+            if (!existing) return;
+            if (!socketUser) return;
+            const isOwner = String(existing.userId || '') === String(socketUser.id || '');
+            const isAssignedProvider = String(existing.driverId || '') === String(socketUser.id || '');
+            const isPrivileged = socketUser.role && socketUser.role !== 'PASSENGER';
+            if (!isOwner && !isAssignedProvider && !isPrivileged) return;
+
+            const updated = await Ticket.findOneAndUpdate(
+                { id: ticketId },
+                { $set: { status } },
+                { new: true }
+            );
+            if (!updated) return;
+
+            const ticket = updated.toObject ? updated.toObject() : updated;
+            emitTicketsUpdated(io, ticket);
+        } catch (e) {
+            console.error('Socket ticket update error', e);
+        }
     });
 });
 
 
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
-app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+// SPA fallback: only for non-.html routes. Explicit *.html requests must hit real MPA files
+// (user.html, provider.html) or 404 — avoids returning index.html when those entries are missing from dist.
+app.get('*', (req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api')) return next();
+    if (req.path.endsWith('.html') && req.path !== '/index.html') {
+        return res.status(404).type('text/plain').send('Not found');
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

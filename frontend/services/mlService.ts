@@ -30,6 +30,26 @@ const getHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': getAuthToken() || ''
 });
+const responseCache = new Map<string, { expiresAt: number; data: any }>();
+const inFlightRequests = new Map<string, Promise<any>>();
+
+const fetchJsonCached = async (url: string, ttlMs = 15000) => {
+    const now = Date.now();
+    const cached = responseCache.get(url);
+    if (cached && cached.expiresAt > now) return cached.data;
+    if (inFlightRequests.has(url)) return inFlightRequests.get(url);
+
+    const p = (async () => {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const data = await res.json();
+        responseCache.set(url, { expiresAt: now + ttlMs, data });
+        return data;
+    })().finally(() => inFlightRequests.delete(url));
+
+    inFlightRequests.set(url, p);
+    return p;
+};
 
 // Helper: Image Base64 to HTML Element
 const imageFromBase64 = async (base64: string): Promise<HTMLImageElement> => {
@@ -208,16 +228,12 @@ export const calculateLogisticsCost = async (itemType: string, weight: number): 
 
 export const getMandiRates = async (): Promise<MandiRate[]> => {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/grammandi/market/rates`);
-        if (res.ok) return await res.json();
+        const data = await fetchJsonCached(`${API_BASE_URL}/api/grammandi/market/rates`, 20000);
+        return Array.isArray(data) ? data : [];
     } catch (e) {
         console.error("Mandi Rates Error:", e);
     }
-    return [
-        { crop: 'Rice (Paddy)', price: 2185, trend: 'UP', satelliteInsight: 'Good yield expected' },
-        { crop: 'Wheat', price: 2125, trend: 'STABLE', predictedPrice: 2150 },
-        { crop: 'Potato', price: 1250, trend: 'DOWN', satelliteInsight: 'Surplus in Bihar' }
-    ];
+    return [];
 };
 
 export const getJobs = async (): Promise<JobOpportunity[]> => {
@@ -234,10 +250,8 @@ export const getJobs = async (): Promise<JobOpportunity[]> => {
 // Update return type in types.ts if needed, assuming MarketItem logic is moved or kept for now.
 export const getMarketItems = async (): Promise<MarketItem[]> => {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/grammandi/produce/listings`);
-        if (res.ok) {
-            const listings = await res.json();
-            // Convert produce listings to market items for generic UI
+        const listings = await fetchJsonCached(`${API_BASE_URL}/api/grammandi/produce/listings`, 15000);
+        if (Array.isArray(listings)) {
             return listings.map((l: any) => ({
                 id: l.id,
                 name: l.crop,
@@ -251,10 +265,7 @@ export const getMarketItems = async (): Promise<MarketItem[]> => {
     } catch (e) {
         console.error("Market Items Error:", e);
     }
-    return [
-        { id: 'M1', name: 'Organic Seeds', price: 250, unit: 'kg', supplier: 'SeedCo', inStock: true, type: 'INPUT' },
-        { id: 'M2', name: 'Bio-Fertilizer', price: 450, unit: 'bag', supplier: 'EcoFarm', inStock: true, type: 'INPUT' }
-    ];
+    return [];
 };
 
 export const getPackages = async (): Promise<PilgrimagePackage[]> => {

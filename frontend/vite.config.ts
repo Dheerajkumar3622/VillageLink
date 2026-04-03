@@ -5,20 +5,34 @@ import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { resolve } from 'path';
 
+// Set VITE_DEV_HTTPS=0 to serve plain http:// on LAN (no self-signed cert warnings; use with npm run dev:host).
+const useDevHttps = process.env.VITE_DEV_HTTPS !== '0';
+
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [react(), ...(useDevHttps ? [basicSsl()] : [])],
   server: {
     host: true, // Allow external access via IP
     port: 3000,
+    watch: {
+      ignored: [
+        '**/android/**',
+        '**/ios/**',
+        '**/dist/**',
+        '**/.gradle/**',
+        '**/node_modules/**',
+      ],
+    },
     proxy: {
       '/socket.io': {
-        target: 'http://127.0.0.1:3001',
+        target: 'http://127.0.0.1:3001', // Local backend for development
         ws: true,
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false,
       },
       '/api': {
-        target: 'http://127.0.0.1:3001',
-        changeOrigin: true
+        target: 'http://127.0.0.1:3001', // Local backend for development
+        changeOrigin: true,
+        secure: false,
       }
     }
   },
@@ -34,6 +48,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         user: resolve(__dirname, 'user.html'),
         provider: resolve(__dirname, 'provider.html'),
+        admin: resolve(__dirname, 'admin.html'),
       },
       output: {
         manualChunks: {
