@@ -40,6 +40,7 @@ if (!(Test-Path "dist\index_original.html")) {
 
 Write-Host "========== 1. BUILDING USER APK =========="
 $env:APP_VARIANT = "user"
+$env:VL_APP_ID = "com.villagelink.user"
 Copy-Item "dist\user.html" "dist\index.html" -Force
 
 Replace-AndroidMetadata -AppId "com.villagelink.user" -AppName "VillageLink"
@@ -51,6 +52,7 @@ Set-Location ".."
 
 Write-Host "========== 2. BUILDING PROVIDER APK =========="
 $env:APP_VARIANT = "provider"
+$env:VL_APP_ID = "com.villagelink.provider"
 Copy-Item "dist\provider.html" "dist\index.html" -Force
 
 Replace-AndroidMetadata -AppId "com.villagelink.provider" -AppName "VL Provider"
@@ -62,6 +64,7 @@ Set-Location ".."
 
 Write-Host "========== 3. BUILDING ADMIN APK =========="
 $env:APP_VARIANT = "admin"
+$env:VL_APP_ID = "com.villagelink.admin"
 Copy-Item "dist\admin.html" "dist\index.html" -Force
 
 Replace-AndroidMetadata -AppId "com.villagelink.admin" -AppName "VL Admin"
@@ -75,6 +78,8 @@ Write-Host "========== CLEANUP & RESTORE REPO STATE =========="
 Copy-Item "dist\index_original.html" "dist\index.html" -ErrorAction SilentlyContinue
 Replace-AndroidMetadata -AppId "com.villagelink.user" -AppName "VillageLink"
 $env:APP_VARIANT = "user"
+$env:VL_APP_ID = "com.villagelink.user"
 npx cap sync android
 
 Write-Host "========== ALL DONE! APKs stored in: $apkOutDir =========="
+

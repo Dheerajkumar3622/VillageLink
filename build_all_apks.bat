@@ -9,6 +9,7 @@ if not exist "dist\index_original.html" copy "dist\index.html" "dist\index_origi
 copy /y "dist\user.html" "dist\index.html" >nul
 
 set APP_VARIANT=user
+set VL_APP_ID=com.villagelink.user
 call npx cap sync android
 cd android
 call .\gradlew assembleDebug
@@ -19,6 +20,7 @@ echo ========== 2. BUILDING PROVIDER APK ==========
 copy /y "dist\provider.html" "dist\index.html" >nul
 
 set APP_VARIANT=provider
+set VL_APP_ID=com.villagelink.provider
 call npx cap sync android
 cd android
 call .\gradlew assembleDebug
@@ -29,6 +31,7 @@ echo ========== 3. BUILDING ADMIN APK ==========
 copy /y "dist\admin.html" "dist\index.html" >nul
 
 set APP_VARIANT=admin
+set VL_APP_ID=com.villagelink.admin
 call npx cap sync android
 cd android
 call .\gradlew assembleDebug
@@ -38,6 +41,8 @@ cd ..
 echo ========== CLEANUP & RESTORE REPO STATE ==========
 copy /y "dist\index_original.html" "dist\index.html" >nul
 set APP_VARIANT=user
+set VL_APP_ID=com.villagelink.user
 call npx cap sync android
 
 echo ========== ALL DONE! APKs stored in: %APK_OUT_DIR% ==========
+
