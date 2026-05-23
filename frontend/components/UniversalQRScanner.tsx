@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import jsQR from 'jsqr';
 import { User } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { Button } from './Button';
@@ -58,6 +59,28 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
     const streamRef = useRef<MediaStream | null>(null);
     const iconRef = useRef<HTMLDivElement>(null);
 
+    const scanningRef = useRef(scanning);
+    const processingRef = useRef(processing);
+    const errorRef = useRef(error);
+
+    useEffect(() => {
+        scanningRef.current = scanning;
+    }, [scanning]);
+
+    useEffect(() => {
+        processingRef.current = processing;
+    }, [processing]);
+
+    useEffect(() => {
+        errorRef.current = error;
+    }, [error]);
+
+    useEffect(() => {
+        if (scanning && !processing && !error) {
+            requestAnimationFrame(scanLoop);
+        }
+    }, [scanning]);
+
     useEffect(() => {
         startCamera();
         loadScanHistory();
@@ -90,27 +113,33 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
     };
 
     const scanLoop = () => {
-        if (!scanning || processing) return;
+        if (!scanningRef.current || processingRef.current || errorRef.current) return;
 
         const video = videoRef.current;
         const canvas = canvasRef.current;
 
         if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
             const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx?.drawImage(video, 0, 0);
+            if (ctx) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Get image data for QR detection
-            // In production, use a library like jsQR
-            const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert',
+                });
 
-            // Simulated QR detection - replace with actual library
-            // const code = jsQR(imageData.data, imageData.width, imageData.height);
-            // if (code) { handleQRCode(code.data); }
+                if (code && code.data) {
+                    console.log('Decoded QR successfully:', code.data);
+                    setScanning(false);
+                    simulateScan(code.data);
+                    return;
+                }
+            }
         }
 
-        if (scanning) {
+        if (scanningRef.current) {
             requestAnimationFrame(scanLoop);
         }
     };

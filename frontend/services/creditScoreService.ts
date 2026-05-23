@@ -8,7 +8,7 @@ import { CreditScore } from '@villagelink/shared';
 export const calculateCreditScore = async (vendorId: string): Promise<CreditScore> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/credit-score/calculate`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/credit-score/calculate`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${token}`,

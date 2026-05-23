@@ -9,7 +9,7 @@ export const createBulkOrder = async (
 ): Promise<{ success: boolean; order?: BulkOrder; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/bulk-order`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/bulk-order`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ export const getOpenBulkOrders = async (
     try {
         const token = await getAuthToken();
         const response = await fetch(
-            `${API_BASE_URL}/vendor/bulk-order/nearby?lat=${latitude}&lng=${longitude}`,
+            `${API_BASE_URL}/api/vendor/bulk-order/nearby?lat=${latitude}&lng=${longitude}`,
             {
                 headers: { Authorization: `Bearer ${token}` },
             }
@@ -50,7 +50,7 @@ export const joinBulkOrder = async (
 ): Promise<{ success: boolean; order?: BulkOrder; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/bulk-order/${orderId}/join`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/bulk-order/${orderId}/join`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ export const joinBulkOrder = async (
 export const getVendorKhata = async (): Promise<{ success: boolean; khata?: VendorKhata; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/khata`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/khata`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -88,7 +88,7 @@ export const recordKhataEntry = async (
         const token = await getAuthToken();
         // Simulate Voice recording upload if voiceNoteUrl is meant to be a file
         // Here we assume text or pre-uploaded URL
-        const response = await fetch(`${API_BASE_URL}/vendor/khata/entry`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/khata/entry`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export const submitHygieneSelfAudit = async (
 ): Promise<{ success: boolean; audit?: HygieneAudit; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/hygiene-audit`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/hygiene-audit`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export const submitHygieneSelfAudit = async (
 export const getHygieneHistory = async (): Promise<{ success: boolean; audits?: HygieneAudit[]; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/hygiene-audit/history`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/hygiene-audit/history`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -145,7 +145,7 @@ export const getHygieneHistory = async (): Promise<{ success: boolean; audits?: 
 export const getCreditScore = async (): Promise<{ success: boolean; score?: CreditScore; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/credit-score`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/credit-score`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -161,7 +161,7 @@ export const applyForLoan = async (
 ): Promise<{ success: boolean; application?: LoanApplication; error?: string }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/vendor/loans/apply`, {
+        const response = await fetch(`${API_BASE_URL}/api/vendor/loans/apply`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -20,7 +20,7 @@ export const submitVote = async (
 ): Promise<{ success: boolean; vote?: MenuVote }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/mess/vote/${voteId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/vote/${voteId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export const setEatSkipStatus = async (
 ): Promise<{ success: boolean; status?: EatSkipStatus }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/mess/eat-skip`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/eat-skip`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -66,7 +66,7 @@ export const getPrepSheet = async (
 ): Promise<{ success: boolean; sheet?: PrepSheet }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/mess/prep-sheet?messId=${messId}&date=${date}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/prep-sheet?messId=${messId}&date=${date}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -83,7 +83,7 @@ export const logWaste = async (
 ): Promise<{ success: boolean; entry?: WasteEntry }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/mess/waste`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/waste`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ export const logWaste = async (
 export const getWasteStats = async (messId: string): Promise<{ success: boolean; chartData?: any }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/mess/stats/waste?messId=${messId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/stats/waste?messId=${messId}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();

@@ -16,7 +16,6 @@ import { Modal } from './Modal';
 import { TRANSLATIONS } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
-import { useAuth } from '../contexts/AuthContext';
 import { getOfficialRoutes, simulateDemand, TripConfig, getLiveDemandHeatmap } from '../services/transportService';
 import CargoDriverView from './CargoDriverView';
 import { QRScanner } from './QRScanner';
@@ -72,7 +71,6 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
     // Bus Mode State
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const { user: authUser, walletBalance, isMobileATM } = useAuth();
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [verifyId, setVerifyId] = useState('');
     const [verifyResult, setVerifyResult] = useState<any>(null);

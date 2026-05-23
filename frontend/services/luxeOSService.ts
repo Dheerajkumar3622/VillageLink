@@ -24,7 +24,7 @@ export const createGuestCard = async (reservationId: string): Promise<{ success:
 export const getInventory = async (restaurantId: string): Promise<{ success: boolean; items?: InventoryItem[] }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/luxe/inventory?restaurantId=${restaurantId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/luxe/inventory?restaurantId=${restaurantId}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -37,7 +37,7 @@ export const getInventory = async (restaurantId: string): Promise<{ success: boo
 export const getLowStockAlerts = async (restaurantId: string): Promise<{ success: boolean; items?: InventoryItem[] }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/luxe/inventory/low-stock?restaurantId=${restaurantId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/luxe/inventory/low-stock?restaurantId=${restaurantId}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -52,7 +52,7 @@ export const createPurchaseOrder = async (
 ): Promise<{ success: boolean; po?: PurchaseOrder }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/luxe/po`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/luxe/po`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -75,8 +75,8 @@ export const getTrainingModules = async (
     try {
         const token = await getAuthToken();
         const url = category
-            ? `${API_BASE_URL}/luxe/training?category=${category}`
-            : `${API_BASE_URL}/luxe/training`;
+            ? `${API_BASE_URL}/api/foodlink/luxe/training?category=${category}`
+            : `${API_BASE_URL}/api/foodlink/luxe/training`;
 
         const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` },

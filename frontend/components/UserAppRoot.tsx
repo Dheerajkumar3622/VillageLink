@@ -9,7 +9,7 @@ import { getCurrentUser, logoutUser, getAuthToken } from '../services/authServic
 import { initSocketConnection } from '../services/transportService';
 import { initializeGeoData } from '@villagelink/shared';
 import { ViewSkeleton } from './LoadingSkeleton';
-import UserAuthView from './UserAuthView';
+import { AuthView } from './AuthView';
 import UserApp from './UserApp';
 
 const UserAppRoot: React.FC = () => {
@@ -93,7 +93,16 @@ const UserAppRoot: React.FC = () => {
     }
 
     if (!user) {
-        return <UserAuthView onSuccess={handleLoginSuccess} lang={lang} />;
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500 overflow-x-hidden">
+                {/* Whisk 3.0: Cinematic Layers */}
+                <div className="veo-cinematic-bg" />
+                <div className="veo-drift-grain" />
+                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10 my-auto py-10">
+                    <AuthView onSuccess={handleLoginSuccess} lang={lang} toggleLang={() => setLang(l => l === 'EN' ? 'HI' : 'EN')} toggleTheme={toggleTheme} darkMode={darkMode} />
+                </div>
+            </div>
+        );
     }
 
     return <UserApp user={user} onLogout={handleLogout} lang={lang} darkMode={darkMode} toggleTheme={toggleTheme} />;

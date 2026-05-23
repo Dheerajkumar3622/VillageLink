@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { User } from '@villagelink/shared';
 import { getCurrentUser, logoutUser, getAuthToken } from '../services/authService';
 import { ViewSkeleton } from './LoadingSkeleton';
-import UserAuthView from './UserAuthView';
+import { AuthView } from './AuthView';
 const AdminView = React.lazy(() => import('./AdminView').then(m => ({ default: m.AdminView })));
 
 const AdminAppRoot: React.FC = () => {
@@ -45,7 +45,7 @@ const AdminAppRoot: React.FC = () => {
                     <p className="text-sm text-slate-400 font-medium">Please login with an Admin account</p>
                 </div>
                 <div className="w-full max-w-md bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 relative z-10">
-                    <UserAuthView onSuccess={handleLoginSuccess} lang={'EN'} />
+                    <AuthView onSuccess={handleLoginSuccess} lang={'EN'} />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-luxe-sienna/10 to-transparent pointer-events-none z-0"></div>
             </div>

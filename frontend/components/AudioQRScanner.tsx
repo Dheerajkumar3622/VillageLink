@@ -1,79 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, CheckCircle } from 'lucide-react';
+import { startUltrasonicListener, stopUltrasonicListener } from '../services/UltrasonicVerificationService';
 
 export const AudioQRScanner: React.FC<{ onDecode?: (token: string) => void }> = ({ onDecode }) => {
   const [isListening, setIsListening] = useState(false);
   const [detectedToken, setDetectedToken] = useState<string | null>(null);
   
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const animationFrameRef = useRef<number>();
-
   const startListening = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AudioContextClass();
-      audioContextRef.current = ctx;
-      
-      const source = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048; // High resolution for frequency bins
-      
-      source.connect(analyser);
-      analyserRef.current = analyser;
-      
       setIsListening(true);
       setDetectedToken(null);
-      processAudio();
+      await startUltrasonicListener((payload) => {
+        console.log("Ultrasonic wave decoded payload successfully:", payload);
+        setDetectedToken(payload);
+        if (onDecode) onDecode(payload);
+        stopListening();
+      });
     } catch (err) {
-      console.error("Mic access denied", err);
-      alert("Microphone access is required to scan offline tickets.");
+      console.error("Ultrasonic verification error:", err);
+      setIsListening(false);
+      alert("Microphone access is required to verify tickets.");
     }
   };
 
   const stopListening = () => {
     setIsListening(false);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (audioContextRef.current) audioContextRef.current.close();
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-  };
-
-  const processAudio = () => {
-    if (!analyserRef.current || !audioContextRef.current) return;
-    
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyserRef.current.getByteFrequencyData(dataArray);
-    
-    // Perform Fast Fourier Transform frequency peak detection
-    const sampleRate = audioContextRef.current.sampleRate;
-    const hzPerBin = (sampleRate / 2) / bufferLength;
-    
-    // Looking for exactly 18,000Hz (BASE) to 19,000Hz (BIT 1)
-    const bin18k = Math.floor(18000 / hzPerBin);
-    const bin19k = Math.floor(19000 / hzPerBin);
-    
-    const mag18k = dataArray[bin18k];
-    const mag19k = dataArray[bin19k];
-    
-    // Threshold detection (Filter out background noise)
-    if (mag18k > 180 || mag19k > 180) {
-       console.log("Ultrasonic Data-Over-Sound Detected!");
-       
-       // In a full implementation, we decode the FSK buffer here.
-       // For this prototype, we simulate successful decode upon peak detection.
-       const mockDecoded = "TKT-OFFLINE-" + Date.now().toString().slice(-4);
-       setDetectedToken(mockDecoded);
-       if (onDecode) onDecode(mockDecoded);
-       stopListening();
-       return;
-    }
-    
-    animationFrameRef.current = requestAnimationFrame(processAudio);
+    stopUltrasonicListener();
   };
 
   useEffect(() => {

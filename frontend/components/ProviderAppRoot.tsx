@@ -8,7 +8,7 @@ import { User } from '@villagelink/shared';
 import { getCurrentUser, logoutUser, getAuthToken } from '../services/authService';
 import { initSocketConnection } from '../services/transportService';
 import { ViewSkeleton } from './LoadingSkeleton';
-import ProviderAuthView from './ProviderAuthView';
+import { AuthView } from './AuthView';
 import ProviderApp from './ProviderApp';
 
 const ProviderAppRoot: React.FC = () => {
@@ -71,7 +71,15 @@ const ProviderAppRoot: React.FC = () => {
     }
 
     if (!user) {
-        return <ProviderAuthView onSuccess={handleLoginSuccess} />;
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500 overflow-x-hidden">
+                <div className="veo-cinematic-bg" />
+                <div className="veo-drift-grain" />
+                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10 my-auto py-10">
+                    <AuthView onSuccess={handleLoginSuccess} />
+                </div>
+            </div>
+        );
     }
 
     return <ProviderApp user={user} onLogout={handleLogout} />;
