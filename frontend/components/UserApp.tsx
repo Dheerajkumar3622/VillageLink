@@ -249,17 +249,8 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
         </div>
     );
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'rides': return <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />;
-            case 'reels': return <ReelsSection user={user!} />;
-            case 'haat': return <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />;
-            case 'food': return <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />;
-            case 'cargo': return <LogisticsApp />;
-            case 'profile': return <UserProfile user={user!} onBack={() => setActiveTab('rides')} onLogout={onLogout} />;
-            default: return null;
-        }
-    };
+    // renderContent removed to support offscreen layout caching
+
 
     if (!user) {
         return (
@@ -442,7 +433,24 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         <p className="text-[10px] uppercase font-[900] tracking-widest text-[#0F172A] dark:text-[#F8FAFC]">Loading Module...</p>
                     </div>
                 }>
-                    {renderContent()}
+                    <div className={activeTab === 'rides' ? 'block' : 'hidden'}>
+                        <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />
+                    </div>
+                    <div className={activeTab === 'reels' ? 'block animate-fade-in' : 'hidden'}>
+                        <ReelsSection user={user!} />
+                    </div>
+                    <div className={activeTab === 'haat' ? 'block animate-fade-in' : 'hidden'}>
+                        <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />
+                    </div>
+                    <div className={activeTab === 'food' ? 'block animate-fade-in' : 'hidden'}>
+                        <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />
+                    </div>
+                    <div className={activeTab === 'cargo' ? 'block animate-fade-in' : 'hidden'}>
+                        <LogisticsApp />
+                    </div>
+                    <div className={activeTab === 'profile' ? 'block animate-fade-in' : 'hidden'}>
+                        <UserProfile user={user!} onBack={() => setActiveTab('rides')} onLogout={onLogout} />
+                    </div>
                 </React.Suspense>
             </main>
 
