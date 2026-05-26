@@ -146,37 +146,54 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
         try {
             const token = getAuthToken();
             const headers = { Authorization: `Bearer ${token}` };
+            const role = user?.role || 'CONSUMER';
 
-            // Fetch all resources concurrently to eliminate waterfall latency
-            const [
-                listingsRes,
-                farmerStatsRes,
-                myListingsRes,
-                consumerStatsRes,
-                ordersRes,
-                newsRes
-            ] = await Promise.all([
+            const isFarmer = role === 'FARMER';
+            const isConsumer = role === 'CONSUMER';
+
+            // Build dynamic list of promises to fetch only required endpoints
+            const promiseKeys: string[] = ['listings', 'news'];
+            const promises: Promise<any>[] = [
                 fetch(`${API_BASE_URL}/api/grammandi/produce/listings`),
-                fetch(`${API_BASE_URL}/api/grammandi/dashboard/farmer`, { headers }),
-                fetch(`${API_BASE_URL}/api/grammandi/produce/my-listings`, { headers }),
-                fetch(`${API_BASE_URL}/api/grammandi/dashboard/consumer`, { headers }),
-                fetch(`${API_BASE_URL}/api/grammandi/orders/my`, { headers }),
                 fetch(`${API_BASE_URL}/api/grammandi/news`)
-            ]);
+            ];
 
-            if (listingsRes.ok) setListings(await listingsRes.json());
-            if (farmerStatsRes.ok) setFarmerStats(await farmerStatsRes.json());
-            if (myListingsRes.ok) setMyListings(await myListingsRes.json());
-            if (consumerStatsRes.ok) setConsumerStats(await consumerStatsRes.json());
-            if (ordersRes.ok) setOrders(await ordersRes.json());
-            if (newsRes.ok) setNews(await newsRes.json());
+            if (isFarmer) {
+                promiseKeys.push('farmerStats');
+                promises.push(fetch(`${API_BASE_URL}/api/grammandi/dashboard/farmer`, { headers }));
+                promiseKeys.push('myListings');
+                promises.push(fetch(`${API_BASE_URL}/api/grammandi/produce/my-listings`, { headers }));
+            }
+            if (isConsumer) {
+                promiseKeys.push('consumerStats');
+                promises.push(fetch(`${API_BASE_URL}/api/grammandi/dashboard/consumer`, { headers }));
+                promiseKeys.push('orders');
+                promises.push(fetch(`${API_BASE_URL}/api/grammandi/orders/my`, { headers }));
+            }
+
+            const responses = await Promise.all(promises);
+            
+            // Map responses back to states
+            for (let i = 0; i < responses.length; i++) {
+                const key = promiseKeys[i];
+                const res = responses[i];
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (key === 'listings') setListings(data);
+                    else if (key === 'news') setNews(data);
+                    else if (key === 'farmerStats') setFarmerStats(data);
+                    else if (key === 'myListings') setMyListings(data);
+                    else if (key === 'consumerStats') setConsumerStats(data);
+                    else if (key === 'orders') setOrders(data);
+                }
+            }
 
         } catch (e) {
             console.error('GramMandi fetch error:', e);
-            // Handle error state if needed
         }
         setLoading(false);
     };
+
 
     const createListing = async () => {
         try {

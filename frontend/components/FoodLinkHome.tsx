@@ -123,17 +123,21 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch stalls
-            const stallsRes = await fetch(`${API_BASE_URL}/api/food/stalls`);
+            const token = getAuthToken();
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            // Fetch stalls, my orders, and subscriptions concurrently to eliminate waterfall latency
+            const [stallsRes, ordersRes, subsRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/food/stalls`),
+                fetch(`${API_BASE_URL}/api/food/my-orders`, { headers }),
+                fetch(`${API_BASE_URL}/api/food/my-subscriptions`, { headers })
+            ]);
+
             if (stallsRes.ok) {
                 const data = await stallsRes.json();
                 setStalls(data);
             }
 
-            // Fetch my orders
-            const ordersRes = await fetch(`${API_BASE_URL}/api/food/my-orders`, {
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-            });
             if (ordersRes.ok) {
                 const data = await ordersRes.json();
                 setMyOrders(data);
@@ -144,10 +148,6 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
                 if (active) setActiveOrder(active);
             }
 
-            // Fetch subscriptions
-            const subsRes = await fetch(`${API_BASE_URL}/api/food/my-subscriptions`, {
-                headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-            });
             if (subsRes.ok) {
                 const data = await subsRes.json();
                 setSubscriptions(data);
@@ -160,6 +160,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
             setLoading(false);
         }
     };
+
 
     const fetchVendorMenu = async (vendorId: string, type: 'STALL' | 'RESTAURANT') => {
         try {

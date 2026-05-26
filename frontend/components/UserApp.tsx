@@ -41,8 +41,28 @@ interface UserAppProps {
 
 import { Geolocation } from '@capacitor/geolocation';
 
+const preloadLazyComponent = (importFn: () => Promise<any>) => {
+    importFn().catch(() => {});
+};
+
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme, toggleLang }) => {
     const [activeTab, setActiveTab] = useState<UserTabType>('rides');
+    
+    useEffect(() => {
+        // Preload heavy modules in background after 1.5 seconds to ensure instant tab switching
+        const preloadTimer = setTimeout(() => {
+            preloadLazyComponent(() => import('./GramMandiHome'));
+            preloadLazyComponent(() => import('./FoodLinkHome'));
+            preloadLazyComponent(() => import('./ReelsSection'));
+            preloadLazyComponent(() => import('./ChatSection'));
+            preloadLazyComponent(() => import('./UserProfile'));
+            preloadLazyComponent(() => import('./LogisticsApp'));
+            preloadLazyComponent(() => import('./UniversalQRScanner'));
+        }, 1500);
+
+        return () => clearTimeout(preloadTimer);
+    }, []);
+
     const [showQRScanner, setShowQRScanner] = useState(false);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [showAIChat, setShowAIChat] = useState(false);
