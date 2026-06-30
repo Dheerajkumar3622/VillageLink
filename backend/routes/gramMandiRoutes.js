@@ -474,6 +474,16 @@ router.get('/logistics/trips/my', Auth.authenticate, async (req, res) => {
     }
 });
 
+// Get my assigned trips (Driver) - Alias for /logistics/my-trips
+router.get('/logistics/my-trips', Auth.authenticate, async (req, res) => {
+    try {
+        const trips = await LogisticsTrip.find({ driverId: req.user.id }).sort({ createdAt: -1 });
+        res.json(trips);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get available trips (Unassigned)
 router.get('/logistics/trips/available', Auth.authenticate, async (req, res) => {
     try {
@@ -484,13 +494,34 @@ router.get('/logistics/trips/available', Auth.authenticate, async (req, res) => 
     }
 });
 
-// Update trip status
+// Update trip status (PUT)
 router.put('/logistics/trip/:tripId/status', Auth.authenticate, async (req, res) => {
     try {
         const { status, currentLocation } = req.body;
         const update = { status };
         if (currentLocation) update.currentLocation = currentLocation;
         if (status === 'STARTED') update.startTime = Date.now();
+        if (status === 'COMPLETED') update.endTime = Date.now();
+
+        const trip = await LogisticsTrip.findOneAndUpdate(
+            { id: req.params.tripId },
+            update,
+            { new: true }
+        );
+        if (!trip) return res.status(404).json({ error: 'Trip not found' });
+        res.json({ success: true, trip });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Update trip status (PATCH) - Alias for PUT
+router.patch('/logistics/trip/:tripId/status', Auth.authenticate, async (req, res) => {
+    try {
+        const { status, currentLocation } = req.body;
+        const update = { status };
+        if (currentLocation) update.currentLocation = currentLocation;
+        if (status === 'STARTED' || status === 'IN_PROGRESS') update.startTime = Date.now();
         if (status === 'COMPLETED') update.endTime = Date.now();
 
         const trip = await LogisticsTrip.findOneAndUpdate(

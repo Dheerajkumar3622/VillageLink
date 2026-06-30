@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { MapPin, Navigation, Search, X, Mic, MicOff, History, Building2, TrainTrack } from 'lucide-react';
 import { LocationData } from '@villagelink/shared';
+import { API_BASE_URL } from '../config';
 
 interface LocationSelectorProps {
   label: string;
@@ -13,6 +14,75 @@ interface LocationSelectorProps {
   labelClassName?: string;
   value?: LocationData | null;
   onMapTrigger?: () => void;
+}
+
+async function fetchGoogleGeocoding(query: string): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/india/geocode?address=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (!json.success || !json.data) return [];
+    const data = json.data;
+    return (data.results ?? []).slice(0, 4).map((r: any, idx: number) => {
+      const addressComponents = r.address_components || [];
+      const pinComp = addressComponents.find((c: any) => c.types.includes('postal_code'));
+      const stateComp = addressComponents.find((c: any) => c.types.includes('administrative_area_level_1'));
+      const distComp = addressComponents.find((c: any) => c.types.includes('administrative_area_level_2'));
+      const blockComp = addressComponents.find((c: any) => c.types.includes('sublocality') || c.types.includes('locality'));
+
+      return {
+        name: r.formatted_address.split(',')[0] || query,
+        address: r.formatted_address,
+        lat: r.geometry.location.lat,
+        lng: r.geometry.location.lng,
+        district: distComp ? distComp.long_name : 'Verified',
+        block: blockComp ? blockComp.long_name : 'Google Map',
+        state: stateComp ? stateComp.long_name : 'India',
+        pincode: pinComp ? pinComp.long_name : '',
+        villageCode: `google-${idx}-${Date.now()}`,
+        isLgd: true,
+        type: '[VERIFIED]'
+      };
+    });
+  } catch(e) {
+    console.error("Google Geocoding error in LocationSelector", e);
+    return [];
+  }
+}
+
+async function fetchGooglePlacesAutocomplete(query: string): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/india/places/autocomplete?input=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (!json.success || !json.data) return [];
+    
+    const predictions = json.data.predictions || [];
+    return predictions.map((p: any) => ({
+      name: p.structured_formatting?.main_text || p.description,
+      address: p.description,
+      lat: 0,
+      lng: 0,
+      district: p.structured_formatting?.secondary_text || p.description || '',
+      block: '',
+      state: '',
+      pincode: '',
+      villageCode: `google-place-${p.place_id}`,
+      isLgd: true,
+      type: '[PLACE]'
+    }));
+  } catch(e) {
+    console.error("Google Places Autocomplete error in LocationSelector", e);
+    return [];
+  }
+}
+
+function highlightText(text: string, query: string): string {
+  if (!text || !query) return text;
+  const tokens = query.toLowerCase().split(' ').filter(Boolean);
+  if (tokens.length === 0) return text;
+  const regex = new RegExp(`(${tokens.join('|')})`, 'gi');
+  return text.replace(regex, `<span class="bg-yellow-200/80 dark:bg-yellow-500/30 text-black dark:text-white rounded-sm px-0.5">$1</span>`);
 }
 
 export const LocationSelector: React.FC<LocationSelectorProps> = ({ 
@@ -58,13 +128,16 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
             const { type, payload } = e.data;
             if (type === 'READY') {
                 setLoading(false);
-            } else if (type === 'RESULTS') {
-                setSearchResults(payload);
-            } else if (type === 'NEAREST_RESULT' && payload) {
-                // Instantly auto-populate the selector with the closest village!
-                handleSelect(payload);
-            }
-         };
+             } else if (type === 'RESULTS') {
+                 setSearchResults(prev => {
+                     const googleItems = prev.filter((p: any) => p.villageCode?.startsWith('google-'));
+                     return [...googleItems, ...payload].slice(0, 10);
+                 });
+             } else if (type === 'NEAREST_RESULT' && payload) {
+                 // Instantly auto-populate the selector with the closest village!
+                 handleSelect(payload);
+             }
+          };
          
          workerRef.current.postMessage({ type: 'INIT' });
       }
@@ -83,8 +156,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       }
   }, [value]);
 
-  // Web Worker Powered Zero-Latency Search Algorithm
+  // Web Worker Powered Zero-Latency Search Algorithm + Google Geocoding Autocomplete
   useEffect(() => {
+    if (!isOpen) return;
     if (!searchTerm || searchTerm.length < 2) {
       setSearchResults([]);
       return;
@@ -101,7 +175,20 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
            }
        });
     }
-  }, [searchTerm, loading, userLocation]);
+
+    // Call Google Maps Places Autocomplete API in parallel
+    const delayDebounce = setTimeout(async () => {
+        const googleResults = await fetchGooglePlacesAutocomplete(searchTerm);
+        if (googleResults.length > 0) {
+            setSearchResults(prev => {
+                const workerItems = prev.filter((p: any) => !p.villageCode?.startsWith('google-'));
+                return [...googleResults, ...workerItems].slice(0, 10);
+            });
+        }
+    }, 450);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, loading, userLocation, isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -125,11 +212,61 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       localStorage.setItem('villagelink_recent_locations', JSON.stringify(updated));
   };
 
-  const handleSelect = (location: any) => {
-    setSearchTerm(`${location.rawName || location.name}, ${location.district || ''}`);
+  const handleSelect = async (location: any) => {
+    const originalSearchTerm = `${location.rawName || location.name}, ${location.district || ''}`;
+    setSearchTerm(originalSearchTerm);
     saveRecent(location);
     setIsOpen(false);
-    onSelect(location);
+
+    const resolvedLocation = { ...location };
+
+    if (!resolvedLocation.lat || !resolvedLocation.lng || resolvedLocation.lat === 0 || resolvedLocation.lng === 0) {
+        setSearchTerm("Resolving coordinates...");
+        try {
+            if (resolvedLocation.villageCode?.startsWith('google-place-')) {
+                const placeId = resolvedLocation.villageCode.replace('google-place-', '');
+                const res = await fetch(`${API_BASE_URL}/api/india/places/details?placeId=${encodeURIComponent(placeId)}`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data?.result) {
+                        const result = json.data.result;
+                        resolvedLocation.lat = result.geometry.location.lat;
+                        resolvedLocation.lng = result.geometry.location.lng;
+                        resolvedLocation.address = result.formatted_address;
+                        
+                        // Parse address components
+                        const comps = result.address_components || [];
+                        const pinComp = comps.find((c: any) => c.types.includes('postal_code'));
+                        const stateComp = comps.find((c: any) => c.types.includes('administrative_area_level_1'));
+                        const distComp = comps.find((c: any) => c.types.includes('administrative_area_level_2'));
+                        const blockComp = comps.find((c: any) => c.types.includes('sublocality') || c.types.includes('locality'));
+                        
+                        resolvedLocation.district = distComp ? distComp.long_name : '';
+                        resolvedLocation.block = blockComp ? blockComp.long_name : '';
+                        resolvedLocation.state = stateComp ? stateComp.long_name : '';
+                        resolvedLocation.pincode = pinComp ? pinComp.long_name : '';
+                    }
+                }
+            } else {
+                const query = `${resolvedLocation.name}, ${resolvedLocation.block || ''}, ${resolvedLocation.district || ''}, ${resolvedLocation.state || 'India'}`;
+                const res = await fetch(`${API_BASE_URL}/api/india/geocode?address=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && json.data?.results?.length > 0) {
+                        const loc = json.data.results[0].geometry.location;
+                        resolvedLocation.lat = loc.lat;
+                        resolvedLocation.lng = loc.lng;
+                        resolvedLocation.address = json.data.results[0].formatted_address;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Geocoding fallback failed", e);
+        }
+        setSearchTerm(originalSearchTerm);
+    }
+
+    onSelect(resolvedLocation);
   };
 
   const handleClear = () => {
@@ -249,7 +386,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
         {isOpen && !disabled && (
           <div 
-            className="absolute z-[100] left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-64 overflow-y-auto overscroll-contain"
+            className="absolute z-[100] left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-64 overflow-y-auto overscroll-contain no-swipe"
             onTouchStart={(e) => e.stopPropagation()}
             onWheel={(e) => e.stopPropagation()}
           >
@@ -262,63 +399,60 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                         <div 
                             key={`recent-${loc.villageCode}-${loc.name}`}
                             onMouseDown={(e) => { e.preventDefault(); handleSelect(loc); }}
-                            className="px-4 py-3 hover:bg-brand-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-0"
+                            className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-0 flex items-start gap-3 transition-colors"
                         >
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{loc.name}</p>
-                            <p className="text-[10px] text-slate-500">{loc.district || loc.block || 'India'} {loc.pincode ? `• ${loc.pincode}` : ''}</p>
+                            {/* Left Icon Container */}
+                            <div className="mt-0.5 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-slate-500 shrink-0">
+                                <History size={14} className="text-slate-400" />
+                            </div>
+
+                            {/* Right Content */}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{loc.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-normal">
+                                    {loc.block ? `${loc.block}, ` : ''}{loc.district ? `${loc.district}, ` : ''}{loc.state || 'India'}
+                                </p>
+                            </div>
                         </div>
                     ))}
                 </>
             )}
 
             {searchResults.map((loc: any) => {
-                // Highlight matches in the name
-                const rawName = loc.rawName || loc.name;
-                const searchTokens = searchTerm.toLowerCase().split(' ').filter(Boolean);
-                
-                // Extremely simple and fast highlight (can be refined further)
-                let highlightedName = rawName;
-                if (searchTokens.length > 0) {
-                   const regex = new RegExp(`(${searchTokens.join('|')})`, 'gi');
-                   highlightedName = rawName.replace(regex, `<span class="bg-yellow-200/80 dark:bg-yellow-500/30 text-black dark:text-white rounded-sm px-0.5">$1</span>`);
-                }
+                const titleText = loc.rawName || loc.name;
+                const subtitleText = loc.isStation ? (
+                   `${loc.name}, ${loc.state}`
+                ) : loc.villageCode?.startsWith('google-') ? (
+                   loc.district || loc.address
+                ) : (
+                   `${loc.block ? `${loc.block}, ` : ''}${loc.district ? `${loc.district}, ` : ''}${loc.state} ${loc.pincode || ''}`.trim()
+                );
 
                 return (
                 <div 
                     key={`${loc.villageCode}-${loc.name}`}
                     onMouseDown={(e) => { e.preventDefault(); handleSelect(loc); }}
-                    className={`px-4 py-3 cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-0 flex justify-between items-center ${loc.isStation ? 'bg-orange-50/50 hover:bg-orange-100/50 dark:bg-orange-900/10' : loc.isLgd ? 'bg-[#4F46E5]/5 hover:bg-[#4F46E5]/10' : 'hover:bg-brand-50 dark:hover:bg-slate-800'}`}
+                    className="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-50 dark:border-slate-800 last:border-0 flex items-start gap-3 transition-colors"
                 >
-                    <div className="flex flex-col w-full">
-                        <div className="flex items-center gap-2 mb-1">
-                            {loc.isStation ? (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 rounded flex items-center gap-1 uppercase tracking-wider">
-                                    <TrainTrack size={10} /> STATION
-                                </span>
-                            ) : loc.isLgd ? (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-100 text-[#4F46E5] dark:bg-indigo-900/40 dark:text-indigo-300 rounded flex items-center gap-1 uppercase tracking-wider">
-                                    <Building2 size={10} /> {loc.type.replace(/[\[\]]/g, '')}
-                                </span>
-                            ) : (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 rounded flex items-center gap-1 uppercase tracking-wider" style={{display: searchTerm.length > 4 ? 'flex' : 'none'}}>
-                                   <MapPin size={10} /> VILLAGE
-                                </span>
-                            )}
-                            <p 
-                               className={`text-sm md:text-base font-[800] tracking-tight ${loc.isStation ? 'text-orange-900 dark:text-orange-100' : loc.isLgd ? 'text-[#4F46E5] dark:text-indigo-200' : 'text-slate-800 dark:text-white'}`}
-                               dangerouslySetInnerHTML={{ __html: highlightedName }}
-                            />
-                        </div>
-                        {/* The Breadcrumb */}
-                        <div className="pl-1 border-l-2 border-slate-200 dark:border-slate-700 ml-1 mt-0.5">
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                {loc.isStation ? (
-                                   <span className="flex items-center gap-1">↳ {loc.name} • {loc.state}</span>
-                                ) : (
-                                   <span className="flex items-center gap-1">↳ {loc.block} (Block), {loc.district} (Dist), {loc.state} {loc.pincode ? `• ${loc.pincode}` : ''}</span>
-                                )}
-                            </p>
-                        </div>
+                    {/* Left Icon Container (Google Maps Style Pin) */}
+                    <div className="mt-0.5 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-slate-500 shrink-0">
+                        {loc.isStation ? (
+                            <TrainTrack size={14} className="text-orange-500" />
+                        ) : (
+                            <MapPin size={14} className="text-indigo-500" />
+                        )}
+                    </div>
+
+                    {/* Right Address Content */}
+                    <div className="flex-1 min-w-0">
+                        <p 
+                           className="text-sm font-bold text-slate-800 dark:text-white truncate"
+                           dangerouslySetInnerHTML={{ __html: highlightText(titleText, searchTerm) }}
+                        />
+                        <p 
+                           className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-normal"
+                           dangerouslySetInnerHTML={{ __html: highlightText(subtitleText, searchTerm) }}
+                        />
                     </div>
                 </div>
                 );

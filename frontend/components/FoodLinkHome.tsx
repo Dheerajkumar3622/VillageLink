@@ -99,6 +99,19 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         fetchWalletData();
     }, []);
 
+    useEffect(() => {
+        const handleBack = () => {
+            if (view !== 'HOME') {
+                setView('HOME');
+                setCart([]);
+            } else {
+                if (onBack) onBack();
+            }
+        };
+        window.addEventListener('food-back', handleBack);
+        return () => window.removeEventListener('food-back', handleBack);
+    }, [view, onBack]);
+
     const fetchWalletData = async () => {
         const w = await getWallet(user.id);
         if (w) setWallet(w);

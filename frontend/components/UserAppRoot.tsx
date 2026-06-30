@@ -98,7 +98,7 @@ const UserAppRoot: React.FC = () => {
                 {/* Whisk 3.0: Cinematic Layers */}
                 <div className="veo-cinematic-bg" />
                 <div className="veo-drift-grain" />
-                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10 my-auto py-10">
+                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col justify-center items-center p-4 z-10 py-10">
                     <AuthView onSuccess={handleLoginSuccess} lang={lang} toggleLang={() => setLang(l => l === 'EN' ? 'HI' : 'EN')} toggleTheme={toggleTheme} darkMode={darkMode} />
                 </div>
             </div>

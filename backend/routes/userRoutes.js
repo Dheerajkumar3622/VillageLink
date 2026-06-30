@@ -5,6 +5,36 @@ import { authenticate } from '../auth.js';
 
 const router = express.Router();
 
+// Get current user profile for compatibility with frontend components
+router.get('/profile', authenticate, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.user.id }).lean();
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        let providerRoles = user.providerRoles || [];
+        if (providerRoles.length === 0 && user.role !== 'PASSENGER') {
+            providerRoles = [{
+                roleType: user.role,
+                status: user.isVerified ? 'VERIFIED' : 'PENDING'
+            }];
+        }
+
+        res.json({
+            id: user.id,
+            name: user.name,
+            role: user.role,
+            isVerified: user.isVerified,
+            activeRole: user.role || user.activeRole,
+            providerRoles: providerRoles,
+            walletBalance: user.walletBalance || 0,
+            phone: user.phone || '',
+            email: user.email || ''
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Get current user profile (roles, status)
 router.get('/me', authenticate, async (req, res) => {
     try {

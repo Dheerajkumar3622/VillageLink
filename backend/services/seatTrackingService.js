@@ -187,24 +187,38 @@ export const getRouteVehicles = async (routeId) => {
  * Broadcast seat update to all clients on the route
  */
 const broadcastSeatUpdate = async (driverLoc) => {
-  if (!io || !driverLoc.activeRouteId) return;
-  
+  if (!io) return;
+
   const seatsAvailable = (driverLoc.seatsTotal || 20) - (driverLoc.seatsOccupied || 0);
-  
-  io.to(`route_${driverLoc.activeRouteId}`).emit('seat_update', {
-    driverId: driverLoc.driverId,
-    driverName: driverLoc.driverName,
-    vehicleType: driverLoc.vehicleType,
-    seatsTotal: driverLoc.seatsTotal || 20,
-    seatsOccupied: driverLoc.seatsOccupied || 0,
-    seatsAvailable,
-    parcelsOnboard: driverLoc.parcelsOnboard || 0,
-    location: {
-      lat: driverLoc.location?.coordinates?.[1],
-      lng: driverLoc.location?.coordinates?.[0]
-    },
-    lastUpdated: Date.now()
-  });
+
+  // Emit global vehicles_update to sync passenger/driver maps instantly
+  io.emit('vehicles_update', [{
+    id: driverLoc.driverId,
+    lat: driverLoc.location?.coordinates?.[1],
+    lng: driverLoc.location?.coordinates?.[0],
+    speed: driverLoc.speed || 0,
+    heading: driverLoc.heading || 0,
+    capacity: driverLoc.seatsTotal || 20,
+    occupancy: driverLoc.seatsOccupied || 0,
+    parcelsOnboard: driverLoc.parcelsOnboard || 0
+  }]);
+
+  if (driverLoc.activeRouteId) {
+    io.to(`route_${driverLoc.activeRouteId}`).emit('seat_update', {
+      driverId: driverLoc.driverId,
+      driverName: driverLoc.driverName,
+      vehicleType: driverLoc.vehicleType,
+      seatsTotal: driverLoc.seatsTotal || 20,
+      seatsOccupied: driverLoc.seatsOccupied || 0,
+      seatsAvailable,
+      parcelsOnboard: driverLoc.parcelsOnboard || 0,
+      location: {
+        lat: driverLoc.location?.coordinates?.[1],
+        lng: driverLoc.location?.coordinates?.[0]
+      },
+      lastUpdated: Date.now()
+    });
+  }
   
   // Notify driver about updated seat count
   io.to(`driver_${driverLoc.driverId}`).emit('my_seat_update', {

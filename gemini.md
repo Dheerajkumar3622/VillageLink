@@ -28,3 +28,5 @@
 - 2026-01-19: Initialized gemini.md
 - 2026-01-20: Implemented Enterprise Agent Skills (UI, Backend, DB, Infra, Orchestrator).
 - 2026-01-20: Hardened codebase (tsconfig strict mode, accessibility fixes, HTML meta tags).
+- 2026-05-28: Integrated Universal Orders & Bookings Hub (Yatra, Mandi, Parcels) with time-aware journey steppers, live telemetry, interactive driver chat simulator, and self-healing wallet refund claims.
+- 2026-06-04: Integrated Tesla-like Autopilot 3D Proximity Radar simulation (neon wireframe, dynamic lane curving, blind-spot audio alarms, simulation control drawer).

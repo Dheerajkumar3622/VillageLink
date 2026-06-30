@@ -273,7 +273,7 @@ const App: React.FC = () => {
           {!isInitialized ? (
             <ViewSkeleton />
           ) : !user ? (
-            <div className="my-auto py-10">
+            <div className="min-h-[75vh] flex flex-col justify-center items-center py-10">
               <AuthView onSuccess={handleLoginSuccess} lang={lang} toggleLang={toggleLang} toggleTheme={toggleTheme} darkMode={darkMode} />
             </div>
           ) : (

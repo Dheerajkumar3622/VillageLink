@@ -156,6 +156,29 @@ export const subscribeToUpdates = (
     attachListeners();
 };
 
+export const onDistrictVehiclesUpdate = (cb: (buses: BusState[]) => void) => {
+    if (!socket) initSocketConnection();
+    const handler = (buses: BusState[]) => {
+        activeBuses = buses;
+        cb(buses);
+    };
+    socket?.on('vehicles_update', handler);
+    
+    const localHandler = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (Array.isArray(detail)) {
+            activeBuses = detail;
+            cb(detail);
+        }
+    };
+    window.addEventListener('mock-vehicles-update', localHandler);
+
+    return () => {
+        socket?.off('vehicles_update', handler);
+        window.removeEventListener('mock-vehicles-update', localHandler);
+    };
+};
+
 export const joinOrderRoom = (orderId: string) => {
     if (!socket) initSocketConnection();
     socket?.emit('join_order_room', orderId);
@@ -217,7 +240,7 @@ export const getPathDemand = (path: string[]): Record<string, number> => {
     path.forEach(stop => {
         // Find pending tickets starting at this stop
         const waitingCount = localTickets
-            .filter(t => t.status === TicketStatus.PENDING && t.from.toLowerCase() === stop.toLowerCase())
+            .filter(t => t.status === TicketStatus.PENDING && !t.driverId && t.from.toLowerCase() === stop.toLowerCase())
             .reduce((acc, t) => acc + t.passengerCount, 0);
         demand[stop] = waitingCount;
     });

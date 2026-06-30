@@ -216,6 +216,60 @@ router.get('/reverse', async (req, res) => {
 });
 
 /**
+ * GET /api/india/geocode
+ * Proxy geocode query to Google Maps from backend (server-side bypasses browser HTTP referrer/IP restrictions)
+ */
+router.get('/geocode', async (req, res) => {
+    try {
+        const { address } = req.query;
+        if (!address) {
+            return res.status(400).json({ success: false, error: 'address query parameter required' });
+        }
+
+        const apiKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Google Geocoding API returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Backend geocode proxy error:', error);
+        res.status(500).json({ success: false, error: 'Geocoding failed' });
+    }
+});
+
+/**
+ * GET /api/india/distance
+ * Proxy Distance Matrix query to Google Maps from backend (server-side bypasses browser HTTP referrer/IP restrictions)
+ */
+router.get('/distance', async (req, res) => {
+    try {
+        const { origins, destinations } = req.query;
+        if (!origins || !destinations) {
+            return res.status(400).json({ success: false, error: 'origins and destinations required' });
+        }
+
+        const apiKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origins)}&destinations=${encodeURIComponent(destinations)}&key=${apiKey}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Google Distance Matrix API returned status ${response.status}`);
+        }
+
+        const data = await response.json();
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Backend distance proxy error:', error);
+        res.status(500).json({ success: false, error: 'Distance calculation failed' });
+    }
+});
+
+/**
  * GET /api/india/location/:id
  * Get location details by ID
  */
@@ -251,12 +305,82 @@ router.get('/location/:id/hierarchy', async (req, res) => {
 });
 
 /**
- * GET /api/india/cache/stats
- * Get cache statistics (for debugging)
+ * GET /api/india/places/autocomplete
+ * Proxy Places Autocomplete queries to Google Maps Places API from backend
  */
-router.get('/cache/stats', (req, res) => {
-    const stats = IndiaLocation.getCacheStats();
-    res.json({ success: true, data: stats });
+router.get('/places/autocomplete', async (req, res) => {
+    try {
+        const { input } = req.query;
+        if (!input) {
+            return res.status(400).json({ success: false, error: 'input query parameter required' });
+        }
+        const apiKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&components=country:in&key=${apiKey}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Google Places Autocomplete API returned status ${response.status}`);
+        }
+        const data = await response.json();
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Backend autocomplete proxy error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Autocomplete failed' });
+    }
+});
+
+/**
+ * GET /api/india/places/details
+ * Proxy Place Details queries to Google Maps Places API from backend
+ */
+router.get('/places/details', async (req, res) => {
+    try {
+        const { placeId } = req.query;
+        if (!placeId) {
+            return res.status(400).json({ success: false, error: 'placeId query parameter required' });
+        }
+        const apiKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry,formatted_address,address_components&key=${apiKey}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Google Place Details API returned status ${response.status}`);
+        }
+        const data = await response.json();
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Backend place details proxy error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Details failed' });
+    }
+});
+
+/**
+ * GET /api/india/reverse-geocode
+ * Proxy Google Reverse Geocoding from backend
+ */
+router.get('/reverse-geocode', async (req, res) => {
+    try {
+        const { lat, lng, result_type } = req.query;
+        if (!lat || !lng) {
+            return res.status(400).json({ success: false, error: 'lat and lng parameters required' });
+        }
+        const apiKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        let url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+        if (result_type) {
+            url += `&result_type=${encodeURIComponent(result_type)}`;
+        }
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`Google Reverse Geocoding API returned status ${response.status}`);
+        }
+        const data = await response.json();
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Backend reverse-geocode proxy error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Reverse geocoding failed' });
+    }
 });
 
 export default router;
+

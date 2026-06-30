@@ -1,11 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Map, { ViewStateChangeEvent, MapRef } from 'react-map-gl';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     MapPin, Search, Navigation, Loader2, Home, User, Phone, CheckCircle2, ChevronLeft, Map as MapIcon
 } from 'lucide-react';
-import 'mapbox-gl/dist/mapbox-gl.css';
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.dummy_mapbox_token_replace_me';
+import { API_BASE_URL } from '../config';
 
 export interface PickupLocationDetails {
     lat: number;
@@ -23,22 +20,24 @@ interface MapPickupSelectorProps {
     initialLng?: number;
 }
 
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
+
 export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({ 
     onConfirm, 
     onBack,
-    initialLat = 24.7913, // Default fallback (e.g., somewhere in Bihar)
+    initialLat = 24.7913,
     initialLng = 84.9913 
 }) => {
     // 1. Map View State
     const [viewState, setViewState] = useState({
         longitude: initialLng,
         latitude: initialLat,
-        zoom: 15,
-        pitch: 0,
-        bearing: 0
+        zoom: 15
     });
 
-    const mapRef = useRef<MapRef | null>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const googleMapRef = useRef<any>(null);
+    const [scriptLoaded, setScriptLoaded] = useState(false);
 
     // 2. Geocoding & Address State
     const [isDragging, setIsDragging] = useState(false);
@@ -53,26 +52,87 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    // Dynamically load Google Maps script if not loaded
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).google && (window as any).google.maps) {
+            setScriptLoaded(true);
+            return;
+        }
+
+        const scriptId = 'google-maps-script-loader';
+        let script = document.getElementById(scriptId) as HTMLScriptElement;
+
+        if (!script) {
+            script = document.createElement('script');
+            script.id = scriptId;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&callback=initGoogleMapsCallback`;
+            script.async = true;
+            script.defer = true;
+
+            (window as any).initGoogleMapsCallback = () => {
+                setScriptLoaded(true);
+            };
+
+            document.head.appendChild(script);
+        } else {
+            const checkInterval = setInterval(() => {
+                if ((window as any).google && (window as any).google.maps) {
+                    setScriptLoaded(true);
+                    clearInterval(checkInterval);
+                }
+            }, 100);
+            return () => clearInterval(checkInterval);
+        }
+    }, []);
+
+    // Initialize Map
+    useEffect(() => {
+        if (!scriptLoaded || !mapContainerRef.current || googleMapRef.current) return;
+
+        const maps = (window as any).google.maps;
+        const mapOptions = {
+            center: { lat: viewState.latitude, lng: viewState.longitude },
+            zoom: viewState.zoom,
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: false
+        };
+
+        const mapInstance = new maps.Map(mapContainerRef.current, mapOptions);
+        googleMapRef.current = mapInstance;
+
+        mapInstance.addListener('dragstart', () => {
+            setIsDragging(true);
+        });
+
+        mapInstance.addListener('dragend', () => {
+            setIsDragging(false);
+            const center = mapInstance.getCenter();
+            const lat = center.lat();
+            const lng = center.lng();
+            setViewState(prev => ({ ...prev, latitude: lat, longitude: lng }));
+            fetchAddressFromCoords(lat, lng);
+        });
+
+        // Trigger initial address resolve
+        fetchAddressFromCoords(viewState.latitude, viewState.longitude);
+    }, [scriptLoaded]);
+
     // --- REVERSE GEOCODING LOGIC ---
     const fetchAddressFromCoords = async (lat: number, lng: number) => {
         setIsGeocoding(true);
         try {
-            // If dummy token, simulate a small delay and mock address
-            if (!MAPBOX_TOKEN || MAPBOX_TOKEN.includes('dummy')) {
-                setTimeout(() => {
-                    setFormattedAddress(`Pinned Location near ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-                    setIsGeocoding(false);
-                }, 800);
-                return;
-            }
-
             const response = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&types=poi,address,neighborhood,locality,place`
+                `${API_BASE_URL}/api/india/reverse-geocode?lat=${lat}&lng=${lng}`
             );
-            const data = await response.json();
+            const json = await response.json();
             
-            if (data.features && data.features.length > 0) {
-                setFormattedAddress(data.features[0].place_name);
+            if (json.success && json.data?.results && json.data.results.length > 0) {
+                setFormattedAddress(json.data.results[0].formatted_address);
             } else {
                 setFormattedAddress(`Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
             }
@@ -84,36 +144,16 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
         }
     };
 
-    // Trigger geocoding when map stops moving
-    const handleMoveEnd = useCallback((evt: ViewStateChangeEvent) => {
-        setIsDragging(false);
-        const center = evt.viewState;
-        fetchAddressFromCoords(center.latitude, center.longitude);
-    }, []);
-
-    // Initial Geocode and Auto-Locate
-    useEffect(() => {
-        // Try to get user current location cleanly
-        if (navigator.geolocation && (initialLat === 24.7913 && initialLng === 84.9913)) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setViewState(prev => ({
-                        ...prev,
-                        latitude: pos.coords.latitude,
-                        longitude: pos.coords.longitude
-                    }));
-                    fetchAddressFromCoords(pos.coords.latitude, pos.coords.longitude);
-                },
-                () => {
-                    fetchAddressFromCoords(initialLat, initialLng);
-                },
-                { enableHighAccuracy: true, timeout: 5000 }
-            );
-        } else {
-            fetchAddressFromCoords(initialLat, initialLng);
+    // Helper to move center to coordinates
+    const flyToLocation = (lat: number, lng: number) => {
+        if (googleMapRef.current) {
+            const maps = (window as any).google.maps;
+            googleMapRef.current.panTo(new maps.LatLng(lat, lng));
+            googleMapRef.current.setZoom(16);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        setViewState(prev => ({ ...prev, latitude: lat, longitude: lng, zoom: 16 }));
+        fetchAddressFromCoords(lat, lng);
+    };
 
     // --- FORWARD GEOCODING (SEARCH) LOGIC ---
     const handleSearch = async (query: string) => {
@@ -125,22 +165,16 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
 
         setIsSearching(true);
         try {
-            if (!MAPBOX_TOKEN || MAPBOX_TOKEN.includes('dummy')) {
-                 setSearchResults([
-                     { place_name: 'Mock City Center, Bihar', center: [85.0, 24.8] },
-                     { place_name: 'Mock Railway Station', center: [85.01, 24.81] }
-                 ]);
-                 setIsSearching(false);
-                 return;
-            }
-
             const response = await fetch(
-                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5&country=in`
+                `${API_BASE_URL}/api/india/places/autocomplete?input=${encodeURIComponent(query)}`
             );
-            const data = await response.json();
-            
-            if (data.features) {
-                setSearchResults(data.features);
+            const json = await response.json();
+            if (json.success && json.data?.predictions) {
+                setSearchResults(json.data.predictions.map((p: any) => ({
+                    text: p.structured_formatting?.main_text || p.description,
+                    place_name: p.description,
+                    place_id: p.place_id
+                })));
             }
         } catch (error) {
             console.error('Search Geocoding Error:', error);
@@ -149,16 +183,21 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
         }
     };
 
-    const handleSelectSearchResult = (result: any) => {
-        const [lng, lat] = result.center;
-        setViewState(prev => ({ ...prev, longitude: lng, latitude: lat, zoom: 16 }));
-        setSearchQuery('');
-        setSearchResults([]);
-        setFormattedAddress(result.place_name);
-        
-        // Optional: Fly to location
-        if (mapRef.current) {
-             mapRef.current.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 });
+    const handleSelectSearchResult = async (result: any) => {
+        setIsSearching(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/india/places/details?placeId=${encodeURIComponent(result.place_id)}`);
+            const json = await res.json();
+            if (json.success && json.data?.result?.geometry?.location) {
+                const loc = json.data.result.geometry.location;
+                flyToLocation(loc.lat, loc.lng);
+                setSearchQuery('');
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.error('Error fetching place details:', error);
+        } finally {
+            setIsSearching(false);
         }
     };
 
@@ -204,7 +243,7 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
 
                 {/* Autocomplete Dropdown */}
                 {searchResults.length > 0 && (
-                    <div className="pointer-events-auto mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                    <div className="pointer-events-auto mt-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden no-swipe">
                         {searchResults.map((result, idx) => (
                             <div 
                                 key={idx} 
@@ -224,18 +263,7 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
 
             {/* 2. INTERACTIVE MAP LAYER */}
             <div className="flex-1 relative">
-                <Map
-                    {...viewState}
-                    ref={mapRef}
-                    onMove={(evt) => {
-                        setViewState(evt.viewState);
-                        setIsDragging(true);
-                    }}
-                    onMoveEnd={handleMoveEnd}
-                    mapboxAccessToken={MAPBOX_TOKEN}
-                    mapStyle="mapbox://styles/mapbox/streets-v12"
-                    style={{ width: '100%', height: '100%' }}
-                />
+                <div ref={mapContainerRef} className="w-full h-full no-swipe" />
 
                 {/* ABSOLUTE CENTER FIXED PIN UI */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
@@ -255,7 +283,7 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
                     </div>
                 </div>
 
-                {/* TARGETING RETICLE OVERLAY (Optional Extra Design Polish) */}
+                {/* TARGETING RETICLE OVERLAY */}
                 {!isDragging && !isGeocoding && (
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-brand-500/20 rounded-full pointer-events-none animate-pulse"></div>
                 )}
@@ -266,7 +294,7 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
                     onClick={() => {
                         if (navigator.geolocation) {
                             navigator.geolocation.getCurrentPosition(pos => {
-                                mapRef.current?.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 16 });
+                                flyToLocation(pos.coords.latitude, pos.coords.longitude);
                             });
                         }
                     }}
@@ -275,7 +303,7 @@ export const MapPickupSelector: React.FC<MapPickupSelectorProps> = ({
                 </button>
             </div>
 
-            {/* 3. BOTTOM SHEET FORM (Whisk 3.0 / 3D Layout) */}
+            {/* 3. BOTTOM SHEET FORM */}
             <div className="relative z-30 bg-white shadow-[0_-12px_40px_-15px_rgba(0,0,0,0.1)] rounded-t-3xl p-5 pt-6 pb-8 transition-transform transform translate-y-0">
                 {/* Drag Handle */}
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full"></div>

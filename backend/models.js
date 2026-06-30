@@ -196,7 +196,10 @@ export const Parcel = mongoose.model('Parcel', new mongoose.Schema({
   timestamp: Number,
   blockchainHash: String,
   trackingEvents: [trackingEventSchema],
-  transactionId: String
+  transactionId: String,
+  driverId: String,
+  description: String,
+  volumeLiters: Number
 }));
 
 export const RoadReport = mongoose.model('RoadReport', new mongoose.Schema({

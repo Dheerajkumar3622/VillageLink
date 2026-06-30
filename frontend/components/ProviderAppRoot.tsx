@@ -75,7 +75,7 @@ const ProviderAppRoot: React.FC = () => {
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-500 overflow-x-hidden">
                 <div className="veo-cinematic-bg" />
                 <div className="veo-drift-grain" />
-                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col p-4 z-10 my-auto py-10">
+                <div className="max-w-4xl mx-auto min-h-screen relative flex flex-col justify-center items-center p-4 z-10 py-10">
                     <AuthView onSuccess={handleLoginSuccess} />
                 </div>
             </div>

@@ -297,6 +297,62 @@ self.onmessage = async (e) => {
         }
         self.postMessage({ type: 'NEAREST_RESULT', payload: nearest });
     }
+
+    if (type === 'ROUTE_LANDMARKS') {
+        if (!isReady) {
+            self.postMessage({ type: 'ROUTE_LANDMARKS_RESULT', payload: [] });
+            return;
+        }
+        const pathDetails = payload || [];
+        if (pathDetails.length === 0) {
+            self.postMessage({ type: 'ROUTE_LANDMARKS_RESULT', payload: [] });
+            return;
+        }
+
+        const checkPoints = [];
+        if (pathDetails.length > 0) {
+            checkPoints.push(pathDetails[0]);
+            let acc = 0;
+            for (let i = 1; i < pathDetails.length; i++) {
+                const prev = pathDetails[i - 1];
+                const curr = pathDetails[i];
+                const d = getDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+                acc += d;
+                if (acc >= 0.5) { // Check every 0.5 km (500 meters) to capture all nodes/junctions
+                    checkPoints.push(curr);
+                    acc = 0;
+                }
+            }
+            if (checkPoints[checkPoints.length - 1] !== pathDetails[pathDetails.length - 1]) {
+                checkPoints.push(pathDetails[pathDetails.length - 1]);
+            }
+        }
+
+        const intermediates: string[] = [];
+        for (const pt of checkPoints) {
+            let nearestName = null;
+            let minDistance = 99999.0; // Unlimited threshold: always consider nearest village for each node/junction
+
+            for (let i = 0; i < globalVillageCache.length; i++) {
+                const v = globalVillageCache[i];
+                const vLat = v[5];
+                const vLng = v[6];
+                if (vLat && vLng) {
+                    const dist = getDistance(pt.lat, pt.lng, vLat, vLng);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        nearestName = v[0];
+                    }
+                }
+            }
+            if (nearestName) {
+                intermediates.push(nearestName);
+            }
+        }
+
+        const uniqueIntermediates = Array.from(new Set(intermediates));
+        self.postMessage({ type: 'ROUTE_LANDMARKS_RESULT', payload: uniqueIntermediates });
+    }
 };
 
 export {};

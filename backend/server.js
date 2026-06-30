@@ -14,7 +14,8 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dns from 'dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+dns.setDefaultResultOrder('ipv4first');
+// dns.setServers(['8.8.8.8', '1.1.1.1']); // Commented out to use system DNS resolver since public DNS servers may be unreachable or blocked
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import compression from 'compression';
@@ -288,16 +289,18 @@ const connectWithRetry = (uri, isFallback = false) => {
         serverSelectionTimeoutMS: 10000,
         connectTimeoutMS: 15000,
         maxPoolSize: 500,
-        family: 4,
     })
         .then(() => {
             isDbConnected = true;
         })
-        .catch((err) => {
+        .catch(async (err) => {
             console.warn(`❌ MongoDB connect failed (${isFallback ? 'fallback' : 'primary'}):`, err.message);
             isDbConnected = false;
             if (!isFallback && uri === MONGO_URI_SRV && MONGO_URI_STANDARD) {
                 console.log('🔄 Retrying with MONGO_URI_STANDARD from env...');
+                try {
+                    await mongoose.disconnect();
+                } catch (e) {}
                 connectWithRetry(MONGO_URI_STANDARD, true);
             } else {
                 printMongoAtlasHelp(err.message);
@@ -824,61 +827,138 @@ app.delete('/api/routes/:id', Auth.authenticate, async (req, res) => {
 app.post('/api/routes/analyze', async (req, res) => {
     try {
         const { start, end } = req.body;
-        if (!start.lat || !end.lat) return res.json({ path: [start.name, end.name], distance: 10, pathDetails: [] });
+        if (!start.lat || !end.lat) {
+            return res.json({ path: [start.name, end.name], distance: 10000, pathDetails: [] });
+        }
 
-        const roadData = await Logic.getRealRoadPath(start.lat, start.lng, end.lat, end.lng);
+        let pathDetails = [];
+        let distanceMeters = 0;
+        let durationSeconds = 0;
+        let alternatives = [];
 
-        if (roadData) {
-            // NEW LOGIC: Identify Intermediate Villages from Database using Geospatial Queries
-            // Sample points along the route (e.g., 6 points) to check for nearby villages
-            const steps = 6;
-            const coords = roadData.pathDetails;
-            const checkPoints = [];
+        // 1. Fetch path from OSRM with alternatives
+        try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&alternatives=true`;
+            const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(4000) });
+            if (osrmRes.ok) {
+                const data = await osrmRes.json();
+                if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                    pathDetails = data.routes[0].geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+                    distanceMeters = data.routes[0].distance;
+                    durationSeconds = data.routes[0].duration;
 
-            if (coords.length > steps) {
-                const interval = Math.floor(coords.length / (steps + 1));
-                for (let i = 1; i <= steps; i++) {
-                    checkPoints.push(coords[i * interval]);
+                    if (data.routes.length > 1) {
+                        alternatives = data.routes.slice(1).map(r => ({
+                            distance: r.distance,
+                            estimatedTime: r.duration,
+                            pathDetails: r.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
+                        }));
+                    }
                 }
             }
-
-            // Parallel DB Lookup for villages near the sampled points
-            const villagePromises = checkPoints.map(pt =>
-                Location.findOne({
-                    geometry: {
-                        $near: {
-                            $geometry: { type: "Point", coordinates: [pt.lng, pt.lat] },
-                            $maxDistance: 3000 // 3km radius from the road point
-                        }
-                    }
-                }).select('name').lean()
-            );
-
-            const results = await Promise.all(villagePromises);
-
-            // Filter distinct names, remove duplicates and start/end points
-            const intermediates = [
-                ...new Set(
-                    results
-                        .filter(v => v && v.name)
-                        .map(v => v.name)
-                        .filter(n => n && n !== start.name && n !== end.name)
-                )
-            ];
-
-            res.json({
-                path: [start.name, ...intermediates, end.name],
-                distance: roadData.distance,
-                pathDetails: roadData.pathDetails,
-                estimatedTime: roadData.duration,
-                trafficLevel: 'REALTIME'
-            });
-        } else {
-            res.json({ path: [start.name, end.name], distance: 10, pathDetails: [] });
+        } catch (e) {
+            console.warn("[Backend OSRM] failed, using linear path:", e.message);
         }
+
+        if (pathDetails.length === 0) {
+            pathDetails = [
+                { lat: start.lat, lng: start.lng },
+                { lat: end.lat, lng: end.lng }
+            ];
+            distanceMeters = 10000;
+            durationSeconds = 600;
+        }
+
+        // 2. Fetch precise Google Distance Matrix
+        const distanceKey = "AIzaSyChdzuy7TWgVVH4GboCc39bZb6oLw7bins";
+        let trafficLevel = 'LIGHT';
+        try {
+            const dmUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${start.lat},${start.lng}&destinations=${end.lat},${end.lng}&departure_time=now&traffic_model=best_guess&key=${distanceKey}`;
+            const dmRes = await fetch(dmUrl, { signal: AbortSignal.timeout(3500) });
+            if (dmRes.ok) {
+                const dmData = await dmRes.json();
+                if (dmData.status === 'OK' && dmData.rows?.[0]?.elements?.[0]?.status === 'OK') {
+                    const element = dmData.rows[0].elements[0];
+                    distanceMeters = element.distance.value;
+                    const durationVal = element.duration.value;
+                    const durationInTrafficVal = element.duration_in_traffic?.value || durationVal;
+                    durationSeconds = durationInTrafficVal;
+
+                    if (durationInTrafficVal > 1.35 * durationVal) {
+                        trafficLevel = 'HEAVY';
+                    } else if (durationInTrafficVal > 1.12 * durationVal) {
+                        trafficLevel = 'MODERATE';
+                    } else {
+                        trafficLevel = 'LIGHT';
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("[Backend Distance Matrix] failed, using OSRM value:", e.message);
+        }
+
+        // Calibrate alternative distances against Google Distance Matrix ratio
+        const primaryOsrmDist = distanceMeters || 1;
+        const calibrationRatio = distanceMeters / primaryOsrmDist;
+        alternatives = alternatives.map(alt => ({
+            ...alt,
+            distance: Math.round(alt.distance * calibrationRatio),
+            estimatedTime: Math.round(alt.estimatedTime * calibrationRatio)
+        }));
+
+        // 3. Find intermediate villages along the path
+        const checkPoints = [];
+        if (pathDetails.length > 0) {
+            checkPoints.push(pathDetails[0]);
+            let acc = 0;
+            for (let i = 1; i < pathDetails.length; i++) {
+                const prev = pathDetails[i - 1];
+                const curr = pathDetails[i];
+                const d = Math.sqrt(Math.pow(curr.lat - prev.lat, 2) + Math.pow(curr.lng - prev.lng, 2)) * 111; // approx km
+                acc += d;
+                if (acc >= 0.5) { // check every 0.5 km (500 meters) to capture all nodes/junctions
+                    checkPoints.push(curr);
+                    acc = 0;
+                }
+            }
+            if (checkPoints[checkPoints.length - 1] !== pathDetails[pathDetails.length - 1]) {
+                checkPoints.push(pathDetails[pathDetails.length - 1]);
+            }
+        }
+
+        const villagePromises = checkPoints.map(pt =>
+            Location.findOne({
+                geometry: {
+                    $near: {
+                        $geometry: { type: "Point", coordinates: [pt.lng, pt.lat] },
+                        $maxDistance: 99999 // Unlimited: always consider nearest village for each node/junction
+                    }
+                }
+            }).select('name').lean()
+        );
+
+        const results = await Promise.all(villagePromises);
+        const intermediates = [
+            ...new Set(
+                results
+                    .filter(v => v && v.name)
+                    .map(v => v.name)
+                    .filter(n => n && n !== start.name && n !== end.name)
+            )
+        ];
+
+        res.json({
+            path: [start.name, ...intermediates, end.name],
+            distance: distanceMeters,
+            estimatedTime: durationSeconds,
+            pathDetails,
+            trafficLevel,
+            alternatives: alternatives.length > 0 ? alternatives : undefined
+        });
+
     } catch (e) {
         console.error("Routing Error:", e);
-        res.status(500).json({ error: "Routing Failed", path: [], distance: 0 });
+        res.status(500).json({ error: "Routing Failed", path: [start.name, end.name], distance: 10000 });
     }
 });
 
@@ -1236,13 +1316,45 @@ io.on('connection', (socket) => {
 
             // Also emit for legacy vehicle tracking
             if (FEATURE_FLAGS.dualPathLegacyEmit) {
-                io.emit('vehicles_update', [{
-                    id: data.driverId,
-                    lat: data.lat,
-                    lng: data.lng,
-                    heading: data.heading,
-                    speed: data.speed
-                }]);
+                try {
+                    const { getSeatInfo } = await import('./services/seatTrackingService.js');
+                    const seatInfo = await getSeatInfo(data.driverId);
+                    io.emit('vehicles_update', [{
+                        id: data.driverId,
+                        lat: data.lat,
+                        lng: data.lng,
+                        heading: data.heading,
+                        speed: data.speed,
+                        capacity: seatInfo?.seatsTotal || 20,
+                        occupancy: seatInfo?.seatsOccupied || 0,
+                        parcelsOnboard: seatInfo?.parcelsOnboard || 0
+                    }]);
+                } catch (err) {
+                    io.emit('vehicles_update', [{
+                        id: data.driverId,
+                        lat: data.lat,
+                        lng: data.lng,
+                        heading: data.heading,
+                        speed: data.speed
+                    }]);
+                }
+            }
+
+            // Silent route log recording for machine learning / scheduling training
+            try {
+                if (mongoose.connection && mongoose.connection.db) {
+                    await mongoose.connection.db.collection('locationlogs').insertOne({
+                        driverId: data.driverId,
+                        location: {
+                            type: 'Point',
+                            coordinates: [parseFloat(data.lng), parseFloat(data.lat)]
+                        },
+                        speed: data.speed || 0,
+                        timestamp: new Date()
+                    });
+                }
+            } catch (err) {
+                // Silently ignore logging failures to prevent stream interruption
             }
 
             // Phase 5: Snap driver position on their active trajectory
@@ -1664,6 +1776,14 @@ io.on('connection', (socket) => {
             await ticket.save();
             const plain = ticket.toObject ? ticket.toObject() : ticket;
             emitTicketsUpdated(io, plain);
+
+            // Silently sync seat tracking numbers on boarding
+            try {
+                const { onPassengerBoard } = await import('./services/seatTrackingService.js');
+                await onPassengerBoard(driverId, ticket.passengerCount || 1);
+            } catch (seatErr) {
+                console.error("Seat occupancy update failed during ultrasonic verify:", seatErr);
+            }
 
             const ack = { success: true, ticketId, driverId, version: 'v1' };
             io.to(toRoom.user(String(ticket.userId))).emit('acoustic_verification_ack', ack);

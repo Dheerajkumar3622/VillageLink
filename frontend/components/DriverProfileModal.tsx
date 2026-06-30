@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, RefreshCw, IndianRupee, MapPin, Package, Users, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 import { getDriverHistory } from '../transportService';
 import { User } from '@villagelink/shared';
@@ -232,6 +233,7 @@ export const DriverProfileModal: React.FC<DriverProfileModalProps> = ({ user, on
                 </div>
             )}
 
-        </div>
+        </div>,
+        document.body
     );
 };

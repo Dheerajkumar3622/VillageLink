@@ -20,6 +20,9 @@ import { getOfficialRoutes, simulateDemand, TripConfig, getLiveDemandHeatmap } f
 import CargoDriverView from './CargoDriverView';
 import { QRScanner } from './QRScanner';
 import { DriverProfileModal } from './DriverProfileModal';
+import { InceptionGrid3D } from './InceptionGrid3D';
+import { GeminiCoPilot } from './GeminiCoPilot';
+import { ARMandiHUD } from './ARMandiHUD';
 
 interface DriverViewProps {
     user: User;
@@ -129,10 +132,35 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [activeTab, setActiveTab] = useState<'ROUTE' | 'EARNINGS' | 'DELIVERIES'>('ROUTE');
     const [routeDemand, setRouteDemand] = useState<any[]>([]);
     const [aheadVehicles, setAheadVehicles] = useState<any[]>([]);
+    const [selectedStopForParcels, setSelectedStopForParcels] = useState<string | null>(null);
+    const [isBidding, setIsBidding] = useState(false);
+    const [showNextRouteAdvisor, setShowNextRouteAdvisor] = useState(false);
+    const [showInceptionGrid, setShowInceptionGrid] = useState(true);
+    const [showARMandiHUD, setShowARMandiHUD] = useState(false);
+    const [showGeminiCoPilot, setShowGeminiCoPilot] = useState(false);
     const tokenRef = useRef(localStorage.getItem('villagelink_token') || '');
 
+    const userRef = useRef(user);
+    const tripConfigRef = useRef(tripConfig);
+    const currentStopIndexRef = useRef(currentStopIndex);
+    const currentOccupancyRef = useRef(0);
+    const isMobileATMRef = useRef(isMobileATM);
+    const parcelsRef = useRef(parcels);
+    const deviationRef = useRef(deviation);
+    const profitWarningRef = useRef(profitWarning);
+
+    useEffect(() => { userRef.current = user; }, [user]);
+    useEffect(() => { tripConfigRef.current = tripConfig; }, [tripConfig]);
+    useEffect(() => { currentStopIndexRef.current = currentStopIndex; }, [currentStopIndex]);
+    useEffect(() => { isMobileATMRef.current = isMobileATM; }, [isMobileATM]);
+    useEffect(() => { parcelsRef.current = parcels; }, [parcels]);
+    useEffect(() => { deviationRef.current = deviation; }, [deviation]);
+    useEffect(() => { profitWarningRef.current = profitWarning; }, [profitWarning]);
+
     const currentOccupancy = useMemo(() => {
-        return liveSeats.occupied || tickets.filter(t => t.status === TicketStatus.BOARDED).reduce((acc, t) => acc + t.passengerCount, 0);
+        const val = liveSeats.occupied || tickets.filter(t => t.status === TicketStatus.BOARDED).reduce((acc, t) => acc + t.passengerCount, 0);
+        currentOccupancyRef.current = val;
+        return val;
     }, [tickets, liveSeats]);
 
     // Acoustic Verification State
@@ -166,72 +194,109 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     useEffect(() => {
         let watchId: number;
         let safetyInterval: any;
+        let fallbackInterval: any;
+
+        const handleGPSUpdate = (coords: { latitude: number, longitude: number, speed: number | null }) => {
+            const { latitude, longitude, speed } = coords;
+            const currSpeed = speed ? speed * 3.6 : (tripConfigRef.current.isActive ? 25 : 0);
+            setCurrentGPS({ lat: latitude, lng: longitude, speed: currSpeed });
+            broadcastBusLocation({
+                driverId: userRef.current.id,
+                isOnline: true,
+                activePath: tripConfigRef.current.path,
+                currentStopIndex: currentStopIndexRef.current,
+                status: 'EN_ROUTE',
+                location: { lat: latitude, lng: longitude, timestamp: Date.now() },
+                capacity: userRef.current.vehicleCapacity || 40,
+                occupancy: currentOccupancyRef.current,
+                isATM: isMobileATMRef.current
+            });
+            if (tripConfigRef.current.pathDetails.length > 0) {
+                const dev = checkForRouteDeviations({ lat: latitude, lng: longitude }, tripConfigRef.current.pathDetails);
+                if (dev) {
+                    if (!deviationRef.current) { announce("Warning. You are off route."); }
+                    setDeviation(dev);
+                } else {
+                    setDeviation(null);
+                }
+            }
+
+            // Smart Profit Analysis
+            const demand = getPathDemand(tripConfigRef.current.path);
+            setPathDemand(demand);
+
+            const competitors = getAheadVehicles(tripConfigRef.current.path, currentStopIndexRef.current, userRef.current.id);
+            setAheadCompetitors(competitors);
+
+            // Profitability Logic
+            const upcomingStops = tripConfigRef.current.path.slice(currentStopIndexRef.current + 1);
+            const totalUpcomingDemand = upcomingStops.reduce((acc, stop) => acc + (demand[stop] || 0), 0);
+            const competitorCapacity = competitors.reduce((acc, c) => acc + ((c.capacity || 40) - (c.occupancy || 0)), 0);
+
+            if (totalUpcomingDemand > 0 && competitorCapacity >= totalUpcomingDemand) {
+                if (!profitWarningRef.current) {
+                    setProfitWarning(`Market Saturated: ${competitors.length} vehicles ahead have enough capacity for all waiting passengers. Highly recommend switching to Cargo or picking up GramMandi logistics.`);
+                    announce("Warning. Demand ahead is low. Consider cargo pickup.");
+                }
+            } else {
+                setProfitWarning(null);
+            }
+
+            // Suggest Logistics (Intersects with Path)
+            const nearbyLogistics = parcelsRef.current.find(p =>
+                p.status === 'PENDING' &&
+                upcomingStops.includes(p.from) &&
+                (p.weightKg || 1) <= ((userRef.current.vehicleCapacity || 100) - currentOccupancyRef.current) // Simple capacity check
+            );
+            if (nearbyLogistics) {
+                setLogisticsAdvice(nearbyLogistics);
+            } else {
+                setLogisticsAdvice(null);
+            }
+        };
+
+        const startFallbackSimulation = () => {
+            if (fallbackInterval) clearInterval(fallbackInterval);
+            let currentIdx = 0;
+            fallbackInterval = setInterval(() => {
+                const pathDetails = tripConfigRef.current.pathDetails;
+                if (pathDetails && pathDetails.length > 0) {
+                    const stop = pathDetails[currentIdx];
+                    if (stop && typeof stop !== 'string' && stop.lat && stop.lng) {
+                        handleGPSUpdate({
+                            latitude: stop.lat,
+                            longitude: stop.lng,
+                            speed: 8.3 // ~30 km/h
+                        });
+                    }
+                    currentIdx = (currentIdx + 1) % pathDetails.length;
+                } else {
+                    const latOffset = Math.sin(Date.now() / 10000) * 0.01;
+                    const lngOffset = Math.cos(Date.now() / 10000) * 0.01;
+                    handleGPSUpdate({
+                        latitude: 26.45 + latOffset,
+                        longitude: 80.35 + lngOffset,
+                        speed: 8.3
+                    });
+                }
+            }, 4000);
+        };
 
         if (isOnline && tripConfig.isActive) {
             initFatigueMonitoring();
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition(
                     (pos) => {
-                        const { latitude, longitude, speed } = pos.coords;
-                        const currSpeed = speed ? speed * 3.6 : (tripConfig.isActive ? 25 : 0);
-                        setCurrentGPS({ lat: latitude, lng: longitude, speed: currSpeed });
-                        broadcastBusLocation({
-                            driverId: user.id,
-                            isOnline: true,
-                            activePath: tripConfig.path,
-                            currentStopIndex: currentStopIndex,
-                            status: 'EN_ROUTE',
-                            location: { lat: latitude, lng: longitude, timestamp: Date.now() },
-                            capacity: user.vehicleCapacity || 40,
-                            occupancy: currentOccupancy,
-                            isATM: isMobileATM
-                        });
-                        if (tripConfig.pathDetails.length > 0) {
-                            const dev = checkForRouteDeviations({ lat: latitude, lng: longitude }, tripConfig.pathDetails);
-                            if (dev) {
-                                if (!deviation) { announce("Warning. You are off route."); }
-                                setDeviation(dev);
-                            } else {
-                                setDeviation(null);
-                            }
-                        }
-
-                        // Smart Profit Analysis
-                        const demand = getPathDemand(tripConfig.path);
-                        setPathDemand(demand);
-
-                        const competitors = getAheadVehicles(tripConfig.path, currentStopIndex, user.id);
-                        setAheadCompetitors(competitors);
-
-                        // Profitability Logic
-                        const upcomingStops = tripConfig.path.slice(currentStopIndex + 1);
-                        const totalUpcomingDemand = upcomingStops.reduce((acc, stop) => acc + (demand[stop] || 0), 0);
-                        const competitorCapacity = competitors.reduce((acc, c) => acc + ((c.capacity || 40) - (c.occupancy || 0)), 0);
-
-                        if (totalUpcomingDemand > 0 && competitorCapacity >= totalUpcomingDemand) {
-                            if (!profitWarning) {
-                                setProfitWarning(`Market Saturated: ${competitors.length} vehicles ahead have enough capacity for all waiting passengers. Highly recommend switching to Cargo or picking up GramMandi logistics.`);
-                                announce("Warning. Demand ahead is low. Consider cargo pickup.");
-                            }
-                        } else {
-                            setProfitWarning(null);
-                        }
-
-                        // Suggest Logistics (Intersects with Path)
-                        const nearbyLogistics = parcels.find(p =>
-                            p.status === 'PENDING' &&
-                            upcomingStops.includes(p.from) &&
-                            (p.weightKg || 1) <= ((user.vehicleCapacity || 100) - currentOccupancy) // Simple capacity check
-                        );
-                        if (nearbyLogistics) {
-                            setLogisticsAdvice(nearbyLogistics);
-                        } else {
-                            setLogisticsAdvice(null);
-                        }
+                        handleGPSUpdate(pos.coords);
                     },
-                    (err) => console.error("GPS Error", err),
+                    (err) => {
+                        console.warn("GPS Error, starting fallback simulation...", err);
+                        startFallbackSimulation();
+                    },
                     { enableHighAccuracy: true, distanceFilter: 10 } as any
                 );
+            } else {
+                startFallbackSimulation();
             }
             safetyInterval = setInterval(() => {
                 if (analyzeDriverDrowsiness()) {
@@ -244,9 +309,10 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         return () => {
             if (watchId) navigator.geolocation.clearWatch(watchId);
             if (safetyInterval) clearInterval(safetyInterval);
+            if (fallbackInterval) clearInterval(fallbackInterval);
             stopFatigueMonitoring();
         };
-    }, [isOnline, tripConfig, user.id, currentStopIndex, isMobileATM, currentOccupancy, deviation]);
+    }, [isOnline, tripConfig.isActive]);
 
     useEffect(() => {
         if (!tripConfig.isActive || !tripConfig.path?.length) {
@@ -312,7 +378,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             loadWallet();
             loadHeatmap();
             loadHeroStats();
-        }, 5000);
+        }, 15000);
 
         loadHeatmap();
         loadHeroStats();
@@ -428,7 +494,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             loadAheadVehicles();
             if (activeTab === 'EARNINGS') loadEarnings();
             if (activeTab === 'DELIVERIES') loadDeliveries();
-        }, 8000);
+        }, 15000);
         loadMySeats();
         loadEarnings();
         loadDeliveries();
@@ -460,6 +526,56 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         setTripConfig({ isActive: false, startLocation: null, endLocation: null, path: [], pathDetails: [], totalDistance: 0 });
         setIsOnline(false); setIsSafetyMonitorActive(false); disconnectDriver(user.id);
     };
+
+    const handleEndTripAndShowRecommendations = async () => {
+        announce("Destination reached. Fetching hot return routes.");
+        let destLat = 26.45;
+        let destLng = 80.35;
+        if (tripConfig.pathDetails && tripConfig.pathDetails.length > 0) {
+            const lastStop = tripConfig.pathDetails[tripConfig.pathDetails.length - 1];
+            if (lastStop && typeof lastStop !== 'string' && lastStop.lat && lastStop.lng) {
+                destLat = lastStop.lat;
+                destLng = lastStop.lng;
+            }
+        } else if (currentGPS) {
+            destLat = currentGPS.lat;
+            destLng = currentGPS.lng;
+        }
+
+        setTripConfig({ isActive: false, startLocation: null, endLocation: null, path: [], pathDetails: [], totalDistance: 0 });
+        setIsSafetyMonitorActive(false);
+        
+        setSmartLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/driver/go-online`, {
+                method: 'POST', headers: apiHeaders,
+                body: JSON.stringify({ 
+                    lat: destLat, 
+                    lng: destLng, 
+                    locationName: tripConfig.path[tripConfig.path.length - 1] || 'Destination Stop',
+                    vehicleType: user.vehicleType || 'BUS', 
+                    seatsTotal: user.vehicleCapacity || 20 
+                })
+            });
+            const data = await res.json();
+            if (data.suggestedRoutes && data.suggestedRoutes.length > 0) {
+                setSmartRoutes(data.suggestedRoutes);
+                setShowNextRouteAdvisor(true);
+                announce(`${data.suggestedRoutes.length} profitable return routes found.`);
+            } else {
+                announce("No return routes available right now.");
+                setIsOnline(false);
+                disconnectDriver(user.id);
+            }
+        } catch (e) {
+            console.error('End trip recommendations error:', e);
+            setIsOnline(false);
+            disconnectDriver(user.id);
+        }
+        setSmartLoading(false);
+    };
+
+    const loadParcels = async () => { const p = await getAllParcels(); setParcels(p); };
 
     const handleAudioCount = async () => {
         setIsCountingAudio(true);
@@ -1229,24 +1345,73 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
                                 <div className="p-5">
                                     {activeTab === 'ROUTE' && (
-                                        <div className="space-y-3">
-                                            {(aheadVehicles || []).length === 0 ? (
-                                                <p className="text-xs text-slate-500 text-center py-4">No vehicles ahead on this route</p>
-                                            ) : aheadVehicles.map((v: any, i: number) => (
-                                                <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-white/5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-luxe-sienna/20 flex items-center justify-center text-sm shadow-inner">🚌</div>
-                                                        <div>
-                                                            <p className="text-xs font-black text-slate-900 dark:text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3)}`.toUpperCase()}</p>
-                                                            <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'On route'}</p>
+                                        <div className="space-y-4">
+                                            {/* --- NavIC Inception Grid 3D HUD --- */}
+                                            {showInceptionGrid && tripConfig.path.length > 0 && (
+                                                <div className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+                                                    <InceptionGrid3D
+                                                        stops={tripConfig.path.map((name, idx) => ({
+                                                            name,
+                                                            waitingPassengers: (routeDemand.find((d: any) => d.stopName === name) as any)?.waitingPassengers || 0,
+                                                            parcels: (routeDemand.find((d: any) => d.stopName === name) as any)?.pendingParcels || (routeDemand.find((d: any) => d.stopName === name) as any)?.parcels || 0,
+                                                            isCurrentStop: idx === currentStopIndex
+                                                        }))}
+                                                        currentStopIndex={currentStopIndex}
+                                                        currentSpeed={currentGPS?.speed || 0}
+                                                        aheadVehicles={(aheadVehicles || []).map((v: any, i: number) => ({
+                                                            id: v.driverId || `v-${i}`,
+                                                            name: v.driverName || `Bus ${(v.driverId || '').slice(-3)}`,
+                                                            distance: v.distanceAhead || (i + 1) * 2,
+                                                            speed: v.speed || 30,
+                                                            capacity: v.seatsTotal || 20,
+                                                            occupancy: v.seatsOccupied || 0
+                                                        }))}
+                                                        tripDistance={tripConfig.totalDistance}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Toggle + AR Mandi Button */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setShowInceptionGrid(!showInceptionGrid)}
+                                                    className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+                                                        showInceptionGrid
+                                                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {showInceptionGrid ? '🌐 Grid Active' : '🌐 Show Grid'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowARMandiHUD(true)}
+                                                    className="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
+                                                >
+                                                    📍 AR Mandi View
+                                                </button>
+                                            </div>
+
+                                            {/* Ahead Vehicles List */}
+                                            <div className="space-y-2">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Vehicles Ahead</p>
+                                                {(aheadVehicles || []).length === 0 ? (
+                                                    <p className="text-xs text-slate-500 text-center py-3">No vehicles ahead on this route</p>
+                                                ) : aheadVehicles.map((v: any, i: number) => (
+                                                    <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-white/5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-luxe-sienna/20 flex items-center justify-center text-sm shadow-inner">🚌</div>
+                                                            <div>
+                                                                <p className="text-xs font-black text-slate-900 dark:text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3)}`.toUpperCase()}</p>
+                                                                <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'On route'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">{v.seatsAvailable || '?'} seats</p>
+                                                            <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.seatsOccupied || 0}/{v.seatsTotal || 20}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">{v.seatsAvailable || '?'} seats</p>
-                                                        <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.seatsOccupied || 0}/{v.seatsTotal || 20}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
@@ -1314,10 +1479,189 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             </div>
                         </div>
                     )}
+
+                    {/* --- Parcel Bid Popup Modal --- */}
+                    {selectedStopForParcels && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+                            <div className="glass-3 border-white/10 w-full max-w-md rounded-[32px] overflow-hidden shadow-2xl p-5 relative">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-black text-white">📦 Parcels at {selectedStopForParcels}</h3>
+                                    <button onClick={() => setSelectedStopForParcels(null)} className="text-slate-400 hover:text-white text-xl">✕</button>
+                                </div>
+                                <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                                    {parcels
+                                        .filter(p => p.from?.toLowerCase() === selectedStopForParcels.toLowerCase() && (p.status === 'PENDING' || p.status === 'POSTED' || p.status === 'UNASSIGNED') && !p.driverId)
+                                        .map((parcel: any, idx: number) => (
+                                            <div key={parcel.id || idx} className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <p className="text-xs font-black text-white">{parcel.itemType || parcel.cropName || 'General Cargo'}</p>
+                                                        <p className="text-[9px] text-slate-400">{parcel.from} → {parcel.to}</p>
+                                                    </div>
+                                                    <span className="text-sm font-black text-emerald-400">₹{parcel.price || parcel.bidAmount || 0}</span>
+                                                </div>
+                                                <div className="flex gap-3 text-[8px] text-slate-500 mb-3">
+                                                    <span>⚖️ {parcel.weightKg || '?'}kg</span>
+                                                    {parcel.volumeLiters && (
+                                                        <span>📐 {parcel.volumeLiters}L</span>
+                                                    )}
+                                                    <span>📏 {parcel.distance || '?'}km</span>
+                                                </div>
+                                                <button
+                                                    disabled={isBidding}
+                                                    onClick={async () => {
+                                                        setIsBidding(true);
+                                                        try {
+                                                            const res = await fetch(`${API_BASE_URL}/api/parcels/${parcel.id}/bid`, {
+                                                                method: 'POST', headers: apiHeaders,
+                                                                body: JSON.stringify({ driverId: user.id, bidAmount: parcel.price || 50 })
+                                                            });
+                                                            const data = await res.json();
+                                                            if (data.success) {
+                                                                announce("Cargo bid placed and claimed successfully.");
+                                                                await loadParcels();
+                                                                const remaining = parcels.filter(p => p.from?.toLowerCase() === selectedStopForParcels.toLowerCase() && (p.status === 'PENDING' || p.status === 'POSTED') && !p.driverId).length;
+                                                                if (remaining <= 1) {
+                                                                    setSelectedStopForParcels(null);
+                                                                }
+                                                            } else {
+                                                                alert("Bid failed: " + data.error);
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("Bid placing error:", err);
+                                                        }
+                                                        setIsBidding(false);
+                                                    }}
+                                                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[10px] font-black text-white uppercase tracking-widest rounded-2xl transition-all shadow-glow-sm shadow-emerald-500/20 active:scale-95 transform"
+                                                >
+                                                    {isBidding ? 'Bidding...' : 'Claim & Load'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- AI Next-Route Profitability Advisor Modal --- */}
+                    {showNextRouteAdvisor && (smartRoutes || []).length > 0 && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+                            <div className="glass-3 border-white/10 w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl p-6 relative">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-2xl shadow-glow-sm animate-float-banana">🤖</div>
+                                    <div>
+                                        <span className="text-[9px] font-black text-luxe-gold uppercase tracking-[0.3em] block">AI Next-Route Advisor</span>
+                                        <h3 className="text-xl font-black text-white leading-tight">Recommended Next Trips</h3>
+                                    </div>
+                                </div>
+
+                                <p className="text-xs font-bold text-slate-400 mb-4 leading-relaxed">
+                                    Based on live supply-chain demand, crop procurement logs, and passenger queues at this hub, here are the most profitable next routes:
+                                </p>
+
+                                <div className="space-y-3 max-h-[50vh] overflow-y-auto mb-6 pr-1">
+                                    {smartRoutes.slice(0, 3).map((route, idx) => (
+                                        <div 
+                                            key={route.routeId || idx}
+                                            onClick={async () => {
+                                                setShowNextRouteAdvisor(false);
+                                                await handleSmartSelectRoute(route.routeId || route.id);
+                                            }}
+                                            className="p-5 rounded-3xl bg-white/5 border border-white/5 hover:border-white/15 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 shadow-sm"
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 className="font-black text-white text-sm">{route.name}</h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold">{route.from} → {route.to}</p>
+                                                </div>
+                                                <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                                    route.tag === 'HOT🔥' ? 'bg-rose-500/20 text-rose-400' :
+                                                    route.tag === 'GOOD👍' ? 'bg-emerald-500/20 text-emerald-400' :
+                                                    'bg-slate-500/20 text-slate-400'
+                                                }`}>{route.tag}</span>
+                                            </div>
+
+                                            {route.reason && (
+                                                <p className="text-[11px] font-bold text-emerald-400 mb-3">{route.reason}</p>
+                                            )}
+
+                                            <div className="flex gap-4 mt-2 border-t border-white/5 pt-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Users size={12} className="text-luxe-teal" />
+                                                    <span className="text-[10px] font-black text-slate-400">{route.demand?.passengers || 0} waiting</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Package size={12} className="text-luxe-gold" />
+                                                    <span className="text-[10px] font-black text-slate-400">{route.demand?.parcels || 0} parcels</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Car size={12} className="text-slate-500" />
+                                                    <span className="text-[10px] font-black text-slate-400">{route.competition || 0} competitors</span>
+                                                </div>
+                                            </div>
+
+                                            {route.aiScore && (
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-gradient-to-r from-luxe-sienna to-luxe-gold rounded-full" style={{ width: `${route.aiScore}%` }}></div>
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-luxe-gold">{route.aiScore}% score</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => setShowNextRouteAdvisor(false)} 
+                                        className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest transition-all"
+                                    >
+                                        Close Advisor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
 
+
+            {/* --- AR Mandi HUD Overlay --- */}
+            {showARMandiHUD && (
+                <ARMandiHUD
+                    mandiName={tripConfig.path[tripConfig.path.length - 1] || 'GramMandi Hub'}
+                    location={currentGPS ? { lat: currentGPS.lat, lng: currentGPS.lng } : undefined}
+                    onClose={() => setShowARMandiHUD(false)}
+                />
+            )}
+
+            {/* --- Gemini Cognitive Co-Pilot --- */}
+            {tripConfig.isActive && (
+                <GeminiCoPilot
+                    isActive={showGeminiCoPilot}
+                    onToggle={() => setShowGeminiCoPilot(!showGeminiCoPilot)}
+                    currentSpeed={currentGPS?.speed}
+                    currentStop={tripConfig.path[currentStopIndex]}
+                    nextStop={tripConfig.path[currentStopIndex + 1]}
+                    aheadVehicles={(aheadVehicles || []).map((v: any) => ({
+                        name: v.driverName,
+                        distance: v.distanceAhead,
+                        capacity: v.seatsTotal,
+                        occupancy: v.seatsOccupied
+                    }))}
+                    parcels={(parcels || []).filter(p => p.status === 'PENDING').map(p => ({
+                        from: p.from,
+                        to: p.to,
+                        itemType: (p as any).itemType,
+                        price: (p as any).price
+                    }))}
+                    routePath={tripConfig.path}
+                    earnings={earnings}
+                    lang={lang}
+                />
+            )}
 
             {/* Modals */}
             <Modal

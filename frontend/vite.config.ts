@@ -1,5 +1,5 @@
 
-// Vite restart trigger 1
+// Vite restart trigger 3
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
@@ -10,6 +10,7 @@ const useDevHttps = process.env.VITE_DEV_HTTPS !== '0';
 
 export default defineConfig({
   plugins: [react(), ...(useDevHttps ? [basicSsl()] : [])],
+  envDir: resolve(__dirname, '../'),
   server: {
     host: true, // Allow external access via IP
     port: 3000,

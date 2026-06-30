@@ -58,31 +58,55 @@ export const JourneyCinematic: React.FC<JourneyCinematicProps> = ({ path, onClos
         };
     }, []);
 
-    // Draw on Canvas when frame or loaded state changes
+    // Handle Window Resize to keep canvas responsive
+    const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Draw on Canvas when frame, loaded state, or dimensions change
     useEffect(() => {
         if (!isLoaded || !canvasRef.current || images.length === 0) return;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Ensure canvas scale matches High DPI displays
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
+        const width = dimensions.width;
+        const height = dimensions.height;
         
-        if (canvas.width !== width) canvas.width = width;
-        if (canvas.height !== height) canvas.height = height;
+        // Ensure backing store matches high-density display resolution
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
 
         const img = images[currentFrame];
-        // Cover logic (like object-fit: cover)
-        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-        const x = (canvas.width / 2) - (img.width / 2) * scale;
-        const y = (canvas.height / 2) - (img.height / 2) * scale;
+        if (!img) return;
+
+        // Cover logic calculated using layout size
+        const scale = Math.max(width / img.width, height / img.height);
+        const x = (width / 2) - (img.width / 2) * scale;
+        const y = (height / 2) - (img.height / 2) * scale;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.filter = `brightness(0.9) contrast(1.1)`; // Cinematic feel
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
         
-    }, [currentFrame, isLoaded, images]);
+        // Draw image scaled by device pixel ratio
+        ctx.drawImage(
+            img, 
+            x * dpr, 
+            y * dpr, 
+            img.width * scale * dpr, 
+            img.height * scale * dpr
+        );
+        
+    }, [currentFrame, isLoaded, images, dimensions]);
 
     // Calculate which stops to show based on frame
     const segments = Math.max(1, path.length - 1);

@@ -5,9 +5,6 @@
 const PRODUCTION_BACKEND = 'https://backendlink-0xjs.onrender.com';
 
 const getBaseUrl = () => {
-    // If VITE_API_URL is explicitly set, use it
-    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-
     // specific check for local development
     if (typeof window !== 'undefined') {
         const host = window.location.hostname;
@@ -23,6 +20,9 @@ const getBaseUrl = () => {
             return '';
         }
     }
+
+    // If VITE_API_URL is explicitly set, use it
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
     // Default to production
     return 'https://backendlink-0xjs.onrender.com';

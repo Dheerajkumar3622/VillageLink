@@ -9,14 +9,53 @@ interface LiveTrackerProps {
     desiredPath?: string[];
     layout?: 'VERTICAL' | 'HORIZONTAL';
     showHeader?: boolean;
+    ticket?: any;
+    onBidSuccess?: (ticketId: string, vehicleId: string, updatedPrice: number) => void;
 }
 
 export const LiveTracker: React.FC<LiveTrackerProps> = ({
     desiredPath,
     layout = 'VERTICAL',
-    showHeader = true
+    showHeader = true,
+    ticket,
+    onBidSuccess
 }) => {
     const [buses, setBuses] = useState<BusState[]>([]);
+    const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+    const [vehicles, setVehicles] = useState([
+        { id: 'VL-821', name: 'Bihar Rajya Transport', regNumber: 'BR-24P-8821', currentStopIndex: 1, capacity: 40, occupancy: 28, speed: 45, type: 'Bus' },
+        { id: 'VL-432', name: 'Rohtas Cruiser', regNumber: 'BR-24J-4432', currentStopIndex: 2, capacity: 10, occupancy: 7, speed: 50, type: 'Jeep' },
+        { id: 'VL-090', name: 'Mahadeva Express', regNumber: 'BR-24M-1090', currentStopIndex: 0, capacity: 32, occupancy: 12, speed: 40, type: 'Mini-Bus' }
+    ]);
+
+    useEffect(() => {
+        if (layout !== 'HORIZONTAL') return;
+        const interval = setInterval(() => {
+            setVehicles(prev => prev.map(v => {
+                const stopsCount = desiredPath ? desiredPath.length : 8;
+                if (v.currentStopIndex < stopsCount - 1) {
+                    const shouldMove = Math.random() > 0.4;
+                    return {
+                        ...v,
+                        currentStopIndex: shouldMove ? v.currentStopIndex + 1 : v.currentStopIndex,
+                        occupancy: Math.min(v.capacity, v.occupancy + (Math.random() > 0.8 ? 1 : 0))
+                    };
+                }
+                return v;
+            }));
+        }, 12000);
+        return () => clearInterval(interval);
+    }, [desiredPath, layout]);
+
+    const displayVehicles = React.useMemo(() => {
+        if (ticket?.driverId) {
+            const matchedSim = vehicles.find(v => v.id === ticket.driverId);
+            if (matchedSim) return [matchedSim];
+            return [{ id: ticket.driverId, name: 'Reserved Vehicle', regNumber: `BR-24-${ticket.driverId.slice(-4).toUpperCase()}`, currentStopIndex: 3, capacity: 40, occupancy: 30, speed: 45, type: 'Bus' }];
+        }
+        return vehicles;
+    }, [vehicles, ticket?.driverId]);
+
     const [currentTime, setCurrentTime] = useState(new Date());
     const scrollRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -193,18 +232,37 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                                 className="absolute top-2.5 left-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full track-progress-bar"
                             ></div>
 
-                            {/* Moving Bus Icon */}
-                            <div
-                                className="absolute top-0 z-20 bus-icon-wrapper"
-                            >
-                                <div className={`text-white p-1 rounded-full shadow-lg border-2 border-white dark:border-slate-800 ${departureInfo?.status === 'MOVING' ? 'bg-emerald-600' : 'bg-amber-500'}`}>
-                                    <Bus size={12} />
-                                </div>
-                                {/* Tooltip Bubble */}
-                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap shadow-xl after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-[4px] after:border-transparent after:border-t-slate-900">
-                                    {departureInfo?.status === 'MOVING' ? `Next: ${displayStops[currentStopIndex + 1] || 'End'}` : 'Boarding'}
-                                </div>
-                            </div>
+                            {/* Moving Vehicles Icons */}
+                            {displayVehicles.map(v => {
+                                const leftPercent = (v.currentStopIndex / (displayStops.length - 1)) * 100;
+                                const isSelected = selectedVehicleId === v.id;
+                                const isReserved = ticket?.driverId === v.id;
+
+                                return (
+                                    <button
+                                        key={v.id}
+                                        type="button"
+                                        onClick={() => {
+                                            if (ticket?.driverId) return; // Prevent selection once reserved
+                                            setSelectedVehicleId(isSelected ? null : v.id);
+                                        }}
+                                        className="absolute top-0 z-30 transition-all duration-500 hover:scale-110 active:scale-95 bus-icon-wrapper"
+                                        style={{ left: `calc(${leftPercent}% - 14px)` }}
+                                    >
+                                        <div className={`text-white p-1 rounded-full shadow-lg border-2 flex items-center justify-center transition-all ${
+                                            isSelected 
+                                                ? 'bg-amber-500 border-white scale-125 ring-4 ring-amber-500/30' 
+                                                : (isReserved ? 'bg-emerald-600 border-emerald-400 scale-110 shadow-glow-sm' : 'bg-slate-800 border-slate-700 hover:bg-slate-700')
+                                        }`}>
+                                            <Bus size={10} />
+                                        </div>
+                                        {/* Small Vehicle ID Badge */}
+                                        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[7px] font-black bg-black/70 text-white px-1.5 py-0.5 rounded-md whitespace-nowrap border border-white/10">
+                                            {v.regNumber.split('-')[2] || v.id}
+                                        </span>
+                                    </button>
+                                );
+                            })}
 
                             {/* Stops */}
                             <div className="flex justify-between relative z-10 pt-1">
@@ -226,6 +284,71 @@ export const LiveTracker: React.FC<LiveTrackerProps> = ({
                         </div>
                     </div>
                 </div>
+
+                {/* Dynamic Bid Console */}
+                {selectedVehicleId && !ticket?.driverId && (() => {
+                    const v = displayVehicles.find(x => x.id === selectedVehicleId);
+                    if (!v) return null;
+
+                    const baseFare = ticket?.totalPrice || 145;
+                    const boardingStopName = ticket?.from || displayStops[0];
+                    const boardingIndex = displayStops.findIndex(s => s.toLowerCase() === boardingStopName.toLowerCase());
+                    const vehicleIndex = v.currentStopIndex;
+                    // Kiraya adds based on vehicle's current distance from boarding stop
+                    const stopsDistance = Math.max(0, boardingIndex - vehicleIndex);
+                    const extraFare = stopsDistance * 15; 
+                    const finalPrice = baseFare + extraFare;
+
+                    return (
+                        <div className="mt-4 p-4 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-amber-500/30 animate-fade-in text-xs space-y-3 shadow-xl">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-black text-white text-sm flex items-center gap-1.5">
+                                        <span className="bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">Bid Available</span>
+                                        <span>{v.name}</span>
+                                        <span className="text-[10px] text-slate-400 font-mono">({v.regNumber})</span>
+                                    </h4>
+                                    <p className="text-slate-400 text-[10px] mt-1 font-medium">
+                                        Current Position: <span className="text-white font-bold">{displayStops[v.currentStopIndex]}</span> ({stopsDistance === 0 ? 'Arrived at your stop' : `${stopsDistance} stops away`})
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-slate-400 text-[9px] block font-bold uppercase tracking-wider">Seats Left</span>
+                                    <span className="text-amber-400 font-bold text-sm">{v.capacity - v.occupancy} / {v.capacity} available</span>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                                <div>
+                                    <span className="text-slate-400 text-[9px] block uppercase font-bold tracking-wider">Bid / Reservation Fare</span>
+                                    <span className="text-xl font-black text-white">₹{finalPrice}</span>
+                                    <span className="text-[8px] text-slate-500 block mt-0.5">(Includes distance from vehicle's location: +₹{extraFare})</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (onBidSuccess && ticket) {
+                                            onBidSuccess(ticket.id, v.id, finalPrice);
+                                            setSelectedVehicleId(null);
+                                        }
+                                    }}
+                                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs uppercase tracking-widest py-3 px-4 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-transform"
+                                >
+                                    Reserve Seat & Bid
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* Bid Successful Locked Badge */}
+                {ticket?.driverId && (
+                    <div className="mt-4 p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/25 text-center animate-fade-in animate-pulse">
+                        <span className="text-emerald-400 font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5">
+                            ✓ Seat Reserved on vehicle {ticket.driverId} (Platform Locked)
+                        </span>
+                    </div>
+                )}
             </div>
         );
     }

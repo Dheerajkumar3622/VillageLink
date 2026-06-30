@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Ticket } from '@villagelink/shared';
 import { X, Clock, MapPin, User as UserIcon } from 'lucide-react';
 import { FloatingVehicle } from './FloatingVehicle';
@@ -50,7 +51,7 @@ export const FlashPass: React.FC<FlashPassProps> = ({ isOpen, onClose, ticket, u
     
     const shortCode = generateShortCode(ticket.id, minute);
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className={`relative w-full h-full md:w-[400px] md:h-[800px] max-h-screen overflow-hidden ${currentTheme} transition-colors duration-1000 flex flex-col md:rounded-3xl shadow-2xl`}>
                 
@@ -143,6 +144,7 @@ export const FlashPass: React.FC<FlashPassProps> = ({ isOpen, onClose, ticket, u
                     100% { transform: translateX(-100%); }
                 }
             `}} />
-        </div>
+        </div>,
+        document.body
     );
 };

@@ -20,12 +20,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => (
         className={`flex-shrink-0 flex flex-col items-center justify-center min-w-[75px] h-full transition-all duration-300 relative group`} 
         onClick={onClick}
     >
-        <div className={`w-14 h-11 rounded-xl flex items-center justify-center transition-all duration-500 ${active ? 'nav-active-pill text-[#BE5103]' : 'text-white/60'}`}>
+        <div className={`w-14 h-11 rounded-xl flex items-center justify-center transition-all duration-500 z-10 ${active ? 'nav-active-pill text-[#BE5103]' : 'text-white/60'}`}>
             <div className={`${active ? 'scale-110' : 'scale-100'} transition-transform duration-300`}>
                 {icon}
             </div>
         </div>
-        <span className={`text-[9px] font-[900] mt-1.5 uppercase tracking-wider transition-all duration-300 ${active ? 'text-white opacity-100' : 'text-white/50'}`}>
+        <span className={`text-[9px] font-[900] mt-1.5 uppercase tracking-wider transition-all duration-300 z-10 ${active ? 'text-white opacity-100' : 'text-white/50'}`}>
             {label}
         </span>
     </button>
@@ -34,15 +34,19 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, active, onClick }) => (
 interface V5BottomNavProps {
     activeTab: TabType;
     onTabChange: (tab: TabType) => void;
+    progress?: number;
+    isSwiping?: boolean;
 }
 
 export const V5BottomNav: React.FC<V5BottomNavProps> = ({
     activeTab,
-    onTabChange
+    onTabChange,
+    progress,
+    isSwiping = false
 }) => {
     return (
         <nav className="v5-bottom-nav fixed bottom-0 left-0 right-0 px-4 py-2 pb-6 h-22 flex items-center justify-center z-[100]">
-            <div className="flex items-center justify-around w-full max-w-lg">
+            <div className="flex items-center justify-around w-full max-w-lg relative px-4">
                 <NavItem
                     icon={<Bus size={22} />}
                     label="Rides"

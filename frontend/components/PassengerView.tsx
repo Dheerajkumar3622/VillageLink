@@ -18,11 +18,11 @@ import { ARFinder } from './ARFinder';
 import { UserProfile } from './UserProfile';
 import { MarketingView } from './MarketingView';
 import { FoodLinkHome } from './FoodLinkHome';
-import { VectorRouteMap as RouteMap } from './VectorRouteMap';
+import { GoogleRouteMap as RouteMap } from './GoogleRouteMap';
 import { PaymentHistory } from './PaymentHistory';
 import { VendorMapView } from './VendorMapView';
 import { VendorAdmin } from './VendorAdmin';
-import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap, Play, Navigation } from 'lucide-react';
+import { Ticket as TicketIcon, Check, Bus, Route, User as UserIcon, Car, Package, Gem, WifiOff, ArrowLeft, Store, Camera, AlertOctagon, Coins, Volume2, VolumeX, Users, Gift, QrCode, CreditCard, Banknote, Replace, Mic, Utensils, MapPin, Bike, Zap, Play, Navigation, Search, Loader2 } from 'lucide-react';
 import { SuccessAnimation } from './SuccessAnimation';
 import { FloatingVehicle } from './FloatingVehicle';
 import { FlashPass } from './FlashPass';
@@ -122,8 +122,13 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
     const [tripDistance, setTripDistance] = useState<number | null>(null);
     const [calculatedPath, setCalculatedPath] = useState<string[]>([]);
     const [pathDetails, setPathDetails] = useState<{ lat: number, lng: number }[]>([]);
+    const [availableRoutes, setAvailableRoutes] = useState<any[]>([]);
+    const [selectedRouteIdx, setSelectedRouteIdx] = useState<number>(0);
     const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+    const [hasSearchedRoute, setHasSearchedRoute] = useState(false);
     const [activeTickets, setActiveTickets] = useState<Ticket[]>([]);
+    const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
+    const [ticketTouchStart, setTicketTouchStart] = useState(0);
     const [myPasses, setMyPasses] = useState<Pass[]>([]);
     const [passengerCount, setPassengerCount] = useState(1);
     const [showToast, setShowToast] = useState(false);
@@ -314,15 +319,16 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         let isActive = true;
 
         const startLoop = async () => {
-            if (activeTickets.length > 0 && ['PENDING', 'BOARDED'].includes(activeTickets[0].status)) {
+            const currentTicket = activeTickets[currentTicketIndex] || activeTickets[0];
+            if (currentTicket && ['PENDING', 'BOARDED', 'PAID'].includes(currentTicket.status)) {
                 setIsBroadcastingAudio(true);
                 setAudioBroadcastError(false);
                 
                 const broadcast = async () => {
                     if (!isActive || document.hidden) return;
                     try {
-                        console.log("[Acoustic TX] Emitting Ticket:", activeTickets[0].id);
-                        await broadcastUltrasonicTicket(activeTickets[0].id);
+                        console.log("[Acoustic TX] Emitting Ticket:", currentTicket.id);
+                        await broadcastUltrasonicTicket(currentTicket.id);
                     } catch (e) {
                         console.error("Audio Broadcast Exception:", e);
                         setAudioBroadcastError(true);
@@ -343,7 +349,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             setIsBroadcastingAudio(false);
             if (broadcastTimer) clearTimeout(broadcastTimer);
         };
-    }, [activeTickets]);
+    }, [activeTickets, currentTicketIndex]);
 
     // SURAKSHA KAVACH: Automatic Recording on Trip Start
     useEffect(() => {
@@ -389,6 +395,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         }
     };
 
+    // Logistics cost calculation hook
     useEffect(() => {
         const calculateLogistics = async () => {
             if (currentView === 'BOOK_PARCEL' || marketBooking) {
@@ -399,27 +406,67 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             }
         };
         calculateLogistics();
+    }, [fromLocation, currentView, marketBooking, logisticsItemType, logisticsWeight]);
 
-        const updateRoute = async () => {
-            if (fromLocation && toLocation) {
-                setIsCalculatingRoute(true);
-                const routeData = await fetchSmartRoute(fromLocation, toLocation);
+    // Reset calculated route states when origin or destination changes
+    useEffect(() => {
+        setHasSearchedRoute(false);
+        setTripDistance(null);
+        setFareDetails(null);
+        setCrowdForecast(null);
+        setPassPrice(0);
+        setRentalPrice(0);
+        setCalculatedPath([]);
+        setPathDetails([]);
+        setAvailableRoutes([]);
+        setSelectedRouteIdx(0);
+        setCargoSubsidy(0);
+    }, [fromLocation, toLocation]);
 
-                setTripDistance(routeData.distance);
-                setCalculatedPath(routeData.path);
-                setPathDetails(routeData.pathDetails || []);
-                setIsCalculatingRoute(false);
+    // Manual route search trigger
+    const handleSearchRoute = async () => {
+        if (!fromLocation || !toLocation) return;
+        setIsCalculatingRoute(true);
+        setHasSearchedRoute(true);
+        try {
+            const routeData = await fetchSmartRoute(fromLocation, toLocation);
 
+            const routes = [{
+                path: routeData.path,
+                distance: routeData.distance,
+                pathDetails: routeData.pathDetails || []
+            }];
+            if (routeData.alternatives && routeData.alternatives.length > 0) {
+                routes.push(...routeData.alternatives);
+            }
+            
+            setAvailableRoutes(routes);
+            setSelectedRouteIdx(0);
+
+            setTripDistance(routeData.distance);
+            setCalculatedPath(routeData.path);
+            setPathDetails(routeData.pathDetails || []);
+        } catch (error) {
+            console.error("Error searching smart route:", error);
+            setHasSearchedRoute(false);
+        } finally {
+            setIsCalculatingRoute(false);
+        }
+    };
+
+    // Separate useEffect to handle pricing and telemetry updates whenever the chosen route's distance changes
+    useEffect(() => {
+        const updateFareAndPricing = async () => {
+            if (tripDistance !== null && tripDistance > 0) {
                 if (currentView === 'DASHBOARD') {
-                    const isHighTrafficRoute = routeData.distance > 5 && Math.random() > 0.5;
+                    const isHighTrafficRoute = tripDistance > 5 && Math.random() > 0.5;
                     const subsidy = isHighTrafficRoute ? 5 : 0;
                     setCargoSubsidy(subsidy);
 
-                    const df = await calculateDynamicFare(routeData.distance, Date.now());
-                    let basePricing = df.totalFare;
+                    const df = await calculateDynamicFare(tripDistance, Date.now());
                     setFareDetails(df);
 
-                    let monthly = basePricing * 20;
+                    let monthly = df.totalFare * 20;
                     if (seatConfig === 'STANDING') monthly = monthly * 0.80;
                     if (churnAnalysis?.recommendedOffer && isBuyingPass) monthly = monthly * (1 - churnAnalysis.recommendedOffer.discountPercent / 100);
                     if (passType === 'VIDYA_VAHAN' || passType === 'STUDENT') monthly = monthly * 0.50;
@@ -427,28 +474,23 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
                     const crowd = getCrowdForecast(Date.now());
                     setCrowdForecast(crowd);
-                } else if (currentView === 'BOOK_RENTAL') {
-                    if (selectedVehicle) {
-                        const effectiveDist = tripType === 'ROUND_TRIP' ? routeData.distance * 2 : routeData.distance;
-                        const price = selectedVehicle.baseRate + (effectiveDist * selectedVehicle.ratePerKm);
-                        setRentalPrice(Math.round(price));
-                    }
+                } else if (currentView === 'BOOK_RENTAL' && selectedVehicle) {
+                    const effectiveDist = tripType === 'ROUND_TRIP' ? tripDistance * 2 : tripDistance;
+                    const price = selectedVehicle.baseRate + (effectiveDist * selectedVehicle.ratePerKm);
+                    setRentalPrice(Math.round(price));
                 }
-            } else {
-                setTripDistance(null);
-                setFareDetails(null);
-                setCrowdForecast(null);
-                setPassPrice(0);
-                setRentalPrice(0);
-                setCalculatedPath([]);
-                setPathDetails([]);
-                setCargoSubsidy(0);
             }
         };
+        updateFareAndPricing();
+    }, [tripDistance, currentView, seatConfig, isBuyingPass, churnAnalysis, passType, selectedVehicle, tripType]);
 
-        updateRoute();
-
-    }, [fromLocation, toLocation, seatConfig, isBuyingPass, churnAnalysis, currentView, selectedVehicle, tripType, logisticsWeight, logisticsItemType, passType, marketBooking]);
+    const handleSelectRoute = (idx: number) => {
+        if (idx < 0 || idx >= availableRoutes.length) return;
+        setSelectedRouteIdx(idx);
+        setTripDistance(availableRoutes[idx].distance);
+        setCalculatedPath(availableRoutes[idx].path);
+        setPathDetails(availableRoutes[idx].pathDetails || []);
+    };
 
     const speak = (text: string) => {
         if (!voiceGuideActive) return;
@@ -479,6 +521,47 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
     const handleShowFlashPass = (ticket: Ticket) => {
         setShowFlashPassModal(ticket);
+    };
+
+    const handleBidSuccess = async (ticketId: string, vehicleId: string, updatedPrice: number) => {
+        try {
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance("Seat reserved successfully. Booking locked.");
+            synth.speak(utter);
+        } catch (e) {}
+
+        setActiveTickets(prev => prev.map(t => {
+            if (t.id === ticketId) {
+                return {
+                    ...t,
+                    driverId: vehicleId,
+                    totalPrice: updatedPrice
+                };
+            }
+            return t;
+        }));
+
+        try {
+            const cached = localStorage.getItem('villagelink_tickets_cache');
+            if (cached) {
+                const parsed = JSON.parse(cached) as Ticket[];
+                const updated = parsed.map(t => {
+                    if (t.id === ticketId) {
+                        return {
+                            ...t,
+                            driverId: vehicleId,
+                            totalPrice: updatedPrice
+                        };
+                    }
+                    return t;
+                });
+                localStorage.setItem('villagelink_tickets_cache', JSON.stringify(updated));
+            }
+        } catch (e) {
+            console.warn("Failed to update cache on bid success", e);
+        }
+
+        alert(`Success! Seat reserved on Vehicle ${vehicleId}. Fare updated to ₹${updatedPrice} (calculated from vehicle's location).`);
     };
 
     const initiateBook = () => {
@@ -536,10 +619,20 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             return;
         }
 
-        const totalCost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0));
+        let totalCost = 0;
+        if (isBuyingPass) {
+            totalCost = passPrice;
+        } else if (currentView === 'BOOK_RENTAL') {
+            totalCost = bidAmount ? parseInt(bidAmount) : rentalPrice;
+        } else if (currentView === 'BOOK_PARCEL') {
+            const basePrice = marketBooking ? (marketBooking.product.price + logisticsPrice) : logisticsPrice;
+            totalCost = logisticsPoolFound ? basePrice * 0.7 : basePrice;
+        } else {
+            totalCost = Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0));
+        }
 
         if (paymentMethod === PaymentMethod.GRAMCOIN) {
-            const result = await spendGramCoin(user.id, totalCost, "Bus Ticket");
+            const result = await spendGramCoin(user.id, totalCost, isBuyingPass ? "Bus Pass" : (currentView === 'BOOK_RENTAL' ? "Rental Vehicle" : (currentView === 'BOOK_PARCEL' ? "Parcel Booking" : "Bus Ticket")));
             if (result.success) {
                 completeBooking(PaymentMethod.GRAMCOIN, TicketStatus.PAID, result.transactionId);
             } else {
@@ -1121,81 +1214,141 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                         <>
                             {activeTab === 'HOME' && currentView === 'DASHBOARD' && (
                                 <div className="space-y-6">
+                                    {activeTickets.length > 0 && (() => {
+                                        const currentTicket = activeTickets[currentTicketIndex] || activeTickets[0];
+                                        
+                                        const handleTicketTouchStart = (e: React.TouchEvent) => {
+                                            setTicketTouchStart(e.touches[0].clientX);
+                                        };
+                                        
+                                        const handleTicketTouchEnd = (e: React.TouchEvent) => {
+                                            const diffX = e.changedTouches[0].clientX - ticketTouchStart;
+                                            const threshold = 50;
+                                            if (diffX > threshold && currentTicketIndex > 0) {
+                                                setCurrentTicketIndex(prev => prev - 1);
+                                            } else if (diffX < -threshold && currentTicketIndex < activeTickets.length - 1) {
+                                                setCurrentTicketIndex(prev => prev + 1);
+                                            }
+                                        };
 
-                                    {/* REDESIGNED ACTIVE Trip CARD (Whisk 2.0 Ticket Stub) */}
-                                    {activeTickets.length > 0 && (
-                                        <div className="ticket-stub relative overflow-hidden bg-gradient-to-br from-slate-900 via-brand-900 to-slate-900 border border-brand-500/30 shadow-2xl shadow-brand-500/20 super-rounded mb-6">
-                                            {/* Top Highlight Area */}
-                                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-luxe-teal via-brand-400 to-luxe-gold"></div>
+                                        return (
+                                            <div 
+                                                onTouchStart={handleTicketTouchStart}
+                                                onTouchEnd={handleTicketTouchEnd}
+                                                className="ticket-stub no-swipe relative overflow-hidden bg-gradient-to-br from-slate-900 via-brand-900 to-slate-900 border border-brand-500/30 shadow-2xl shadow-brand-500/20 super-rounded mb-6"
+                                            >
+                                                {/* Top Highlight Area */}
+                                                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-luxe-teal via-brand-400 to-luxe-gold"></div>
 
-                                            <div className="p-5 relative z-10">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div>
-                                                        <div className="flex flex-col gap-1 mb-1.5 px-3 py-1.5 bg-emerald-500/10 w-max rounded-xl border border-emerald-500/20">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`w-1.5 h-1.5 rounded-full ${audioBroadcastError ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]'}`}></span>
-                                                                <span className="text-[10px] font-black uppercase tracking-widest" style={{color: audioBroadcastError ? '#ef4444' : '#6ee7b7'}}>
-                                                                    {audioBroadcastError ? 'BROADCAST ERR' : t('active_trip')}
-                                                                </span>
+                                                <div className="p-5 relative z-10">
+                                                    {/* Ticket Swipe Indicator for Multi-booking */}
+                                                    {activeTickets.length > 1 && (
+                                                        <div className="flex items-center justify-between mb-3 px-1 py-1 rounded-lg bg-black/30 border border-white/5">
+                                                            <button 
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setCurrentTicketIndex(prev => Math.max(0, prev - 1));
+                                                                }}
+                                                                disabled={currentTicketIndex === 0}
+                                                                className="text-white/60 hover:text-white disabled:opacity-20 px-2 py-0.5 text-[10px] font-black uppercase"
+                                                            >
+                                                                ◀ Prev
+                                                            </button>
+                                                            <div className="flex gap-1">
+                                                                {activeTickets.map((_, idx) => (
+                                                                    <div 
+                                                                        key={idx} 
+                                                                        className={`w-1.5 h-1.5 rounded-full transition-all ${idx === currentTicketIndex ? 'bg-brand-400 w-3' : 'bg-slate-700'}`}
+                                                                    />
+                                                                ))}
                                                             </div>
-                                                            <AnimatedWave isBroadcasting={isBroadcastingAudio && !audioBroadcastError} isError={audioBroadcastError} />
+                                                            <button 
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setCurrentTicketIndex(prev => Math.min(activeTickets.length - 1, prev + 1));
+                                                                }}
+                                                                disabled={currentTicketIndex === activeTickets.length - 1}
+                                                                className="text-white/60 hover:text-white disabled:opacity-20 px-2 py-0.5 text-[10px] font-black uppercase"
+                                                            >
+                                                                Next ▶
+                                                            </button>
                                                         </div>
-                                                        <h3 className="text-xl font-black leading-tight mt-1 flex items-center gap-2" style={{color: '#ffffff'}}>
-                                                            <span>{activeTickets[0].from}</span>
-                                                            <span style={{color: '#a5b4fc'}} className="mx-0.5">→</span>
-                                                            <span>{activeTickets[0].to}</span>
-                                                        </h3>
-                                                    </div>
-                                                    <div className="text-right px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)'}}>
-                                                        <p className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Seat</p>
-                                                        <p className="text-sm font-black" style={{color: '#a5b4fc'}}>{activeTickets[0].seatNumber || 'STAND'}</p>
-                                                    </div>
-                                                </div>
+                                                    )}
 
-                                                {/* Live Tracker Integration */}
-                                                <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 mb-6 ring-1 ring-white/10 shadow-inner">
-                                                    <LiveTracker desiredPath={activeTickets[0].routePath} layout="HORIZONTAL" showHeader={false} />
-                                                </div>
-
-                                                <div className="flex justify-between items-center border-t border-dashed pt-4" style={{borderColor: 'rgba(255,255,255,0.15)'}}>
-                                                    <div className="flex flex-col px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)'}}>
-                                                        <span className="text-[8px] uppercase font-black tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Ticket ID</span>
-                                                        <span className="text-[11px] font-mono font-black" style={{color: '#ffffff'}}>#{activeTickets[0].id.slice(-6).toUpperCase()}</span>
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div>
+                                                            <div className="flex flex-col gap-1 mb-1.5 px-3 py-1.5 bg-emerald-500/10 w-max rounded-xl border border-emerald-500/20">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${audioBroadcastError ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]'}`}></span>
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest" style={{color: audioBroadcastError ? '#ef4444' : '#6ee7b7'}}>
+                                                                        {audioBroadcastError ? 'BROADCAST ERR' : t('active_trip')}
+                                                                    </span>
+                                                                </div>
+                                                                <AnimatedWave isBroadcasting={isBroadcastingAudio && !audioBroadcastError} isError={audioBroadcastError} />
+                                                            </div>
+                                                            <h3 className="text-xl font-black leading-tight mt-1 flex items-center gap-2" style={{color: '#ffffff'}}>
+                                                                <span>{currentTicket.from}</span>
+                                                                <span style={{color: '#a5b4fc'}} className="mx-0.5">→</span>
+                                                                <span>{currentTicket.to}</span>
+                                                            </h3>
+                                                        </div>
+                                                        <div className="text-right px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)'}}>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Fare / Seat</p>
+                                                            <p className="text-sm font-black text-white">₹{currentTicket.totalPrice} <span style={{color: '#a5b4fc'}}>• {currentTicket.seatNumber || 'STAND'}</span></p>
+                                                        </div>
                                                     </div>
-                                                    
-                                                    <div className="flex gap-2">
-                                                        {activeTickets[0].id.startsWith('TOUR-') && setActiveTourismTracker && (
+
+                                                    {/* Live Tracker Integration */}
+                                                    <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/5 mb-6 ring-1 ring-white/10 shadow-inner">
+                                                        <LiveTracker 
+                                                            desiredPath={currentTicket.routePath} 
+                                                            layout="HORIZONTAL" 
+                                                            showHeader={false} 
+                                                            ticket={currentTicket}
+                                                            onBidSuccess={handleBidSuccess}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center border-t border-dashed pt-4" style={{borderColor: 'rgba(255,255,255,0.15)'}}>
+                                                        <div className="flex flex-col px-3 py-1.5 rounded-xl" style={{backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)'}}>
+                                                            <span className="text-[8px] uppercase font-black tracking-widest mb-0.5" style={{color: '#94a3b8'}}>Ticket ID</span>
+                                                            <span className="text-[11px] font-mono font-black" style={{color: '#ffffff'}}>#{currentTicket.id.slice(-6).toUpperCase()}</span>
+                                                        </div>
+                                                        
+                                                        <div className="flex gap-2">
+                                                            {currentTicket.id.startsWith('TOUR-') && setActiveTourismTracker && (
+                                                                <button
+                                                                    onClick={() => setActiveTourismTracker(currentTicket)}
+                                                                    className="bg-brand-500/20 text-brand-300 border border-brand-500/30 px-3 py-2 rounded-xl text-xs font-bold hover:bg-brand-500/40 transition-colors flex items-center justify-center"
+                                                                >
+                                                                    Open Chat
+                                                                </button>
+                                                            )}
+                                                            {(currentTicket.status === 'PENDING' || currentTicket.status === 'PROVISIONAL' || currentTicket.status === 'PAID') && (
+                                                                <button
+                                                                    onClick={() => handleCancelActiveTicket(currentTicket.id)}
+                                                                    disabled={cancelLoadingId === currentTicket.id}
+                                                                    className="bg-red-500/20 text-red-200 border border-red-500/30 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-500/40 transition-colors flex items-center justify-center"
+                                                                >
+                                                                    {cancelLoadingId === currentTicket.id ? 'Wait...' : 'Cancel'}
+                                                                </button>
+                                                            )}
                                                             <button
-                                                                onClick={() => setActiveTourismTracker(activeTickets[0])}
-                                                                className="bg-brand-500/20 text-brand-300 border border-brand-500/30 px-3 py-2 rounded-xl text-xs font-bold hover:bg-brand-500/40 transition-colors flex items-center justify-center"
+                                                                onClick={() => handleShowFlashPass(currentTicket)}
+                                                                className="bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors flex items-center gap-2 transform hover:scale-105"
                                                             >
-                                                                Open Chat
+                                                                <Zap size={14} className="fill-white" />
+                                                                Flash Pass
                                                             </button>
-                                                        )}
-                                                        {(activeTickets[0].status === 'PENDING' || activeTickets[0].status === 'PROVISIONAL') && (
-                                                            <button
-                                                                onClick={() => handleCancelActiveTicket(activeTickets[0].id)}
-                                                                disabled={cancelLoadingId === activeTickets[0].id}
-                                                                className="bg-red-500/20 text-red-200 border border-red-500/30 px-3 py-2 rounded-xl text-xs font-bold hover:bg-red-500/40 transition-colors flex items-center justify-center"
-                                                            >
-                                                                {cancelLoadingId === activeTickets[0].id ? 'Wait...' : 'Cancel'}
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleShowFlashPass(activeTickets[0])}
-                                                            className="bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-brand-500/30 hover:bg-brand-600 transition-colors flex items-center gap-2 transform hover:scale-105"
-                                                        >
-                                                            <Zap size={14} className="fill-white" />
-                                                            Flash Pass
-                                                        </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
-                                    {/* ... (Rest of existing dashboard UI) ... */}
-                                    {/* Removed overflow-hidden to allow dropdown to display */}
                                     {/* DASHBOARD SECTION MATCHING REFERENCE IMAGE */}
                                     <div className={`journey-card-reference transition-all duration-500 ease-in-out ${isScrolled ? '![border-radius:50%_50%_0_0/24px_24px_0_0] shadow-2xl mt-4 mx-0' : `![border-radius:0_0_32px_32px] !border-t-0 shadow-xl ${activeTickets.length > 0 ? 'mt-4' : '-mt-[2px] z-10'} mx-0`}`}>
                                         <div className="flex flex-col gap-5">
@@ -1233,62 +1386,129 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-4 relative z-10 mt-6">
-                                            <LocationSelector
-                                                label="Pickup Point"
-                                                defaultAutoDetect={true}
-                                                value={fromLocation}
-                                                onSelect={setFromLocation as any}
-                                                onMapTrigger={() => setShowMapSelector('from')}
-                                                placeholder="Start"
-                                                labelClassName="text-slate-700 dark:text-slate-300"
-                                            />
-
-                                            {upcomingBuses.length > 0 && fromLocation && (
-                                                <div className="absolute right-4 top-[85px] z-20 flex flex-col items-end pointer-events-none">
-                                                    {upcomingBuses.slice(0, 1).map(bus => (
-                                                        <div key={bus.driverId} className="bg-white/10 backdrop-blur-md shadow-lg rounded-full p-1 pr-3 flex items-center gap-2 border border-white/20 animate-in slide-in-from-right">
-                                                            <div className="bg-emerald-500 text-white p-1.5 rounded-full"><Bus size={14} /></div>
-                                                            <div className="text-right"><p className="text-[9px] text-emerald-300 font-bold uppercase">Approaching</p><p className="text-xs font-bold text-white">{(bus.capacity - bus.occupancy)} Seats</p></div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            <div className="absolute left-[29px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-500/50 to-emerald-500/50 -z-10"></div>
-
-                                            <LocationSelector
-                                                label="Destination"
-                                                value={toLocation}
-                                                onSelect={setToLocation as any}
-                                                onMapTrigger={() => setShowMapSelector('to')}
-                                                placeholder="End"
-                                                labelClassName="text-slate-700 dark:text-slate-300"
-                                            />
-
-                                            {fromLocation && toLocation && !isBuyingPass && (
-                                                <SegmentRidePanel
-                                                    user={user}
-                                                    embedded
-                                                    initialFromStop={
-                                                        calculatedPath.length >= 2 ? calculatedPath[0] : fromLocation.name
-                                                    }
-                                                    initialToStop={
-                                                        calculatedPath.length >= 2
-                                                            ? calculatedPath[calculatedPath.length - 1]
-                                                            : toLocation.name
-                                                    }
-                                                    onBooked={() => {
-                                                        setShowToast(true);
-                                                        setTimeout(() => setShowToast(false), 2500);
-                                                    }}
+                                            {/* Location Selectors Container */}
+                                            <div className="space-y-4 relative z-10 mt-6">
+                                                <LocationSelector
+                                                    label="Pickup Point"
+                                                    defaultAutoDetect={true}
+                                                    value={fromLocation}
+                                                    onSelect={setFromLocation as any}
+                                                    onMapTrigger={() => setShowMapSelector('from')}
+                                                    placeholder="Start"
+                                                    labelClassName="text-slate-700 dark:text-slate-300"
                                                 />
-                                            )}
+
+                                                {upcomingBuses.length > 0 && fromLocation && (
+                                                    <div className="absolute right-4 top-[85px] z-20 flex flex-col items-end pointer-events-none">
+                                                        {upcomingBuses.slice(0, 1).map(bus => (
+                                                            <div key={bus.driverId} className="bg-white/10 backdrop-blur-md shadow-lg rounded-full p-1 pr-3 flex items-center gap-2 border border-white/20 animate-in slide-in-from-right">
+                                                                <div className="bg-emerald-500 text-white p-1.5 rounded-full"><Bus size={14} /></div>
+                                                                <div className="text-right"><p className="text-[9px] text-emerald-300 font-bold uppercase">Approaching</p><p className="text-xs font-bold text-white">{(bus.capacity - bus.occupancy)} Seats</p></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute left-[29px] top-[100px] bottom-[100px] w-0.5 bg-gradient-to-b from-brand-500/50 to-emerald-500/50 -z-10 animate-pulse"></div>
+
+                                                <LocationSelector
+                                                    label="Destination"
+                                                    value={toLocation}
+                                                    onSelect={setToLocation as any}
+                                                    onMapTrigger={() => setShowMapSelector('to')}
+                                                    placeholder="End"
+                                                    labelClassName="text-slate-700 dark:text-slate-300"
+                                                />
+                                            </div>
                                         </div>
 
-                                        {calculatedPath.length > 0 && (
+                                        {/* SEARCH BUTTON & LOADING RADAR ANIMATION */}
+                                        {fromLocation && toLocation && (!hasSearchedRoute || isCalculatingRoute) && (
+                                            <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-bottom duration-300">
+                                                <button
+                                                    onClick={handleSearchRoute}
+                                                    disabled={isCalculatingRoute}
+                                                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-extrabold tracking-wider text-xs uppercase flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(79,70,229,0.25)] active:scale-[0.98] transition-all duration-300 border border-white/10"
+                                                >
+                                                    {isCalculatingRoute ? (
+                                                        <>
+                                                            <Loader2 size={16} className="animate-spin text-white" />
+                                                            Finding Smart Route...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Search size={16} className="text-white" />
+                                                            Search Smart Route
+                                                        </>
+                                                    )}
+                                                </button>
+
+                                                {/* Premium Whisk 3.0 Radar Mapping Animation */}
+                                                {isCalculatingRoute && (
+                                                    <div className="p-6 rounded-2xl border border-brand-500/30 bg-brand-900/10 backdrop-blur-md flex flex-col items-center justify-center gap-4 text-center overflow-hidden relative min-h-[180px] shadow-[0_0_30px_rgba(34,197,94,0.05)]">
+                                                        {/* Ambient glowing circles */}
+                                                        <div className="absolute w-48 h-48 rounded-full border border-brand-500/10 animate-[ping_2s_infinite] opacity-60"></div>
+                                                        <div className="absolute w-32 h-32 rounded-full border border-brand-500/20 animate-pulse duration-700 opacity-40"></div>
+                                                        
+                                                        {/* Radar Pulse Spinner */}
+                                                        <div className="relative w-16 h-16 rounded-full bg-brand-500/10 border-2 border-brand-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.2)]">
+                                                            <Navigation size={24} className="text-brand-400 animate-bounce" />
+                                                            <span className="absolute inset-0 rounded-full border-2 border-brand-400 animate-[ping_1.5s_infinite]"></span>
+                                                        </div>
+
+                                                        <div className="z-10">
+                                                            <h4 className="text-xs font-black text-white uppercase tracking-widest text-shadow-sm">Mapping Route Junctions</h4>
+                                                            <p className="text-[9px] text-slate-400 mt-1.5 max-w-[250px] leading-relaxed font-bold">
+                                                                Snapping geocoding coordinates to nearest village landmarks...
+                                                            </p>
+                                                        </div>
+                                                        
+                                                        {/* Shimmer loading bar */}
+                                                        <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden mt-2 relative border border-white/5">
+                                                            <div className="h-full bg-gradient-to-r from-brand-500 to-indigo-500 w-1/3 rounded-full absolute animate-[shimmer_1.5s_infinite] shadow-[0_0_10px_#10B981]"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* WAY 1 / WAY 2 SELECTOR */}
+                                        {hasSearchedRoute && !isCalculatingRoute && availableRoutes.length > 1 && (
+                                            <div className="mt-4 p-4 rounded-xl border border-white/5 bg-slate-900/40 backdrop-blur-xl shadow-2xl animate-fade-in">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-400">Select Route Way</label>
+                                                <div className="grid grid-cols-2 gap-3 mt-2">
+                                                    {availableRoutes.map((route, idx) => {
+                                                        const isSelected = selectedRouteIdx === idx;
+                                                        const viaName = route.path.length > 2 ? `via ${route.path[Math.floor(route.path.length / 2)]}` : 'Direct';
+                                                        return (
+                                                            <button
+                                                                key={idx}
+                                                                onClick={() => handleSelectRoute(idx)}
+                                                                className={`relative p-3 rounded-xl border text-left transition-all duration-300 ${
+                                                                    isSelected 
+                                                                    ? 'bg-brand-500/10 border-brand-500/50 shadow-[0_0_15px_rgba(34,197,94,0.15)]' 
+                                                                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                                }`}
+                                                            >
+                                                                {isSelected && (
+                                                                    <div className="absolute top-0 right-0 w-2 h-2 bg-brand-500 rounded-full m-2 animate-pulse" />
+                                                                )}
+                                                                <p className={`text-xs font-bold ${isSelected ? 'text-brand-400' : 'text-slate-300'}`}>
+                                                                    Way {idx + 1}
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-400 mt-0.5 truncate">{viaName}</p>
+                                                                <p className="text-[10px] text-emerald-400 font-bold mt-1">
+                                                                    {route.distance.toFixed(1)} km ({Math.round(route.distance / 30 * 60)} min)
+                                                                </p>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {hasSearchedRoute && !isCalculatingRoute && calculatedPath.length > 0 && (
                                             <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 bg-brand-900/10`}>
                                                 <div className="flex justify-between items-end mb-3">
                                                     <label className={`text-xs font-bold uppercase tracking-wider text-brand-300`}>Route Landmarks ({calculatedPath.length})</label>
@@ -1319,58 +1539,11 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                             </div>
                                         )}
 
-                                        {/* INTERACTIVE ROUTE MAP */}
-                                        {pathDetails.length > 1 && fromLocation && toLocation && (
-                                            <div className="mt-4 animate-fade-in ring-1 ring-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                                                <RouteMap
-                                                    pathCoordinates={pathDetails}
-                                                    pickupLocation={{ lat: fromLocation.lat, lng: fromLocation.lng, name: fromLocation.name }}
-                                                    dropoffLocation={{ lat: toLocation.lat, lng: toLocation.lng, name: toLocation.name }}
-                                                    height="220px"
-                                                    showControls={true}
-                                                    theme="dark" // FORCE DARK MODE FOR IMMERSIVE FEEL
-                                                    className="opacity-90 hover:opacity-100 transition-opacity"
-                                                />
-                                                <div className="flex justify-between mt-2 px-1">
-                                                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Actual Road Route
-                                                    </span>
-                                                    <span className="text-[10px] text-emerald-400 font-bold">
-                                                        ETA: ~{Math.round((tripDistance || 0) / 30 * 60)} min
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-
-
                                         {/* Whisk 3.0: Ultimate Ride Selector (Inspired by Demo) */}
-                                        {fareDetails && (
+                                        {hasSearchedRoute && !isCalculatingRoute && fareDetails && (
                                             <div className="mt-6">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Select Vehicle</label>
-                                                    <span className="v5-match-badge group-hover:animate-pulse">AI Route Match</span>
-                                                </div>
-                                                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-                                                    {[
-                                                        { id: 'RICKSHAW', icon: '🛺', name: 'E-Rickshaw', price: 12 },
-                                                        { id: 'BUS', icon: '🚌', name: 'Village Bus', price: 5 },
-                                                        { id: 'MOTO', icon: '🛵', name: 'Moto Taxi', price: 15 },
-                                                        { id: 'CARGO', icon: '🛒', name: 'Cargo Cart', price: 8 },
-                                                    ].map((ride) => (
-                                                        <div
-                                                            key={ride.id}
-                                                            className={`v5-ride-option ${ride.id === 'BUS' ? 'active' : ''}`}
-                                                        >
-                                                            <span className="v5-ride-icon">{ride.icon}</span>
-                                                            <div className="v5-ride-name">{ride.name}</div>
-                                                            <div className="v5-ride-price">₹{Math.round(fareDetails.totalFare * (ride.price / 10))}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
                                                 {/* Ride Details (Inspired by Demo) */}
-                                                <div className="space-y-3 mt-2">
+                                                <div className="space-y-3">
                                                     <div className="flex justify-between items-center p-3 bg-white/5 rounded-2xl border border-white/5">
                                                         <span className="text-xs text-slate-400">Distance / ETA</span>
                                                         <span className="text-xs font-bold text-white">{tripDistance?.toFixed(1) || '2.4'} km • {Math.round((tripDistance || 2.4) * 3)} min</span>
@@ -1383,7 +1556,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                             </div>
                                         )}
 
-                                        {fareDetails && (
+                                        {hasSearchedRoute && !isCalculatingRoute && fareDetails && (
                                             <div className="mt-6">
                                                 <Button onClick={initiateBook} fullWidth disabled={!toLocation} className={`py-4 shadow-xl shadow-brand-500/20`}>
                                                     <div className="flex items-center justify-between w-full"><span>{isBuyingPass ? `Buy ${passType.replace('_', ' ')} Pass` : 'Book Ticket'}</span><span className="bg-white/20 px-2 py-1 rounded text-sm">{formatCurrency(isBuyingPass ? passPrice : fareDetails.totalFare * passengerCount)}</span></div>
@@ -1391,6 +1564,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                 {fareDetails.message && <p className="text-center text-[10px] text-slate-400 mt-2">{fareDetails.message}</p>}
                                             </div>
                                         )}
+
 
                                         {/* Book Charter & Send Parcel merged into Journey Card */}
                                         <div className="grid grid-cols-2 gap-3 mt-6">
@@ -1465,7 +1639,17 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                     isOpen={showPaymentGateway}
                     onClose={() => setShowPaymentGateway(false)}
                     onSuccess={handlePaymentGatewaySuccess}
-                    amount={Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0))}
+                    amount={
+                        isBuyingPass 
+                        ? passPrice 
+                        : currentView === 'BOOK_RENTAL' 
+                        ? (bidAmount ? parseInt(bidAmount) : rentalPrice) 
+                        : currentView === 'BOOK_PARCEL' 
+                        ? (logisticsPoolFound 
+                            ? (marketBooking ? marketBooking.product.price + logisticsPrice : logisticsPrice) * 0.7 
+                            : (marketBooking ? marketBooking.product.price + logisticsPrice : logisticsPrice))
+                        : Math.max(0, ((fareDetails?.totalFare || 0) - cargoSubsidy) * passengerCount + (livestockInfo ? 20 : 0) + (hasInsurance ? 1 : 0))
+                    }
                     orderId={activeOrderId}
                 />
             )}

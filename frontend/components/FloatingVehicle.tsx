@@ -24,12 +24,13 @@ export const FloatingVehicle: React.FC<FloatingVehicleProps> = ({ className = ''
     }, [size]);
 
     return (
-        <div className="floating-vehicle">
+        <div className="floating-vehicle-container animate-float-vehicle">
             <img
                 ref={vehicleRef}
                 src={vehicleImagePath}
                 alt="Floating Futuristic Vehicle"
                 className="vehicle-img"
+                style={{ imageRendering: '-webkit-optimize-contrast' }}
             />
         </div>
     );

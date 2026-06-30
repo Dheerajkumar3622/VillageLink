@@ -1,0 +1,30 @@
+﻿
+> @villagelink/frontend@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 1603 modules transformed.
+node.exe : [31mx[39m Build failed in 10.11s
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mx[39m Build failed in 10.11s:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[31merror during build:
+[31mCould not resolve "../contexts/AuthContext" from "components/DriverView.tsx"[31m
+file: [36mD:/Antigravity/Village_latest v1.0/frontend/components/DriverView.tsx[31m
+    at getRollupError 
+(file:///D:/Antigravity/Village_latest%20v1.0/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///D:/Antigravity/Village_latest%20v1.0/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at ModuleLoader.handleInvalidResolvedId 
+(file:///D:/Antigravity/Village_latest%20v1.0/node_modules/rollup/dist/es/shared/node-entry.js:21710:24)
+    at file:///D:/Antigravity/Village_latest%20v1.0/node_modules/rollup/dist/es/shared/node-entry.js:21670:26[39m
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path D:\Antigravity\Village_latest v1.0\frontend
+npm error workspace @villagelink/frontend@1.0.0
+npm error location D:\Antigravity\Village_latest v1.0\frontend
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c vite build

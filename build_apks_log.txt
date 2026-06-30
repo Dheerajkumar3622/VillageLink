@@ -1,0 +1,121 @@
+﻿========== 1. BUILDING USER APK ==========
+ΓêÜ Copying web assets from dist to android\app\src\main\assets\public in 177.46ms
+ΓêÜ Creating capacitor.config.json in android\app\src\main\assets in 4.12ms
+ΓêÜ copy android in 276.15ms
+ΓêÜ Updating Android plugins in 22.40ms
+[info] Found 4 Capacitor plugins for android:
+       @capacitor/app@8.0.1
+       @capacitor/filesystem@8.1.2
+       @capacitor/geolocation@8.1.0
+       @capacitor/preferences@8.0.1
+ΓêÜ update android in 581.12ms
+[info] Sync finished in 1.211s
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :clean
+> Task :app:clean
+> Task :capacitor-android:clean
+> Task :capacitor-app:clean
+> Task :capacitor-cordova-android-plugins:clean UP-TO-DATE
+> Task :capacitor-filesystem:clean
+> Task :capacitor-geolocation:clean
+> Task :capacitor-preferences:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:preBuild UP-TO-DATE
+> Task :capacitor-app:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:writeDebugAarMetadata
+> Task :app:javaPreCompileDebug
+> Task :capacitor-filesystem:preBuild UP-TO-DATE
+> Task :capacitor-filesystem:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :capacitor-geolocation:preBuild UP-TO-DATE
+> Task :capacitor-geolocation:preDebugBuild UP-TO-DATE
+> Task :capacitor-filesystem:writeDebugAarMetadata
+> Task :capacitor-android:writeDebugAarMetadata
+> Task :capacitor-preferences:preBuild UP-TO-DATE
+> Task :capacitor-preferences:preDebugBuild UP-TO-DATE
+> Task :capacitor-geolocation:writeDebugAarMetadata
+> Task :capacitor-preferences:writeDebugAarMetadata
+> Task :capacitor-android:processDebugNavigationResources
+> Task :capacitor-app:processDebugNavigationResources
+> Task :capacitor-cordova-android-plugins:processDebugNavigationResources
+> Task :app:checkDebugAarMetadata
+> Task :capacitor-filesystem:processDebugNavigationResources
+> Task :capacitor-geolocation:processDebugNavigationResources
+> Task :capacitor-preferences:processDebugNavigationResources
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugResValues
+> Task :capacitor-android:generateDebugResValues
+> Task :app:compileDebugNavigationResources
+> Task :capacitor-android:generateDebugResources
+> Task :capacitor-android:packageDebugResources
+> Task :capacitor-app:generateDebugResValues
+> Task :capacitor-app:generateDebugResources
+> Task :capacitor-app:packageDebugResources
+> Task :capacitor-cordova-android-plugins:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:generateDebugResources
+> Task :capacitor-cordova-android-plugins:packageDebugResources
+> Task :capacitor-filesystem:generateDebugResValues
+> Task :capacitor-filesystem:generateDebugResources
+> Task :capacitor-filesystem:packageDebugResources
+> Task :capacitor-geolocation:generateDebugResValues
+> Task :capacitor-geolocation:generateDebugResources
+> Task :capacitor-geolocation:packageDebugResources
+> Task :capacitor-preferences:generateDebugResValues
+> Task :capacitor-preferences:generateDebugResources
+> Task :capacitor-preferences:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :capacitor-android:extractDeepLinksDebug
+> Task :capacitor-app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+> Task :capacitor-cordova-android-plugins:processDebugManifest
+> Task :capacitor-android:processDebugManifest
+> Task :capacitor-filesystem:extractDeepLinksDebug
+> Task :capacitor-geolocation:extractDeepLinksDebug
+> Task :capacitor-filesystem:processDebugManifest
+> Task :capacitor-preferences:extractDeepLinksDebug
+> Task :capacitor-geolocation:processDebugManifest
+> Task :capacitor-app:processDebugManifest
+> Task :capacitor-preferences:processDebugManifest
+> Task :capacitor-android:compileDebugLibraryResources
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :capacitor-app:compileDebugLibraryResources
+> Task :capacitor-android:parseDebugLocalResources
+> Task :capacitor-app:parseDebugLocalResources
+> Task :app:processDebugManifestForPackage
+> Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+> Task :capacitor-filesystem:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+> Task :capacitor-filesystem:parseDebugLocalResources
+> Task :capacitor-cordova-android-plugins:generateDebugRFile
+> Task :capacitor-geolocation:compileDebugLibraryResources
+> Task :capacitor-app:generateDebugRFile
+> Task :capacitor-preferences:compileDebugLibraryResources
+> Task :capacitor-filesystem:generateDebugRFile
+> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-geolocation:parseDebugLocalResources
+> Task :capacitor-preferences:parseDebugLocalResources
+> Task :capacitor-geolocation:generateDebugRFile
+> Task :capacitor-android:javaPreCompileDebug
+> Task :capacitor-preferences:generateDebugRFile
+> Task :capacitor-app:javaPreCompileDebug
+> Task :app:processDebugResources
+> Task :capacitor-android:compileDebugJavaWithJavac

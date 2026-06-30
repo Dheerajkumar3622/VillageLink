@@ -12,7 +12,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dns from 'dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+// dns.setServers(['8.8.8.8', '1.1.1.1']); // Commented out to use system DNS resolver since public DNS servers may be unreachable or blocked
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import compression from 'compression';
@@ -138,7 +138,7 @@ app.get('/api/config/razorpay', (req, res) => {
 // --- DATABASE STATE ---
 let isDbConnected = false;
 const MONGO_URI_SRV = process.env.MONGO_URI || 'mongodb+srv://dheerakumar3622:Dheeraj123@villagelink.j9op0nf.mongodb.net/test?appName=Villagelink';
-const MONGO_URI_STANDARD = 'mongodb://dheerakumar3622:Dheeraj123@ac-klokthx-shard-00-00.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-01.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-02.j9op0nf.mongodb.net:27017/test?ssl=true&replicaSet=atlas-2yklok-shard-0&authSource=admin&retryWrites=true&w=majority';
+const MONGO_URI_STANDARD = 'mongodb://dheerakumar3622:Dheeraj123@ac-klokthx-shard-00-00.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-01.j9op0nf.mongodb.net:27017,ac-klokthx-shard-00-02.j9op0nf.mongodb.net:27017/test?ssl=true&replicaSet=atlas-nq3uvx-shard-0&authSource=admin&retryWrites=true&w=majority';
 
 // --- AUTO-SEED DEFAULT ADMIN ON DB CONNECT ---
 async function seedDefaultAdmin() {
@@ -185,7 +185,6 @@ const connectWithRetry = (uri) => {
         serverSelectionTimeoutMS: 5000,
         connectTimeoutMS: 10000,
         maxPoolSize: 500, // Handle up to 500 concurrent connections
-        family: 4, // Force IPv4
     })
         .then(() => {
             isDbConnected = true;

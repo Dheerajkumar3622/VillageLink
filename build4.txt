@@ -1,0 +1,124 @@
+﻿
+> @villagelink/frontend@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 3471 modules transformed.
+node.exe : Generated an empty chunk: "feature-ai".
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Generated an empty chunk: "feature-ai".:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+rendering chunks...
+[1m[33m[plugin:vite:reporter][39m[22m [33m[plugin vite:reporter] 
+(!) D:/Antigravity/Village_latest v1.0/frontend/config.ts is dynamically imported by D:/Antigravity/Village_latest 
+v1.0/frontend/components/AuthView.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/AuthView.tsx but also 
+statically imported by D:/Antigravity/Village_latest v1.0/frontend/components/AdminView.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/AutoClicker.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/CargoDriverView.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/CargoShipmentView.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/ChatSection.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/DriverApp.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/DriverView.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/FoodLinkHome.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/GramMandiHome.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/GramSahayakBubble.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/KisanApp.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/LiveLocationUpdater.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/LogisticsApp.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/MessApp.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/MessManagerView.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/MyQRCode.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/PassengerView.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/PaymentGatewayModal.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/PaymentHistory.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/ProviderApp.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/ReelsSection.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/RoleSelector.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/StorageApp.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/TransitHubWidget.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/UniversalQRScanner.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/UserApp.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/UserPanel.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/UserProfile.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/VendorAdmin.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/VendorAnalytics.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/VendorMapView.tsx, D:/Antigravity/Village_latest v1.0/frontend/components/VendorView.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/components/VillageManagerView.tsx, D:/Antigravity/Village_latest 
+v1.0/frontend/components/VyapariApp.tsx, D:/Antigravity/Village_latest v1.0/frontend/index.tsx, 
+D:/Antigravity/Village_latest v1.0/frontend/services/adminService.ts, D:/Antigravity/Village_latest 
+v1.0/frontend/services/aeroService.ts, D:/Antigravity/Village_latest v1.0/frontend/services/authService.ts, 
+D:/Antigravity/Village_latest v1.0/frontend/services/blockchainService.ts, D:/Antigravity/Village_latest 
+v1.0/frontend/services/errorReportingService.ts, D:/Antigravity/Village_latest v1.0/frontend/services/graphService.ts, 
+D:/Antigravity/Village_latest v1.0/frontend/services/luxeOSService.ts, D:/Antigravity/Village_latest 
+v1.0/frontend/services/marketingService.ts, D:/Antigravity/Village_latest v1.0/frontend/services/messMateService.ts, 
+D:/Antigravity/Village_latest v1.0/frontend/services/mlService.ts, D:/Antigravity/Village_latest 
+v1.0/frontend/services/transportService.ts, D:/Antigravity/Village_latest 
+v1.0/frontend/services/vyaparSaathiService.ts, D:/Antigravity/Village_latest v1.0/frontend/transportService.ts, 
+dynamic import will not move module into another chunk.
+[39m
+computing gzip size...
+[2mdist/[22m[32madmin.html                                        [39m[1m[2m    1.27 kB[22m[1m[22m[2m Γöé gzip:   0.67 kB[22m
+[2mdist/[22m[32massets/locationSearchWorker-Da80hAWd.js           [39m[1m[2m    3.66 kB[22m[1m[22m
+[2mdist/[22m[32muser.html                                         [39m[1m[2m    5.14 kB[22m[1m[22m[2m Γöé gzip:   1.85 kB[22m
+[2mdist/[22m[32mprovider.html                                     [39m[1m[2m    5.89 kB[22m[1m[22m[2m Γöé gzip:   1.94 kB[22m
+[2mdist/[22m[32mindex.html                                        [39m[1m[2m    7.12 kB[22m[1m[22m[2m Γöé gzip:   2.71 kB[22m
+[2mdist/[22m[35massets/PassengerView-Kb9tyk11.css                 [39m[1m[2m   56.40 kB[22m[1m[22m[2m Γöé gzip:  11.94 kB[22m
+[2mdist/[22m[35massets/LoadingSkeleton-DKchf0wO.css               [39m[1m[2m  211.77 kB[22m[1m[22m[2m Γöé gzip:  31.40 kB[22m
+[2mdist/[22m[36massets/feature-ai-l0sNRNKZ.js                     [39m[1m[2m    0.00 kB[22m[1m[22m[2m Γöé gzip:   0.02 kB[22m
+[2mdist/[22m[36massets/index-Cx0OaQbI.js                          [39m[1m[2m    0.37 kB[22m[1m[22m[2m Γöé gzip:   0.26 kB[22m
+[2mdist/[22m[36massets/marketingService-eDkRhMOO.js               [39m[1m[2m    0.44 kB[22m[1m[22m[2m Γöé gzip:   0.28 kB[22m
+[2mdist/[22m[36massets/index-DvePlwAa.js                          [39m[1m[2m    0.80 kB[22m[1m[22m[2m Γöé gzip:   0.49 kB[22m
+[2mdist/[22m[36massets/web-qnJf70h3.js                            [39m[1m[2m    0.90 kB[22m[1m[22m[2m Γöé gzip:   0.47 kB[22m
+[2mdist/[22m[36mviews/firebaseConfig-D2FPbBBL.js                  [39m[1m[2m    1.04 kB[22m[1m[22m[2m Γöé gzip:   0.68 kB[22m
+[2mdist/[22m[36massets/web-BCsbV0YA.js                            [39m[1m[2m    1.25 kB[22m[1m[22m[2m Γöé gzip:   0.59 kB[22m
+[2mdist/[22m[36massets/Modal-DWrMzKlT.js                          [39m[1m[2m    1.41 kB[22m[1m[22m[2m Γöé gzip:   0.69 kB[22m
+[2mdist/[22m[36massets/blockchainService-Dv3M8kad.js              [39m[1m[2m    1.53 kB[22m[1m[22m[2m Γöé gzip:   0.72 kB[22m
+[2mdist/[22m[36massets/adminService-BeJpSjnh.js                   [39m[1m[2m    1.83 kB[22m[1m[22m[2m Γöé gzip:   0.65 kB[22m
+[2mdist/[22m[36massets/user-B92JCnqT.js                           [39m[1m[2m    2.43 kB[22m[1m[22m[2m Γöé gzip:   1.17 kB[22m
+[2mdist/[22m[36massets/UltrasonicVerificationService-l0MDi-2w.js  [39m[1m[2m    2.49 kB[22m[1m[22m[2m Γöé gzip:   1.17 kB[22m
+[2mdist/[22m[36massets/provider-Dt-uYPhG.js                       [39m[1m[2m    2.69 kB[22m[1m[22m[2m Γöé gzip:   1.33 kB[22m
+[2mdist/[22m[36massets/admin-hVl8edMJ.js                          [39m[1m[2m    2.86 kB[22m[1m[22m[2m Γöé gzip:   1.29 kB[22m
+[2mdist/[22m[36massets/graphService-OM-c8Zb0.js                   [39m[1m[2m    2.95 kB[22m[1m[22m[2m Γöé gzip:   1.29 kB[22m
+[2mdist/[22m[36mviews/ScratchCard-DcTQUHFp.js                     [39m[1m[2m    3.23 kB[22m[1m[22m[2m Γöé gzip:   1.48 kB[22m
+[2mdist/[22m[36massets/mlService-iPVo1CNB.js                      [39m[1m[2m    4.70 kB[22m[1m[22m[2m Γöé gzip:   2.31 kB[22m
+[2mdist/[22m[36massets/errorReportingService-CGAODF9S.js          [39m[1m[2m    6.15 kB[22m[1m[22m[2m Γöé gzip:   2.54 kB[22m
+[2mdist/[22m[36mviews/MessApp-Cy5ybM5j.js                         [39m[1m[2m    6.80 kB[22m[1m[22m[2m Γöé gzip:   1.98 kB[22m
+[2mdist/[22m[36mviews/DriverApp-BfXOTZTx.js                       [39m[1m[2m    7.80 kB[22m[1m[22m[2m Γöé gzip:   2.52 kB[22m
+[2mdist/[22m[36massets/LocationSelector-CuRsyFDu.js               [39m[1m[2m    7.90 kB[22m[1m[22m[2m Γöé gzip:   3.12 kB[22m
+[2mdist/[22m[36massets/synapse-Wl_cUrHx.js                        [39m[1m[2m    8.69 kB[22m[1m[22m[2m Γöé gzip:   3.50 kB[22m
+[2mdist/[22m[36massets/web-C2Fe704s.js                            [39m[1m[2m    8.80 kB[22m[1m[22m[2m Γöé gzip:   3.02 kB[22m
+[2mdist/[22m[36mviews/LuxeOSView-Db9tKpUx.js                      [39m[1m[2m    8.94 kB[22m[1m[22m[2m Γöé gzip:   2.69 kB[22m
+[2mdist/[22m[36mviews/ShopkeeperView-WB_R2IVa.js                  [39m[1m[2m    9.39 kB[22m[1m[22m[2m Γöé gzip:   2.57 kB[22m
+[2mdist/[22m[36massets/transportService-BXQKxFqj.js               [39m[1m[2m    9.97 kB[22m[1m[22m[2m Γöé gzip:   3.55 kB[22m
+[2mdist/[22m[36mviews/UserPanel-SYSdrEfm.js                       [39m[1m[2m   10.18 kB[22m[1m[22m[2m Γöé gzip:   3.05 kB[22m
+[2mdist/[22m[36mviews/VyaparSaathiView-TPOe3tjk.js                [39m[1m[2m   10.29 kB[22m[1m[22m[2m Γöé gzip:   2.99 kB[22m
+[2mdist/[22m[36mviews/StorageApp-CBNL6DlS.js                      [39m[1m[2m   12.23 kB[22m[1m[22m[2m Γöé gzip:   3.35 kB[22m
+[2mdist/[22m[36mviews/UniversalQRScanner-BVNYuPTv.js              [39m[1m[2m   13.36 kB[22m[1m[22m[2m Γöé gzip:   3.63 kB[22m
+[2mdist/[22m[36mviews/VyapariApp-CdIUbEYG.js                      [39m[1m[2m   13.78 kB[22m[1m[22m[2m Γöé gzip:   3.55 kB[22m
+[2mdist/[22m[36mviews/MessManagerView-BcZTc4yF.js                 [39m[1m[2m   14.56 kB[22m[1m[22m[2m Γöé gzip:   3.99 kB[22m
+[2mdist/[22m[36mviews/UserProfile-LU3cHEsK.js                     [39m[1m[2m   15.86 kB[22m[1m[22m[2m Γöé gzip:   4.13 kB[22m
+[2mdist/[22m[36mviews/ChatSection-BwUssnrc.js                     [39m[1m[2m   16.57 kB[22m[1m[22m[2m Γöé gzip:   4.54 kB[22m
+[2mdist/[22m[36mviews/ReelsSection-B3waQOW-.js                    [39m[1m[2m   16.57 kB[22m[1m[22m[2m Γöé gzip:   4.44 kB[22m
+[2mdist/[22m[36mviews/LogisticsApp-CZGvPmiE.js                    [39m[1m[2m   17.33 kB[22m[1m[22m[2m Γöé gzip:   4.65 kB[22m
+[2mdist/[22m[36mviews/CargoShipmentView-CZ5wnwZr.js               [39m[1m[2m   18.92 kB[22m[1m[22m[2m Γöé gzip:   4.45 kB[22m
+[2mdist/[22m[36massets/main-B-NGfV15.js                           [39m[1m[2m   19.65 kB[22m[1m[22m[2m Γöé gzip:   7.46 kB[22m
+[2mdist/[22m[36mviews/UserApp-BYtn-hDm.js                         [39m[1m[2m   24.07 kB[22m[1m[22m[2m Γöé gzip:   6.78 kB[22m
+[2mdist/[22m[36mviews/VillageManagerView-uiSrGhx-.js              [39m[1m[2m   27.06 kB[22m[1m[22m[2m Γöé gzip:   5.37 kB[22m
+[2mdist/[22m[36mviews/VendorView-btKbJVY0.js                      [39m[1m[2m   28.25 kB[22m[1m[22m[2m Γöé gzip:   6.79 kB[22m
+[2mdist/[22m[36mviews/GramMandiHome-B5PDn7zW.js                   [39m[1m[2m   29.31 kB[22m[1m[22m[2m Γöé gzip:   6.66 kB[22m
+[2mdist/[22m[36mviews/AdminView-CWL_8pwV.js                       [39m[1m[2m   29.65 kB[22m[1m[22m[2m Γöé gzip:   7.00 kB[22m
+[2mdist/[22m[36mviews/FoodLinkHome-CErlI0cd.js                    [39m[1m[2m   29.71 kB[22m[1m[22m[2m Γöé gzip:   7.28 kB[22m
+[2mdist/[22m[36massets/LoadingSkeleton-BAhq-d6E.js                [39m[1m[2m   35.98 kB[22m[1m[22m[2m Γöé gzip:  10.21 kB[22m
+[2mdist/[22m[36mviews/KisanApp-DrStmccg.js                        [39m[1m[2m   38.27 kB[22m[1m[22m[2m Γöé gzip:   9.47 kB[22m
+[2mdist/[22m[36massets/vendor-socket-CyTcV1HU.js                  [39m[1m[2m   41.25 kB[22m[1m[22m[2m Γöé gzip:  12.90 kB[22m
+[2mdist/[22m[36mviews/ProviderApp-XmkPR4CQ.js                     [39m[1m[2m   62.30 kB[22m[1m[22m[2m Γöé gzip:  15.25 kB[22m
+[2mdist/[22m[36massets/vendor-ui-iodnKzWl.js                      [39m[1m[2m   74.88 kB[22m[1m[22m[2m Γöé gzip:  16.04 kB[22m
+[2mdist/[22m[36massets/vendor-react-N2jDEoW4.js                   [39m[1m[2m  133.74 kB[22m[1m[22m[2m Γöé gzip:  43.03 kB[22m
+[2mdist/[22m[36massets/index.esm-Jrid8fL9.js                      [39m[1m[2m  237.21 kB[22m[1m[22m[2m Γöé gzip:  48.45 kB[22m
+[2mdist/[22m[36mviews/PassengerView-DFtU1C3Z.js                   [39m[1m[2m  339.52 kB[22m[1m[22m[2m Γöé gzip:  95.34 kB[22m
+[2mdist/[22m[36mviews/DriverView-DXSpPG66.js                      [39m[1m[2m  387.37 kB[22m[1m[22m[2m Γöé gzip: 113.45 kB[22m
+[2mdist/[22m[36massets/feature-blockchain-BNTqLrh4.js             [39m[1m[2m  393.28 kB[22m[1m[22m[2m Γöé gzip: 145.44 kB[22m
+[2mdist/[22m[36massets/mapbox-gl-ClINtL-d.js                      [39m[1m[33m1,692.54 kB[39m[22m[2m Γöé gzip: 466.28 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: 
+https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32mΓ£ô built in 1m 1s[39m

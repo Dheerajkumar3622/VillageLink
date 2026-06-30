@@ -161,19 +161,24 @@ router.post('/go-online', Auth.authenticate, async (req, res) => {
 
       return {
         ...route,
-        pendingPassengers: pendingTickets,
-        pendingParcels,
-        pendingCropPickups: pendingCropOrders,
-        competingDrivers: competition,
+        routeId: route.routeId,
+        routeName: route.routeName,
+        name: route.routeName,
+        demand: {
+          passengers: pendingTickets,
+          parcels: pendingParcels,
+          crops: pendingCropOrders
+        },
+        competition: competition,
+        aiScore: demandScore,
+        tag: demandScore >= 70 ? 'HOT🔥' : demandScore >= 40 ? 'GOOD👍' : 'NORMAL',
         estimatedEarning: pendingFares[0]?.total || 0,
-        demandScore,
-        aiSuggestion: demandScore >= 70 ? 'HOT 🔥' : demandScore >= 40 ? 'GOOD 👍' : 'NORMAL',
         reason: buildReasonString(pendingTickets, pendingParcels, pendingCropOrders, competition)
       };
     }));
 
-    // Sort by demand score (highest first)
-    enrichedRoutes.sort((a, b) => b.demandScore - a.demandScore);
+    // Sort by AI score (highest first)
+    enrichedRoutes.sort((a, b) => b.aiScore - a.aiScore);
 
     console.log(`🟢 Driver ${user?.name} online at ${locationName || `${lat},${lng}`} | ${enrichedRoutes.length} routes available`);
 
@@ -496,12 +501,29 @@ router.put('/deliveries/:id/accept', Auth.authenticate, async (req, res) => {
       { new: true }
     );
 
-    if (!delivery) {
+    if (delivery) {
+      // Sync seat tracking for loaded parcels
+      try {
+        const { onParcelLoaded } = await import('../services/seatTrackingService.js');
+        await onParcelLoaded(driverId, 1);
+      } catch (seatErr) {
+        console.error("Seat tracking sync for parcel accept failed:", seatErr);
+      }
+    } else {
       delivery = await ProcurementOrder.findOneAndUpdate(
         { id: deliveryId },
         { assignedDriverId: driverId, status: 'DRIVER_ASSIGNED', updatedAt: Date.now() },
         { new: true }
       );
+      if (delivery) {
+        // Sync seat tracking for loaded crops
+        try {
+          const { onParcelLoaded } = await import('../services/seatTrackingService.js');
+          await onParcelLoaded(driverId, 1);
+        } catch (seatErr) {
+          console.error("Seat tracking sync for crop accept failed:", seatErr);
+        }
+      }
     }
 
     if (!delivery) return res.status(404).json({ error: 'Delivery not found' });

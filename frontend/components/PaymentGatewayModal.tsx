@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, CreditCard, Lock, CheckCircle, Smartphone, QrCode, Home, Radio, HandCoins, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from './Button';
 import { playSonicToken } from '../services/advancedFeatures';
@@ -205,8 +206,8 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={step === 'form' ? onClose : undefined}></div>
 
       <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/20 overflow-hidden animate-fade-in flex flex-col max-h-[90vh]">
@@ -292,6 +293,7 @@ export const PaymentGatewayModal: React.FC<PaymentGatewayModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

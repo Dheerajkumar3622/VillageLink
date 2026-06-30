@@ -40,6 +40,8 @@ interface UserAppProps {
 }
 
 import { Geolocation } from '@capacitor/geolocation';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 const preloadLazyComponent = (importFn: () => Promise<any>) => {
     importFn().catch(() => {});
@@ -47,6 +49,18 @@ const preloadLazyComponent = (importFn: () => Promise<any>) => {
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme, toggleLang }) => {
     const [activeTab, setActiveTab] = useState<UserTabType>('rides');
+    
+    // Swipe gesture states (Touch tracking)
+    const [touchStartX, setTouchStartX] = useState(0);
+    const [touchStartY, setTouchStartY] = useState(0);
+    const [touchMoveX, setTouchMoveX] = useState(0);
+    const [touchMoveY, setTouchMoveY] = useState(0);
+    const [isSwiping, setIsSwiping] = useState(false);
+    const [swipeDirection, setSwipeDirection] = useState<'none' | 'horizontal' | 'vertical'>('none');
+
+    // Hardware exit back-tap state
+    const [showExitToast, setShowExitToast] = useState(false);
+    const lastBackPress = React.useRef<number>(0);
     
     useEffect(() => {
         // Preload heavy modules in background after 1.5 seconds to ensure instant tab switching
@@ -180,19 +194,309 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
 
     const [isScrolled, setIsScrolled] = useState(false);
 
+    // Ref-based state cache to handle events in Capacitor listeners without re-binding
+    const stateRef = React.useRef({
+        activeTab,
+        passengerViewMode,
+        showQRScanner,
+        showAIChat,
+        showProfileDetails,
+        showSettings,
+        showEditProfile
+    });
+
     useEffect(() => {
-        const handleScroll = () => {
-            const scrollContainer = document.querySelector('.v5-main-content');
-            if (scrollContainer && scrollContainer.scrollTop > 10) {
+        stateRef.current = {
+            activeTab,
+            passengerViewMode,
+            showQRScanner,
+            showAIChat,
+            showProfileDetails,
+            showSettings,
+            showEditProfile
+        };
+    }, [activeTab, passengerViewMode, showQRScanner, showAIChat, showProfileDetails, showSettings, showEditProfile]);
+
+    const handleGlobalBack = () => {
+        const {
+            activeTab: curTab,
+            passengerViewMode: curPvMode,
+            showQRScanner: curQR,
+            showAIChat: curAI,
+            showProfileDetails: curProfile,
+            showSettings: curSettings,
+            showEditProfile: curEdit
+        } = stateRef.current;
+
+        if (curQR) {
+            setShowQRScanner(false);
+            return;
+        }
+        if (curAI) {
+            setShowAIChat(false);
+            return;
+        }
+        if (curProfile) {
+            if (curSettings) {
+                setShowSettings(false);
+            } else if (curEdit) {
+                setShowEditProfile(false);
+            } else {
+                setShowProfileDetails(false);
+            }
+            return;
+        }
+
+        if (curTab === 'haat') {
+            window.dispatchEvent(new Event('haat-back'));
+        } else if (curTab === 'food') {
+            window.dispatchEvent(new Event('food-back'));
+        } else if (curTab === 'rides') {
+            if (curPvMode !== 'DASHBOARD') {
+                window.dispatchEvent(new Event('passenger-back'));
+            } else {
+                const now = Date.now();
+                if (now - lastBackPress.current < 2000) {
+                    App.minimizeApp();
+                } else {
+                    lastBackPress.current = now;
+                    setShowExitToast(true);
+                    setTimeout(() => setShowExitToast(false), 2000);
+                }
+            }
+        } else {
+            setActiveTab('rides');
+        }
+    };
+
+    useEffect(() => {
+        let backHandler: any = null;
+
+        const setupListener = async () => {
+            if (Capacitor.isNativePlatform()) {
+                backHandler = await App.addListener('backButton', () => {
+                    handleGlobalBack();
+                });
+            }
+        };
+        setupListener();
+
+        return () => {
+            if (backHandler) {
+                backHandler.then((l: any) => l.remove()).catch(() => {});
+            }
+        };
+    }, []);
+
+    // Swipe gesture touch event handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!['rides', 'haat', 'food'].includes(activeTab)) return;
+        if (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD') return;
+
+        // Disable swipe transitions entirely if any modal or overlay is currently active/open in the DOM
+        if (
+            document.querySelector('.fixed.inset-0.z-\\[100\\]') ||
+            document.querySelector('.fixed.inset-0.z-\\[200\\]') ||
+            document.querySelector('.fixed.inset-0.z-\\[300\\]') ||
+            document.querySelector('.fixed.inset-0.z-\\[500\\]')
+        ) {
+            return;
+        }
+
+        // Edge-only swipe validation to eliminate accidental swipes inside scroll views, maps, and sliders
+        const startX = e.touches[0].clientX;
+        const edgeThreshold = 40;
+        if (startX > edgeThreshold && startX < window.innerWidth - edgeThreshold) {
+            return;
+        }
+
+        const target = e.target as HTMLElement;
+        if (
+            target.closest('.no-swipe') ||
+            target.closest('.leaflet-container') ||
+            target.closest('.mapboxgl-map') ||
+            target.closest('.map-container') ||
+            target.closest('input') ||
+            target.closest('textarea') ||
+            target.closest('button') ||
+            target.closest('a') ||
+            target.closest('[role="slider"]') ||
+            target.closest('.overflow-x-auto')
+        ) {
+            return;
+        }
+
+        setTouchStartX(e.touches[0].clientX);
+        setTouchStartY(e.touches[0].clientY);
+        setTouchMoveX(e.touches[0].clientX);
+        setTouchMoveY(e.touches[0].clientY);
+        setIsSwiping(true);
+        setSwipeDirection('none');
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isSwiping) return;
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const diffX = currentX - touchStartX;
+        const diffY = currentY - touchStartY;
+
+        if (swipeDirection === 'none') {
+            const threshold = 8;
+            if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    setSwipeDirection('horizontal');
+                } else {
+                    setSwipeDirection('vertical');
+                    setIsSwiping(false);
+                }
+            }
+        }
+
+        if (swipeDirection === 'horizontal') {
+            if (e.cancelable) e.preventDefault();
+            setTouchMoveX(currentX);
+            setTouchMoveY(currentY);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!isSwiping) return;
+        setIsSwiping(false);
+
+        if (swipeDirection === 'horizontal') {
+            const diffX = touchMoveX - touchStartX;
+            const swipeThreshold = window.innerWidth * 0.25;
+
+            const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+            const currentIdx = swipeableTabs.indexOf(activeTab);
+
+            if (currentIdx !== -1) {
+                if (diffX < -swipeThreshold && currentIdx < swipeableTabs.length - 1) {
+                    setActiveTab(swipeableTabs[currentIdx + 1]);
+                } else if (diffX > swipeThreshold && currentIdx > 0) {
+                    setActiveTab(swipeableTabs[currentIdx - 1]);
+                }
+            }
+        }
+
+        setTouchStartX(0);
+        setTouchStartY(0);
+        setTouchMoveX(0);
+        setTouchMoveY(0);
+        setSwipeDirection('none');
+    };
+
+    const getSwipeStyle = () => {
+        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const currentIdx = swipeableTabs.indexOf(activeTab);
+        if (currentIdx === -1) return {};
+
+        let dragOffset = 0;
+        if (isSwiping && swipeDirection === 'horizontal') {
+            const diffX = touchMoveX - touchStartX;
+            if ((currentIdx === 0 && diffX > 0) || (currentIdx === 2 && diffX < 0)) {
+                dragOffset = diffX * 0.25;
+            } else {
+                dragOffset = diffX;
+            }
+        }
+
+        return {
+            transform: `translate3d(calc(${-currentIdx * 100}vw + ${dragOffset}px), 0, 0)`,
+            transition: isSwiping ? 'none' : 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        };
+    };
+
+    const getSwipeProgress = () => {
+        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const currentIdx = swipeableTabs.indexOf(activeTab);
+        if (currentIdx === -1) return 0;
+
+        if (isSwiping && swipeDirection === 'horizontal') {
+            const diffX = touchMoveX - touchStartX;
+            let dragOffset = diffX;
+            if ((currentIdx === 0 && diffX > 0) || (currentIdx === 2 && diffX < 0)) {
+                dragOffset = diffX * 0.25;
+            }
+            return currentIdx - (dragOffset / window.innerWidth);
+        }
+        return currentIdx;
+    };
+
+    const getMeshColors = () => {
+        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const currentIdx = swipeableTabs.indexOf(activeTab);
+        if (currentIdx === -1) {
+            return {
+                orb1: darkMode ? 'rgba(190, 81, 3, 0.2)' : 'rgba(190, 81, 3, 0.1)',
+                orb2: darkMode ? 'rgba(255, 206, 27, 0.15)' : 'rgba(255, 206, 27, 0.1)',
+                orb3: darkMode ? 'rgba(6, 148, 148, 0.15)' : 'rgba(6, 148, 148, 0.1)',
+            };
+        }
+
+        const dragOffset = isSwiping && swipeDirection === 'horizontal' ? touchMoveX - touchStartX : 0;
+        let progress = currentIdx - (dragOffset / window.innerWidth);
+        progress = Math.max(0, Math.min(2, progress));
+
+        const colors = [
+            {
+                orb1: [190, 81, 3, darkMode ? 0.2 : 0.1],
+                orb2: [255, 206, 27, darkMode ? 0.15 : 0.1],
+                orb3: [6, 148, 148, darkMode ? 0.15 : 0.1]
+            },
+            {
+                orb1: [16, 185, 129, darkMode ? 0.2 : 0.1],
+                orb2: [6, 148, 148, darkMode ? 0.2 : 0.1],
+                orb3: [190, 81, 3, darkMode ? 0.1 : 0.05]
+            },
+            {
+                orb1: [194, 65, 12, darkMode ? 0.25 : 0.15],
+                orb2: [217, 119, 6, darkMode ? 0.2 : 0.1],
+                orb3: [255, 206, 27, darkMode ? 0.15 : 0.1]
+            }
+        ];
+
+        const phase1 = isNaN(progress) ? 0 : Math.floor(progress);
+        const phase2 = Math.min(2, phase1 + 1);
+        const weight = isNaN(progress) ? 0 : progress - phase1;
+
+        const interpolate = (c1: number[], c2: number[]) => {
+            if (!c1 || !c2) return 'rgba(0,0,0,0)';
+            const r = Math.round(c1[0] + (c2[0] - c1[0]) * weight);
+            const g = Math.round(c1[1] + (c2[1] - c1[1]) * weight);
+            const b = Math.round(c1[2] + (c2[2] - c1[2]) * weight);
+            const a = c1[3] + (c2[3] - c1[3]) * weight;
+            return `rgba(${r}, ${g}, ${b}, ${a})`;
+        };
+
+        const c1 = colors[phase1] || colors[0];
+        const c2 = colors[phase2] || colors[0];
+
+        return {
+            orb1: interpolate(c1.orb1, c2.orb1),
+            orb2: interpolate(c1.orb2, c2.orb2),
+            orb3: interpolate(c1.orb3, c2.orb3)
+        };
+    };
+
+    useEffect(() => {
+        const handleScroll = (e: Event) => {
+            const target = e.currentTarget as HTMLElement;
+            if (target && target.scrollTop > 10) {
                 setIsScrolled(true);
             } else {
                 setIsScrolled(false);
             }
         };
 
-        const scrollContainer = document.querySelector('.v5-main-content');
+        const scrollContainer = ['rides', 'haat', 'food'].includes(activeTab)
+            ? document.querySelector(`.v5-swipe-slide[data-tab="${activeTab}"]`)
+            : document.querySelector('.v5-main-content');
+
         if (scrollContainer) {
             scrollContainer.addEventListener('scroll', handleScroll);
+            setIsScrolled(scrollContainer.scrollTop > 10);
             return () => scrollContainer.removeEventListener('scroll', handleScroll);
         }
     }, [activeTab]);
@@ -261,28 +565,24 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
         );
     }
 
+    const meshColors = getMeshColors();
+
     return (
         <div className="v5-app-shell">
             {/* Mesh Background - Prismatic Luxe */}
             <div className={`v5-mesh-bg fixed inset-0 z-0 transition-all duration-1000 ${darkMode ? 'bg-[#0A0705]' : 'bg-[#FFF9F5]'}`}>
-                <div className={`absolute top-[-10%] left-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse ${darkMode ? 'bg-[#BE5103]/20' : 'bg-[#BE5103]/10'}`}></div>
-                <div className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse ${darkMode ? 'bg-[#FFCE1B]/15' : 'bg-[#FFCE1B]/10'}`} style={{ animationDelay: '1s' }}></div>
-                <div className={`absolute top-[40%] right-[-5%] w-[30%] h-[30%] blur-[100px] rounded-full animate-pulse ${darkMode ? 'bg-[#069494]/15' : 'bg-[#069494]/10'}`} style={{ animationDelay: '2s' }}></div>
+                <div className={`absolute top-[-10%] left-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb1 }}></div>
+                <div className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb2, animationDelay: '1s' }}></div>
+                <div className={`absolute top-[40%] right-[-5%] w-[30%] h-[30%] blur-[100px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb3, animationDelay: '2s' }}></div>
             </div>
 
             {/* V5 Header */}
             <header className="v5-header glass-panel px-6 py-4 flex items-center justify-between z-50 transition-all duration-500 max-w-md mx-auto border-b-border-subtle backdrop-blur-2xl">
                 <div className="flex items-center gap-3 animate-[pulseGlow_3s_ease-in-out_infinite] rounded-full transition-all duration-500">
                     {/* V5 Holographic Prism Logo or Back Button */}
-                    {(activeTab === 'profile' || activeTab === 'haat' || (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD')) ? (
+                    {(activeTab === 'profile' || activeTab === 'haat' || activeTab === 'food' || (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD')) ? (
                         <button onClick={() => {
-                            if (activeTab === 'haat') {
-                                window.dispatchEvent(new Event('haat-back'));
-                            } else if (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD') {
-                                window.dispatchEvent(new Event('passenger-back'));
-                            } else {
-                                setActiveTab('rides');
-                            }
+                            handleGlobalBack();
                         }} className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 transition-colors shadow-sm" aria-label="Go Back">
                             <ArrowLeft size={20} className="text-slate-900 dark:text-white" />
                         </button>
@@ -426,24 +726,41 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             </header>
 
             {/* Scrollable Content */}
-            <main className="v5-scroll-view v5-main-content pb-24 overflow-y-auto h-screen" style={{ scrollBehavior: 'smooth' }}>
+            <main className={`v5-scroll-view v5-main-content pb-24 h-screen ${['rides', 'haat', 'food'].includes(activeTab) ? 'overflow-hidden' : 'overflow-y-auto'}`} style={{ scrollBehavior: 'smooth' }}>
                 <React.Suspense fallback={
                     <div className="flex flex-col items-center justify-center p-8 mt-32 opacity-60 animate-[pulse_2s_ease-in-out_infinite]">
                         <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)] mb-4" />
                         <p className="text-[10px] uppercase font-[900] tracking-widest text-[#0F172A] dark:text-[#F8FAFC]">Loading Module...</p>
                     </div>
                 }>
-                    <div className={activeTab === 'rides' ? 'block' : 'hidden'}>
-                        <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />
-                    </div>
+                    {/* Sliding Swipe Container for Rides, Mandi, and Food tabs */}
+                    {['rides', 'haat', 'food'].includes(activeTab) ? (
+                        <div 
+                            className="v5-swipe-viewport"
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                        >
+                            <div 
+                                className="v5-swipe-container animate-fade-in"
+                                style={getSwipeStyle()}
+                            >
+                                <div className="v5-swipe-slide" data-tab="rides">
+                                    <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />
+                                </div>
+                                <div className="v5-swipe-slide" data-tab="haat">
+                                    <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />
+                                </div>
+                                <div className="v5-swipe-slide" data-tab="food">
+                                    <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {/* Other Tabs (rendered normally) */}
                     <div className={activeTab === 'reels' ? 'block animate-fade-in' : 'hidden'}>
                         <ReelsSection user={user!} />
-                    </div>
-                    <div className={activeTab === 'haat' ? 'block animate-fade-in' : 'hidden'}>
-                        <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />
-                    </div>
-                    <div className={activeTab === 'food' ? 'block animate-fade-in' : 'hidden'}>
-                        <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />
                     </div>
                     <div className={activeTab === 'cargo' ? 'block animate-fade-in' : 'hidden'}>
                         <LogisticsApp />
@@ -464,9 +781,19 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         setActiveTab(tab as any);
                     }
                 }}
+                progress={getSwipeProgress()}
+                isSwiping={isSwiping && swipeDirection === 'horizontal'}
             />
 
-
+            {/* Double Tap to Exit Toast */}
+            {showExitToast && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] animate-[v5FadeIn_0.3s_ease-out_forwards] pointer-events-none">
+                    <div className="bg-slate-900/90 dark:bg-black/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10 text-white text-xs font-bold shadow-lg flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Press back again to exit</span>
+                    </div>
+                </div>
+            )}
 
             {/* AI Chat Drawer - Simplified integration */}
             {showAIChat && (
@@ -705,6 +1032,30 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                 @keyframes v5FadeIn {
                     from { opacity: 0; transform: translateY(15px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                .v5-swipe-viewport {
+                    width: 100vw;
+                    height: 100%;
+                    overflow: hidden;
+                    position: relative;
+                    touch-action: pan-y;
+                }
+                .v5-swipe-container {
+                    display: flex;
+                    width: 300vw;
+                    height: 100%;
+                    will-change: transform;
+                    backface-visibility: hidden;
+                }
+                .v5-swipe-slide {
+                    width: 100vw;
+                    flex-shrink: 0;
+                    height: 100%;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    padding-bottom: 88px;
+                    box-sizing: border-box;
+                    -webkit-overflow-scrolling: touch;
                 }
             `}</style>
         </div>
