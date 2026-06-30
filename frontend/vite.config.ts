@@ -25,13 +25,13 @@ export default defineConfig({
     },
     proxy: {
       '/socket.io': {
-        target: 'http://127.0.0.1:3001', // Local backend for development
+        target: 'https://backendlink-0xjs.onrender.com', // Live backend for seamless local wifi testing
         ws: true,
         changeOrigin: true,
         secure: false,
       },
       '/api': {
-        target: 'http://127.0.0.1:3001', // Local backend for development
+        target: 'https://backendlink-0xjs.onrender.com', // Live backend for seamless local wifi testing
         changeOrigin: true,
         secure: false,
       }

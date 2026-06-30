@@ -37,7 +37,19 @@ interface ProviderAppProps {
     onLogout: () => void;
 }
 
-type ProviderRole = 'DRIVER' | 'FARMER' | 'VENDOR' | 'RETAILER' | 'MESS_OWNER' | 'SHOPKEEPER' | 'LOGISTICS';
+type ProviderRole = 
+    | 'DRIVER' 
+    | 'FARMER' 
+    | 'VENDOR' 
+    | 'RETAILER' 
+    | 'MESS_OWNER' 
+    | 'MESS_MANAGER'
+    | 'FOOD_VENDOR'
+    | 'SHOPKEEPER' 
+    | 'LOGISTICS' 
+    | 'CARGO_DRIVER'
+    | 'VILLAGE_MANAGER'
+    | 'ADMIN';
 type TabType = 'bus' | 'cargo' | 'charter' | 'tool';
 
 interface RoleConfig {
@@ -52,8 +64,13 @@ const ROLE_CONFIGS: Record<ProviderRole, RoleConfig> = {
     VENDOR: { icon: <Store className="w-4 h-4" />, label: 'Vendor', color: '#f97316' },
     RETAILER: { icon: <ShoppingCart className="w-4 h-4" />, label: 'Retailer', color: '#8b5cf6' },
     MESS_OWNER: { icon: <UtensilsCrossed className="w-4 h-4" />, label: 'Mess Owner', color: '#ef4444' },
+    MESS_MANAGER: { icon: <UtensilsCrossed className="w-4 h-4" />, label: 'Mess Manager', color: '#ef4444' },
+    FOOD_VENDOR: { icon: <Store className="w-4 h-4" />, label: 'Food Vendor', color: '#f97316' },
     SHOPKEEPER: { icon: <Store className="w-4 h-4" />, label: 'Shopkeeper', color: '#06b6d4' },
-    LOGISTICS: { icon: <Box className="w-4 h-4" />, label: 'Logistics', color: '#84cc16' }
+    LOGISTICS: { icon: <Box className="w-4 h-4" />, label: 'Logistics', color: '#84cc16' },
+    CARGO_DRIVER: { icon: <Truck className="w-4 h-4" />, label: 'Cargo Driver', color: '#3b82f6' },
+    VILLAGE_MANAGER: { icon: <Settings className="w-4 h-4" />, label: 'Village Manager', color: '#e11d48' },
+    ADMIN: { icon: <Wrench className="w-4 h-4" />, label: 'Admin', color: '#d97706' }
 };
 
 import { Geolocation } from '@capacitor/geolocation';
@@ -70,6 +87,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const [earnings, setEarnings] = useState({ today: 0, week: 0, month: 0 });
     const [pendingOrders, setPendingOrders] = useState(0);
     const [showAIChat, setShowAIChat] = useState(false);
+    const [loadingRoles, setLoadingRoles] = useState(true);
 
     const ColorIcon: React.FC<{ icon: React.ReactNode; color: string }> = ({ icon, color }) => {
         const iconRef = React.useRef<HTMLDivElement>(null);
@@ -126,6 +144,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     }, [user]);
 
     const loadUserRoles = async () => {
+        setLoadingRoles(true);
         try {
             const token = localStorage.getItem('villagelink_token');
             if (!token) {
@@ -184,6 +203,8 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
             } else {
                 setUserRoles(['DRIVER']);
             }
+        } finally {
+            setLoadingRoles(false);
         }
     };
 
@@ -222,17 +243,32 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 return <KisanApp />;
             case 'VENDOR':
             case 'RETAILER':
+            case 'FOOD_VENDOR':
                 return <VendorView user={user!} />;
             case 'MESS_OWNER':
+            case 'MESS_MANAGER':
                 return <MessManagerView user={user!} onBack={() => { }} />;
             case 'SHOPKEEPER':
                 return <ShopkeeperView user={user!} />;
             case 'LOGISTICS':
+            case 'CARGO_DRIVER':
                 return <CargoDriverView
                     driverId={user?.id || ''}
                     driverName={user?.name || ''}
                     onBack={() => { }}
                 />;
+            case 'VILLAGE_MANAGER':
+            case 'ADMIN':
+                return (
+                    <Suspense fallback={
+                        <div className="flex flex-col items-center justify-center p-8 bg-slate-900 rounded-2xl border border-white/5">
+                            <Loader2 className="w-8 h-8 animate-spin text-amber-500 mb-2" />
+                            <p className="text-sm text-slate-400">Loading Admin Dashboard...</p>
+                        </div>
+                    }>
+                        <AdminView user={user!} />
+                    </Suspense>
+                );
             default:
                 return <DriverView user={user!} lang="EN" />;
         }
@@ -262,6 +298,15 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
         );
     }
 
+    if (loadingRoles) {
+        return (
+            <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <p className="text-sm text-slate-400">Loading partner profile...</p>
+            </div>
+        );
+    }
+
     if (user.role === 'ADMIN') {
         return (
             <Suspense
@@ -285,6 +330,55 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 onComplete={handleRoleRegistration}
                 onCancel={() => setShowRoleSelector(false)}
             />
+        );
+    }
+
+    // Show Verification Pending screen if user has no verified roles
+    if (userRoles.length === 0) {
+        return (
+            <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
+                <div className="v5-mesh-bg fixed inset-0 z-0 opacity-40"></div>
+                <div className="v5-grain"></div>
+                
+                <div className="liquid-glass-card p-8 rounded-3xl border border-white/10 max-w-md w-full text-center relative z-10 backdrop-blur-3xl bg-slate-900/60 shadow-2xl">
+                    <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
+                        <Sparkles className="w-8 h-8 text-amber-400" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-extrabold font-space mb-3 bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                        Verification Pending
+                    </h2>
+                    
+                    <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                        Welcome to the VillageLink Partner network, <span className="text-white font-semibold">{user.name}</span>! Your profile details are currently being reviewed by our verification team. 
+                    </p>
+                    
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4 mb-6 text-left">
+                        <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+                            <span>Partner ID</span>
+                            <span className="font-mono text-white">{user.id}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs text-slate-400">
+                            <span>Status</span>
+                            <span className="text-amber-400 font-bold flex items-center gap-1">
+                                <Loader2 className="w-3 h-3 animate-spin" /> Pending Review
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <p className="text-xs text-slate-500 mb-6">
+                        You will receive a notification and SMS once your account is activated. Usually takes 24-48 hours.
+                    </p>
+                    
+                    <Button
+                        variant="glow"
+                        onClick={onLogout}
+                        className="w-full py-3 rounded-2xl font-bold bg-rose-600 hover:bg-rose-500 border-none text-white"
+                    >
+                        Sign Out
+                    </Button>
+                </div>
+            </div>
         );
     }
 
