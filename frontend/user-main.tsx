@@ -9,6 +9,7 @@ import './index.css';
 
 // Import the User App Root (with auth handling)
 import UserAppRoot from './components/UserAppRoot';
+import { LanguageProvider } from './services/i18n';
 
 // Global Fetch Interceptor for 401 Unauthorized (Invalid Token)
 const originalFetch = window.fetch;
@@ -30,7 +31,9 @@ if (container) {
     const root = createRoot(container);
     root.render(
         <React.StrictMode>
-            <UserAppRoot />
+            <LanguageProvider>
+                <UserAppRoot />
+            </LanguageProvider>
         </React.StrictMode>
     );
 }
