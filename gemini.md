@@ -30,3 +30,8 @@
 - 2026-01-20: Hardened codebase (tsconfig strict mode, accessibility fixes, HTML meta tags).
 - 2026-05-28: Integrated Universal Orders & Bookings Hub (Yatra, Mandi, Parcels) with time-aware journey steppers, live telemetry, interactive driver chat simulator, and self-healing wallet refund claims.
 - 2026-06-04: Integrated Tesla-like Autopilot 3D Proximity Radar simulation (neon wireframe, dynamic lane curving, blind-spot audio alarms, simulation control drawer).
+- 2026-06-30: Migrated Confirm Booking modal, Driver Profile modal, Payment Gateway modal, and Flash Pass modal to React Portals to fix horizontal slider parent transforms.
+- 2026-06-30: Implemented swipeable Active Tickets swiper carousel in PassengerView for multiple simultaneous bookings.
+- 2026-06-30: Built Autopilot Live Route Radar with simulated/socket multi-vehicle location tracking, segment distance dynamic price bid calculation, and pre-arrival bidding seat reservation locks.
+- 2026-06-30: Optimized Google Maps RoutingService latency by adding local cache keys and 2.5s abort timeout with straight-line fallback.
+- 2026-06-30: Successfully compiled fresh release APKs (User, Provider, Admin) into apk-out/ and pushed the codebase to GitHub repositories (origin and buildorigin).
