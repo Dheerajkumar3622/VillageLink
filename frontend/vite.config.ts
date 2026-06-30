@@ -9,7 +9,26 @@ import { resolve } from 'path';
 const useDevHttps = process.env.VITE_DEV_HTTPS !== '0';
 
 export default defineConfig({
-  plugins: [react(), ...(useDevHttps ? [basicSsl()] : [])],
+  plugins: [
+    react(), 
+    ...(useDevHttps ? [basicSsl()] : []),
+    {
+      name: 'html-rewrite-middleware',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url ? req.url.split('?')[0] : '';
+          if (url === '/provider') {
+            req.url = '/provider.html';
+          } else if (url === '/admin') {
+            req.url = '/admin.html';
+          } else if (url === '/user') {
+            req.url = '/user.html';
+          }
+          next();
+        });
+      }
+    }
+  ],
   envDir: resolve(__dirname, '../'),
   server: {
     host: true, // Allow external access via IP

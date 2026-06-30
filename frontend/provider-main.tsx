@@ -9,6 +9,7 @@ import './index.css';
 
 // Import the Provider App Root (with auth handling)
 import ProviderAppRoot from './components/ProviderAppRoot';
+import { LanguageProvider } from './services/i18n';
 
 // Global Fetch Interceptor for 401 Unauthorized (Invalid Token)
 const originalFetch = window.fetch;
@@ -30,7 +31,10 @@ if (container) {
     const root = createRoot(container);
     root.render(
         <React.StrictMode>
-            <ProviderAppRoot />
+            <LanguageProvider>
+                <ProviderAppRoot />
+            </LanguageProvider>
         </React.StrictMode>
     );
 }
+

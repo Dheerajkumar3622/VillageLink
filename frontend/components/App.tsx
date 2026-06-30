@@ -5,6 +5,7 @@ import { ViewSkeleton, ProfileSkeleton } from './LoadingSkeleton';
 import { User } from '@villagelink/shared';
 import { getCurrentUser, logoutUser, getAuthToken } from '../services/authService';
 import { Moon, Sun, LogOut, Languages } from 'lucide-react';
+import { LanguageProvider } from '../services/i18n';
 
 // ========================================
 // LAZY LOADED VIEWS - Only load what's needed
@@ -291,4 +292,10 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+const AppWithProvider: React.FC = () => (
+  <LanguageProvider>
+    <App />
+  </LanguageProvider>
+);
+
+export default AppWithProvider;

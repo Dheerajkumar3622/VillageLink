@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { User as UserType, Ticket } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { Bell, Loader2, Sparkles, X, Bike, ShieldCheck, ArrowLeft, LogOut, Settings, Edit3, Camera, KeyRound, MapPin, Mail, Languages, Check, Phone, Paperclip, Send, Search } from 'lucide-react';
+import { useTranslation } from '../services/i18n';
+import { LanguageSelector } from './LanguageSelector';
 import { LiveTracker } from './LiveTracker';
 
 // Import V5 Shared Components
@@ -48,6 +50,7 @@ const preloadLazyComponent = (importFn: () => Promise<any>) => {
 };
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme, toggleLang }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<UserTabType>('rides');
     
     // Swipe gesture states (Touch tracking)
@@ -640,7 +643,8 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         </div>
                     )}
                 </div>
-                <div className="v5-living-header shrink-0">
+                <div className="v5-living-header shrink-0 flex items-center gap-2">
+                    <LanguageSelector />
                     {/* Breathing Avatar */}
                     <div className="v5-avatar-ecosystem" onClick={() => {
                         if (activeTab === 'profile') {

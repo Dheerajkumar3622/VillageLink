@@ -36,6 +36,8 @@ import { TourismTracker } from './TourismTracker';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
 import { MapPickupSelector } from './MapPickupSelector';
+import { GeminiCoPilot } from './GeminiCoPilot';
+import { useTranslation } from '../services/i18n';
 
 // Animated Wave Component for Ultrasonic Status
 const AnimatedWave = ({ isBroadcasting, isError = false }: { isBroadcasting: boolean, isError?: boolean }) => {
@@ -90,7 +92,7 @@ interface PassengerViewProps {
 }
 
 export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScrolled = false, onLogout, activeTourismTracker, setActiveTourismTracker }) => {
-    const t = (key: any) => (TRANSLATIONS[lang] as any)[key] || (TRANSLATIONS.EN as any)[key];
+    const { t } = useTranslation();
 
     const [appMode, setAppMode] = useState<'TRANSPORT' | 'MARKET' | 'FOOD'>('TRANSPORT');
     const [currentView, setCurrentView] = useState<'DASHBOARD' | 'BOOK_RENTAL' | 'BOOK_PARCEL'>('DASHBOARD');
@@ -1421,6 +1423,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                     labelClassName="text-slate-700 dark:text-slate-300"
                                                 />
                                             </div>
+
+                                            {/* Gemini Voice Co-Pilot - AI Bhojpuri/Hindi Booking */}
+                                            <GeminiCoPilot onBookingExtracted={(data) => {
+                                                // Auto-fill locations from voice input
+                                                setFromLocation({ name: data.source, address: data.source, lat: 0, lng: 0, block: '', panchayat: '', villageCode: '' } as any);
+                                                setToLocation({ name: data.destination, address: data.destination, lat: 0, lng: 0, block: '', panchayat: '', villageCode: '' } as any);
+                                                setPassengerCount(data.seats || 1);
+                                            }} />
                                         </div>
 
                                         {/* SEARCH BUTTON & LOADING RADAR ANIMATION */}

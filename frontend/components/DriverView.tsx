@@ -13,7 +13,7 @@ import { Button } from './Button';
 import { HeartHandshake, PhoneIcon, XIcon, ShieldOffIcon, AlertTriangleIcon, CheckCircle2, Navigation, Volume2, VolumeX, MenuSquare, ArrowUpRight, ArrowDownRight, Clock, MapPin, Search, Camera, Activity, Check, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight } from 'lucide-react';
 import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
-import { TRANSLATIONS } from '@villagelink/shared';
+import { useTranslation } from '../services/i18n';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
 import { getOfficialRoutes, simulateDemand, TripConfig, getLiveDemandHeatmap } from '../services/transportService';
@@ -32,7 +32,7 @@ interface DriverViewProps {
 // ... (Interface definitions remain the same) ...
 
 export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
-    const t = (key: keyof typeof TRANSLATIONS.EN) => TRANSLATIONS[lang][key] || TRANSLATIONS.EN[key];
+    const { t } = useTranslation();
     const [viewMode, setViewMode] = useState<'BUS' | 'CHARTER' | 'CARGO' | 'UTILITIES'>('BUS');
     const [showCargoPanel, setShowCargoPanel] = useState(false);
 

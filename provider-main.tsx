@@ -9,13 +9,16 @@ import './index.css';
 
 // Import the Provider App Root (with auth handling)
 import ProviderAppRoot from './components/ProviderAppRoot';
+import { LanguageProvider } from './frontend/services/i18n';
 
 const container = document.getElementById('root');
 if (container) {
     const root = createRoot(container);
     root.render(
         <React.StrictMode>
-            <ProviderAppRoot />
+            <LanguageProvider>
+                <ProviderAppRoot />
+            </LanguageProvider>
         </React.StrictMode>
     );
 }

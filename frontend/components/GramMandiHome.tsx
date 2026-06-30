@@ -14,6 +14,8 @@ import {
     TrendingUp, Package, DollarSign, BarChart3, RefreshCw, Eye, Check,
     ShieldCheck, Map, History, Globe, Sparkles, X, Newspaper
 } from 'lucide-react';
+import { ARMandiHUD } from './ARMandiHUD';
+import { useTranslation } from '../services/i18n';
 
 const OrganicToggle: React.FC<{ organic: boolean, onChange: (val: boolean) => void }> = ({ organic, onChange }) => {
     const ref = useRef<HTMLButtonElement>(null);
@@ -77,6 +79,7 @@ interface Order {
 }
 
 export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState<ViewType>('CONSUMER_SHOP');
     const [userRole, setUserRole] = useState<UserRole>('CONSUMER');
@@ -839,6 +842,11 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                                 View All
                             </button>
                         </div>
+
+                        {/* AI Mandi Crop Grading - Gemini Vision */}
+                        <ARMandiHUD onGradeComplete={(result) => {
+                            console.log('AI Crop Grade Result:', result);
+                        }} />
 
                         {/* Top Farmers Carousel */}
                         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">

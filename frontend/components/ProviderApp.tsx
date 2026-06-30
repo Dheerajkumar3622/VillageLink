@@ -29,6 +29,8 @@ import CargoDriverView from './CargoDriverView';
 import ReelsSection from './ReelsSection';
 import MyQRCode from './MyQRCode';
 import RoleSelector from './RoleSelector';
+import { useTranslation } from '../services/i18n';
+import { LanguageSelector } from './LanguageSelector';
 
 const AdminView = lazy(() => import('./AdminView').then((m) => ({ default: m.AdminView })));
 
@@ -88,6 +90,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const [pendingOrders, setPendingOrders] = useState(0);
     const [showAIChat, setShowAIChat] = useState(false);
     const [loadingRoles, setLoadingRoles] = useState(true);
+    const { t } = useTranslation();
 
     const ColorIcon: React.FC<{ icon: React.ReactNode; color: string }> = ({ icon, color }) => {
         const iconRef = React.useRef<HTMLDivElement>(null);
@@ -346,7 +349,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     </div>
                     
                     <h2 className="text-2xl font-extrabold font-space mb-3 bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                        Verification Pending
+                        {t('auth.verificationPending')}
                     </h2>
                     
                     <p className="text-sm text-slate-400 leading-relaxed mb-6">
@@ -375,7 +378,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                         onClick={onLogout}
                         className="w-full py-3 rounded-2xl font-bold bg-rose-600 hover:bg-rose-500 border-none text-white"
                     >
-                        Sign Out
+                        {t('auth.signOut')}
                     </Button>
                 </div>
             </div>
@@ -439,6 +442,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <LanguageSelector />
                     <ProfilePill
                         name={user?.name || 'Provider'}
                         balance={user?.walletBalance || 0}
