@@ -643,9 +643,11 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                         </div>
                     )}
                 </div>
-                <div className="v5-living-header shrink-0 flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     <LanguageSelector />
-                    {/* Breathing Avatar */}
+                    
+                    <div className="v5-living-header flex items-center gap-2">
+                        {/* Breathing Avatar */}
                     <div className="v5-avatar-ecosystem" onClick={() => {
                         if (activeTab === 'profile') {
                             setShowProfileDetails(true);
@@ -726,6 +728,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                             <LogOut size={16} strokeWidth={3} className="text-white" />
                         </button>
                     )}
+                </div>
                 </div>
             </header>
 

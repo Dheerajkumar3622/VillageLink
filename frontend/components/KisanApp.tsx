@@ -12,10 +12,10 @@ import {
     TrendingUp, MapPin, Phone, Mail, Lock, User, Leaf, ChevronRight, LogOut,
     Camera, Calendar, Check, Clock, Sun, Cloud, CloudRain
 } from 'lucide-react';
-import { getWeatherData, getNewsData } from '../services/mlService';
-import AeroDashboard from './aero/AeroDashboard';
+import { ARMandiHUD } from './ARMandiHUD';
+import { Sparkles as SparklesIcon } from 'lucide-react';
 
-type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS' | 'AEROPONICS';
+type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS' | 'AEROPONICS' | 'CROP_GRADING';
 
 interface KisanUser {
     id: string;
@@ -30,6 +30,8 @@ export const KisanApp: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<KisanUser | null>(null);
+    const [prefilledCropName, setPrefilledCropName] = useState('');
+    const [prefilledPrice, setPrefilledPrice] = useState('');
 
     // Auth form
     const [loginId, setLoginId] = useState('');
@@ -351,6 +353,22 @@ export const KisanApp: React.FC = () => {
                         </button>
 
                         <button
+                            onClick={() => setViewState('CROP_GRADING')}
+                            className="btn-primary w-full flex items-center justify-between !bg-gradient-to-r !from-amber-500 !to-orange-600 border-none"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-xl">
+                                    <SparklesIcon size={24} className="text-white" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-lg">फसल गुणवत्ता जांच (AI)</p>
+                                    <p className="text-xs text-emerald-100 font-medium">AI Crop Quality Grading</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="opacity-50" />
+                        </button>
+
+                        <button
                             onClick={() => setViewState('AEROPONICS')}
                             className="btn-primary w-full flex items-center justify-between !bg-gradient-to-r !from-green-500 !to-teal-600 border-none"
                         >
@@ -504,8 +522,8 @@ export const KisanApp: React.FC = () => {
                             <div>
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Crop Name / फसल का नाम</label>
                                 <div className="relative">
-                                    <Wheat className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                    <input name="crop" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="e.g. Wheat, Potato, Rice" />
+                                     <Wheat className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                     <input name="crop" required value={prefilledCropName} onChange={e => setPrefilledCropName(e.target.value)} className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="e.g. Wheat, Potato, Rice" />
                                 </div>
                             </div>
 
@@ -513,15 +531,15 @@ export const KisanApp: React.FC = () => {
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Quantity / मात्रा</label>
                                     <div className="relative">
-                                        <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input name="quantity" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Amount" />
+                                         <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                         <input name="quantity" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Amount" />
                                     </div>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Price (₹/unit) / मूल्य</label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                        <input name="price" type="number" required className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Rate" />
+                                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                         <input name="price" type="number" required value={prefilledPrice} onChange={e => setPrefilledPrice(e.target.value)} className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 transition-all font-bold" placeholder="Rate" />
                                     </div>
                                 </div>
                             </div>
@@ -574,6 +592,34 @@ export const KisanApp: React.FC = () => {
                 userId={user?.id || ''}
                 onBack={() => setViewState('DASHBOARD')}
             />
+        );
+    }
+
+    // AI Crop Quality Grading View
+    if (viewState === 'CROP_GRADING') {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20 relative">
+                <div className="animated-bg opacity-30"></div>
+
+                {/* Header */}
+                <div className="glass-panel sticky top-0 z-30 px-4 py-6 border-b-emerald-500/20">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setViewState('DASHBOARD')} aria-label="Back to Dashboard" className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+                            <ArrowLeft size={20} />
+                        </button>
+                        <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">AI Crop Grading</h1>
+                    </div>
+                </div>
+
+                <div className="px-4 mt-8 animate-fadeInUp">
+                    <ARMandiHUD onGradeComplete={(result) => {
+                        // Prefill crop details and switch to CREATE_LISTING
+                        setPrefilledCropName(result.cropType);
+                        setPrefilledPrice(result.price.toString());
+                        setViewState('CREATE_LISTING');
+                    }} />
+                </div>
+            </div>
         );
     }
 

@@ -843,11 +843,6 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             </button>
                         </div>
 
-                        {/* AI Mandi Crop Grading - Gemini Vision */}
-                        <ARMandiHUD onGradeComplete={(result) => {
-                            console.log('AI Crop Grade Result:', result);
-                        }} />
-
                         {/* Top Farmers Carousel */}
                         <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
                             {[
