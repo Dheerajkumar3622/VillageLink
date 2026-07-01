@@ -92,6 +92,15 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     const [loadingRoles, setLoadingRoles] = useState(true);
     const { t } = useTranslation();
 
+    const currentRoleConfig = ROLE_CONFIGS[activeRole] || ROLE_CONFIGS['DRIVER'];
+    const headerRef = React.useRef<HTMLElement>(null);
+
+    React.useEffect(() => {
+        if (headerRef.current) {
+            headerRef.current.style.borderBottom = `2px solid ${currentRoleConfig.color}44`;
+        }
+    }, [currentRoleConfig.color]);
+
     const ColorIcon: React.FC<{ icon: React.ReactNode; color: string }> = ({ icon, color }) => {
         const iconRef = React.useRef<HTMLDivElement>(null);
         React.useEffect(() => {
@@ -385,15 +394,6 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
         );
     }
 
-    const currentRoleConfig = ROLE_CONFIGS[activeRole] || ROLE_CONFIGS['DRIVER'];
-
-    const headerRef = React.useRef<HTMLElement>(null);
-
-    React.useEffect(() => {
-        if (headerRef.current) {
-            headerRef.current.style.borderBottom = `2px solid ${currentRoleConfig.color}44`;
-        }
-    }, [currentRoleConfig.color]);
 
     return (
         <div className="v5-app-shell">
