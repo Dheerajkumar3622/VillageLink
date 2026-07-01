@@ -75,6 +75,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     // Bus Mode State
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [showQRScanner, setShowQRScanner] = useState(false);
+    const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [verifyId, setVerifyId] = useState('');
     const [verifyResult, setVerifyResult] = useState<any>(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
