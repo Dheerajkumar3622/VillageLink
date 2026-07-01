@@ -232,15 +232,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const t = (key: string): string => {
-    const keys = key.split('.');
-    let translation: any = TRANSLATIONS[language];
+    let translation: any = TRANSLATIONS[language] || TRANSLATIONS['EN'];
     
-    if (translation[key]) {
+    if (translation && translation[key]) {
       return translation[key];
     }
     
     let englishTranslation: any = TRANSLATIONS['EN'];
-    if (englishTranslation[key]) {
+    if (englishTranslation && englishTranslation[key]) {
       return englishTranslation[key];
     }
 

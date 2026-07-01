@@ -10,6 +10,10 @@ import './index.css';
 // Import the User App Root (with auth handling)
 import UserAppRoot from './components/UserAppRoot';
 import { LanguageProvider } from './services/i18n';
+import { initGlobalErrorReporter } from './utils/errorReporter';
+
+// Initialize global error reporter
+initGlobalErrorReporter();
 
 // Global Fetch Interceptor for 401 Unauthorized (Invalid Token)
 const originalFetch = window.fetch;

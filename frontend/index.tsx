@@ -8,34 +8,10 @@ import { getCurrentUser } from './services/authService';
 import { bootstrapOTA } from './src/OTABootstrap';
 import { OTAService } from './src/OTAService';
 
-// --- GLOBAL ERROR REPORTER ---
-const reportError = (message: string, stack: string, componentStack?: string) => {
-  const user = getCurrentUser();
-  // Use navigator.sendBeacon for reliable sending even if page unloads
-  const payload = JSON.stringify({
-    message,
-    stackTrace: stack,
-    componentStack,
-    userId: user?.id || 'ANONYMOUS',
-  });
+import { initGlobalErrorReporter } from './utils/errorReporter';
 
-  // Attempt standard fetch first, fallback to beacon
-  fetch(`${API_BASE_URL}/api/bugs/report`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload
-  }).catch(() => {
-    navigator.sendBeacon(`${API_BASE_URL}/api/bugs/report`, payload);
-  });
-};
-
-window.onerror = (message, source, lineno, colno, error) => {
-  reportError(message.toString(), error?.stack || `${source}:${lineno}:${colno}`);
-};
-
-window.onunhandledrejection = (event) => {
-  reportError(`Unhandled Promise Rejection: ${event.reason}`, event.reason?.stack || '');
-};
+// Initialize global error reporter
+initGlobalErrorReporter();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

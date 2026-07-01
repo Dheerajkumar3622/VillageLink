@@ -385,7 +385,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
         );
     }
 
-    const currentRoleConfig = ROLE_CONFIGS[activeRole];
+    const currentRoleConfig = ROLE_CONFIGS[activeRole] || ROLE_CONFIGS['DRIVER'];
 
     const headerRef = React.useRef<HTMLElement>(null);
 
@@ -423,10 +423,10 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                                     onClick={() => switchRole(role)}
                                 >
                                     <ColorIcon
-                                        icon={ROLE_CONFIGS[role].icon}
-                                        color={role === activeRole ? 'inherit' : ROLE_CONFIGS[role].color}
+                                        icon={(ROLE_CONFIGS[role] || ROLE_CONFIGS['DRIVER']).icon}
+                                        color={role === activeRole ? 'inherit' : (ROLE_CONFIGS[role] || ROLE_CONFIGS['DRIVER']).color}
                                     />
-                                    <span className="text-sm font-semibold">{ROLE_CONFIGS[role].label}</span>
+                                    <span className="text-sm font-semibold">{(ROLE_CONFIGS[role] || ROLE_CONFIGS['DRIVER']).label}</span>
                                     {role === activeRole && <Check className="w-4 h-4 ml-auto" />}
                                 </button>
                             ))}
@@ -571,24 +571,30 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
 };
 
 // Orders View Component
-const OrdersView: React.FC<{ role: ProviderRole; user: User }> = ({ role, user }) => (
-    <div className="orders-view">
-        <h2 className="view-title">
-            Orders & Requests
-        </h2>
-        <p className="view-empty-text">No pending orders for {ROLE_CONFIGS[role].label}</p>
-    </div>
-);
+const OrdersView: React.FC<{ role: ProviderRole; user: User }> = ({ role, user }) => {
+    const config = ROLE_CONFIGS[role] || ROLE_CONFIGS['DRIVER'];
+    return (
+        <div className="orders-view">
+            <h2 className="view-title">
+                Orders & Requests
+            </h2>
+            <p className="view-empty-text">No pending orders for {config.label}</p>
+        </div>
+    );
+};
 
 // Earnings View Component  
-const EarningsView: React.FC<{ role: ProviderRole; user: User }> = ({ role, user }) => (
-    <div className="earnings-view">
-        <h2 className="view-title">
-            Earnings Dashboard
-        </h2>
-        <p className="view-empty-text">Earnings data for {ROLE_CONFIGS[role].label}</p>
-    </div>
-);
+const EarningsView: React.FC<{ role: ProviderRole; user: User }> = ({ role, user }) => {
+    const config = ROLE_CONFIGS[role] || ROLE_CONFIGS['DRIVER'];
+    return (
+        <div className="earnings-view">
+            <h2 className="view-title">
+                Earnings Dashboard
+            </h2>
+            <p className="view-empty-text">Earnings data for {config.label}</p>
+        </div>
+    );
+};
 
 // Settings View Component
 const SettingsView: React.FC<{ user: User; onLogout: () => void }> = ({ user, onLogout }) => (

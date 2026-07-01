@@ -104,6 +104,31 @@
 
     <!-- Razorpay -->
     <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+    
+    <!-- Early Error Banner Overlay -->
+    <script>
+      window.addEventListener('error', function (event) {
+        if (!event.message) return;
+        var errDiv = document.createElement('div');
+        errDiv.style.position = 'fixed';
+        errDiv.style.top = '0';
+        errDiv.style.left = '0';
+        errDiv.style.width = '100%';
+        errDiv.style.zIndex = '999999';
+        errDiv.style.background = '#ef4444';
+        errDiv.style.color = '#ffffff';
+        errDiv.style.padding = '20px';
+        errDiv.style.fontFamily = 'monospace';
+        errDiv.style.fontSize = '14px';
+        errDiv.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+        errDiv.innerHTML = '<h2>🚨 Client Application Error</h2>' +
+          '<p><b>Error:</b> ' + event.message + '</p>' +
+          '<p><b>Source:</b> ' + event.filename + ':' + event.lineno + ':' + event.colno + '</p>' +
+          '<pre style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-top: 10px;">' + (event.error ? event.error.stack : 'No stacktrace available') + '</pre>' +
+          '<button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px; background: white; color: #ef4444; border: none; font-weight: bold; border-radius: 4px; cursor: pointer;">Reload Page</button>';
+        document.body.appendChild(errDiv);
+      });
+    </script>
 </head>
 
 <body class="bg-slate-900 text-slate-50 min-h-screen">
