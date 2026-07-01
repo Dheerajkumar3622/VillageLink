@@ -1,6 +1,5 @@
 import express from 'express';
 const router = express.Router();
-import fetch from 'node-fetch-commonjs';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
