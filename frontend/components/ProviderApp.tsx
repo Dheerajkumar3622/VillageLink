@@ -398,8 +398,8 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
     return (
         <div className="v5-app-shell">
             {/* Mesh Background */}
-            <div className="v5-mesh-bg fixed inset-0 z-0"></div>
-            <div className="v5-grain"></div>
+            <div className="v5-mesh-bg fixed inset-0 z-[-20] pointer-events-none"></div>
+            <div className="v5-grain pointer-events-none"></div>
 
             {/* Header */}
             <header ref={headerRef} className="v5-header">

@@ -939,14 +939,17 @@ body,
 
 .veo-drift-grain {
   position: fixed;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
   opacity: 0.03;
-  animation: driftGrain 60s linear infinite;
   pointer-events: none;
-  z-index: -5;
+  z-index: -10;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes driftGrain {
@@ -1694,35 +1697,32 @@ body,
 .v5-mesh-bg {
   position: fixed;
   inset: 0;
-  z-index: -10;
+  z-index: -20;
   background:
     radial-gradient(circle at 10% 10%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 50% 90%, rgba(139, 92, 219, 0.08) 0%, transparent 40%),
     var(--bg-deep);
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* V5 Cinematic Grain */
 .v5-grain {
   position: fixed;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
   opacity: 0.02;
-  animation: v5Drift 60s linear infinite;
   pointer-events: none;
-  z-index: -5;
-}
-
-@keyframes v5Drift {
-  from {
-    transform: translate(0, 0);
-  }
-
-  to {
-    transform: translate(-5%, -5%);
-  }
+  z-index: -10;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* V5 Section Header */

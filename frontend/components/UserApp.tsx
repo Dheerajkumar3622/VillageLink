@@ -573,10 +573,10 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     return (
         <div className="v5-app-shell">
             {/* Mesh Background - Prismatic Luxe */}
-            <div className={`v5-mesh-bg fixed inset-0 z-0 transition-all duration-1000 ${darkMode ? 'bg-[#0A0705]' : 'bg-[#FFF9F5]'}`}>
-                <div className={`absolute top-[-10%] left-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb1 }}></div>
-                <div className={`absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb2, animationDelay: '1s' }}></div>
-                <div className={`absolute top-[40%] right-[-5%] w-[30%] h-[30%] blur-[100px] rounded-full animate-pulse`} style={{ backgroundColor: meshColors.orb3, animationDelay: '2s' }}></div>
+            <div className={`v5-mesh-bg fixed inset-0 z-[-20] pointer-events-none transition-all duration-1000 ${darkMode ? 'bg-[#0A0705]' : 'bg-[#FFF9F5]'}`}>
+                <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full" style={{ backgroundColor: meshColors.orb1, transform: 'translate3d(0,0,0)', backfaceVisibility: 'hidden' }}></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] blur-[120px] rounded-full" style={{ backgroundColor: meshColors.orb2, transform: 'translate3d(0,0,0)', backfaceVisibility: 'hidden' }}></div>
+                <div className="absolute top-[40%] right-[-5%] w-[30%] h-[30%] blur-[100px] rounded-full" style={{ backgroundColor: meshColors.orb3, transform: 'translate3d(0,0,0)', backfaceVisibility: 'hidden' }}></div>
             </div>
 
             {/* V5 Header */}
