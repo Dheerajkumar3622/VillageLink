@@ -321,14 +321,7 @@ const allowedOrigins = [
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost:')) {
-            return callback(null, true);
-        }
-        if (origin.endsWith('.onrender.com')) {
-            return callback(null, true);
-        }
-        // Fallback to allow connection in dev, but set proper headers
-        return callback(null, true);
+        return callback(null, origin);
     },
     credentials: true,
     maxAge: 86400
