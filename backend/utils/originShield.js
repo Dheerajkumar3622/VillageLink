@@ -8,11 +8,10 @@ const SHIELD_SECRET = process.env.ORIGIN_SHIELD_SECRET || 'shield_v3_secure_vill
 export const originShieldVerify = (req, res, next) => {
     const shieldSignature = req.headers['x-origin-shield-signature'];
     
-    // In development mode, allow requests unless a simulation testing header is provided
-    const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+    const isEnforced = process.env.ENFORCE_ORIGIN_SHIELD === 'true';
     const isTestMode = req.headers['x-shield-test-mode'] === 'true';
 
-    if (isDev && !isTestMode) {
+    if (!isEnforced && !isTestMode) {
         return next();
     }
 
