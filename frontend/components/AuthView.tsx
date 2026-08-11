@@ -183,7 +183,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
     const phoneAuthPromise = fb.signInWithPhoneNumber(fb.auth, phoneNumber, verifier);
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('reCAPTCHA / Phone Auth verification timed out after 2.5s')), 2500)
+      setTimeout(() => reject(new Error('reCAPTCHA / Phone Auth verification timed out after 10s')), 10000)
     );
 
     return await Promise.race([phoneAuthPromise, timeoutPromise]);
@@ -382,24 +382,24 @@ export const AuthView: React.FC<AuthViewProps> = ({
     if (isPhone) {
       setViewState('REGISTER_VERIFY');
       startResendTimer();
-      setInfoMsg("Sending OTP...");
+      setInfoMsg("Sending Real SMS OTP via Firebase...");
       try {
-        const data = await sendBackendOtp(targetId);
-        setConfirmationResult(null);
-        if (data.otp) {
-          setRegOtp(data.otp);
-          setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
-        } else {
-          setInfoMsg(data.message || "OTP sent to your mobile number!");
-        }
-      } catch (err: any) {
-        console.warn("Backend SMS failed, attempting Firebase Phone Auth fallback:", err);
+        const phoneNumber = targetId.startsWith('+') ? targetId : `+91${targetId.replace(/\D/g, '').slice(-10)}`;
+        const confirmation = await executeFirebasePhoneAuth(phoneNumber);
+        setConfirmationResult(confirmation);
+        setInfoMsg(`Real SMS OTP sent to ${phoneNumber} via Firebase!`);
+      } catch (fbErr: any) {
+        console.warn("Firebase Register SMS fallback to backend:", fbErr);
         try {
-          const phoneNumber = targetId.startsWith('+') ? targetId : `+91${targetId.replace(/\D/g, '').slice(-10)}`;
-          const confirmation = await executeFirebasePhoneAuth(phoneNumber);
-          setConfirmationResult(confirmation);
-          setInfoMsg(`Real SMS OTP sent to ${phoneNumber} via Firebase!`);
-        } catch (fbErr: any) {
+          const data = await sendBackendOtp(targetId);
+          setConfirmationResult(null);
+          if (data.otp) {
+            setRegOtp(data.otp);
+            setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
+          } else {
+            setInfoMsg(data.message || "OTP sent to your mobile number!");
+          }
+        } catch (fallbackErr: any) {
           setError(formatFirebaseError(fbErr));
         }
       } finally {
@@ -488,24 +488,24 @@ export const AuthView: React.FC<AuthViewProps> = ({
     if (isPhone) {
       setViewState('RESET');
       startResendTimer();
-      setInfoMsg("Sending OTP...");
+      setInfoMsg("Sending Real SMS OTP via Firebase...");
       try {
-        const data = await sendBackendOtp(targetId);
-        setConfirmationResult(null);
-        if (data.otp) {
-          setResetToken(data.otp);
-          setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
-        } else {
-          setInfoMsg(data.message || "OTP sent to your mobile number!");
-        }
-      } catch (err: any) {
-        console.warn("Backend SMS failed, attempting Firebase Phone Auth fallback:", err);
+        const phoneNumber = targetId.startsWith('+') ? targetId : `+91${targetId.replace(/\D/g, '').slice(-10)}`;
+        const confirmation = await executeFirebasePhoneAuth(phoneNumber);
+        setConfirmationResult(confirmation);
+        setInfoMsg(`Real SMS OTP sent to ${phoneNumber} via Firebase!`);
+      } catch (fbErr: any) {
+        console.warn("Firebase Forgot SMS fallback to backend:", fbErr);
         try {
-          const phoneNumber = targetId.startsWith('+') ? targetId : `+91${targetId.replace(/\D/g, '').slice(-10)}`;
-          const confirmation = await executeFirebasePhoneAuth(phoneNumber);
-          setConfirmationResult(confirmation);
-          setInfoMsg(`Real SMS OTP sent to ${phoneNumber} via Firebase!`);
-        } catch (fbErr: any) {
+          const data = await sendBackendOtp(targetId);
+          setConfirmationResult(null);
+          if (data.otp) {
+            setResetToken(data.otp);
+            setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
+          } else {
+            setInfoMsg(data.message || "OTP sent to your mobile number!");
+          }
+        } catch (fallbackErr: any) {
           setError(formatFirebaseError(fbErr));
         }
       } finally {
