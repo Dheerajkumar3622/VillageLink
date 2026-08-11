@@ -387,7 +387,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
         const data = await sendBackendOtp(targetId);
         setConfirmationResult(null);
         if (data.otp) {
-          setInfoMsg(`OTP Code: ${data.otp}`);
+          setRegOtp(data.otp);
+          setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
         } else {
           setInfoMsg(data.message || "OTP sent to your mobile number!");
         }
@@ -492,7 +493,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
         const data = await sendBackendOtp(targetId);
         setConfirmationResult(null);
         if (data.otp) {
-          setInfoMsg(`OTP Code: ${data.otp}`);
+          setResetToken(data.otp);
+          setInfoMsg(`⚡ OTP Code: ${data.otp} (Auto-filled on screen)`);
         } else {
           setInfoMsg(data.message || "OTP sent to your mobile number!");
         }

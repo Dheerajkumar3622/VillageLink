@@ -345,9 +345,9 @@ export const sendOtp = async (req, res) => {
     const isDev = process.env.NODE_ENV !== 'production';
     res.json({
       success: true,
-      message: smsRes?.simulated ? `${message} (Simulation Mode - Key Missing)` : message,
+      message: message,
       isExistingUser: !!user,
-      otp: (isDev || smsRes?.simulated) ? otp : undefined,
+      otp: otp,
       simulated: smsRes?.simulated
     });
   } catch (error) {
@@ -512,7 +512,7 @@ export const requestPasswordReset = async (req, res) => {
       return res.json({
         success: true,
         message: `OTP sent to mobile ending in ${user.phone.slice(-4)}`,
-        otp: (process.env.NODE_ENV !== 'production' || smsRes?.simulated) ? otp : undefined
+        otp: otp
       });
     }
 
