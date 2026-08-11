@@ -179,11 +179,16 @@ export const AuthView: React.FC<AuthViewProps> = ({
       'callback': () => {},
       'expired-callback': () => {}
     });
+    try {
+      await verifier.render();
+    } catch (rErr) {
+      console.warn("Recaptcha render info:", rErr);
+    }
     (window as any).recaptchaVerifier = verifier;
 
     const phoneAuthPromise = fb.signInWithPhoneNumber(fb.auth, phoneNumber, verifier);
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('reCAPTCHA / Phone Auth verification timed out after 10s')), 10000)
+      setTimeout(() => reject(new Error('reCAPTCHA / Phone Auth verification timed out after 15s')), 15000)
     );
 
     return await Promise.race([phoneAuthPromise, timeoutPromise]);
