@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { VNISHighwayJunctionSnappingEngine } from './vnisHighwayJunctionSnappingEngine.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,17 +51,41 @@ export class VNISJunctionVillageAllocator {
       return { junctions: [], unallocatedVillages: [], totalJunctionsMapped: 0 };
     }
 
-    // Load master village database (bihar_junction_nodes.json)
+    // Load master village database (from VNISHighwayJunctionSnappingEngine & local frontend cache)
     let villageDb = [];
     try {
-      const dbPath = path.join(__dirname, '..', 'data', 'bihar_junction_nodes.json');
-      if (fs.existsSync(dbPath)) {
-        const content = fs.readFileSync(dbPath, 'utf8');
-        const raw = JSON.parse(content);
-        villageDb = Array.isArray(raw) ? raw : (raw.nodes || []);
+      const candidates = await VNISHighwayJunctionSnappingEngine.snapRouteToHighwayModes(polyline, maxFeederRadiusKm);
+      if (candidates && candidates.sequence && candidates.sequence.length > 0) {
+        villageDb = candidates.sequence.map(s => ({
+          id: s.nodeId,
+          name: s.name,
+          localNameHindi: s.localNameHindi,
+          lat: s.pointOnPolyline ? s.pointOnPolyline.lat : polyline[0].lat,
+          lng: s.pointOnPolyline ? s.pointOnPolyline.lng : polyline[0].lng,
+          district: s.district || 'Rural District',
+          coLocatedVillages: s.coLocatedVillages || []
+        }));
       }
-    } catch (err) {
-      console.error('[VNISJunctionVillageAllocator] Failed to load village DB:', err);
+    } catch (e) {
+      console.warn('[VNISJunctionVillageAllocator] Dynamic snapping query warning:', e.message);
+    }
+
+    if (villageDb.length === 0) {
+      try {
+        const biharPath = path.resolve(process.cwd(), 'frontend/public/data/bihar_junction_nodes.json');
+        const precisionPath = path.resolve(process.cwd(), 'frontend/public/data/precision_village_nodes.json');
+        
+        if (fs.existsSync(biharPath)) {
+          const raw = JSON.parse(fs.readFileSync(biharPath, 'utf8'));
+          villageDb = villageDb.concat(Array.isArray(raw) ? raw : (raw.nodes || []));
+        }
+        if (fs.existsSync(precisionPath)) {
+          const raw = JSON.parse(fs.readFileSync(precisionPath, 'utf8'));
+          villageDb = villageDb.concat(Array.isArray(raw) ? raw : (raw.nodes || []));
+        }
+      } catch (err) {
+        console.error('[VNISJunctionVillageAllocator] Failed to load local village DB:', err);
+      }
     }
 
     // Step 1: Detect T-Junctions and Y-Junctions along the polyline

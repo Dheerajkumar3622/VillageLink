@@ -48,6 +48,25 @@ export class RoutingService {
     }
   }
 
+  /**
+   * VNIS T-Junction & Y-Junction Feeder Village Allocator
+   * Maps 100% of interior villages to nearest highway boarding junction modes along polyline
+   */
+  public async allocateHighwayJunctions(polylinePoints: Array<{ lat: number; lng: number }>, maxFeederRadiusKm = 3.0) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vnis/corridor/allocate-junctions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ polyline: polylinePoints, maxFeederRadiusKm })
+      });
+      const data = await res.json();
+      return data.success ? data.data : null;
+    } catch (e) {
+      console.warn('[RoutingService] VNIS Highway Junction Allocation Error:', e);
+      return null;
+    }
+  }
+
   private calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371e3; // metres
     const phi1 = lat1 * Math.PI/180;
