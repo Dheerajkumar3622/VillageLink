@@ -29,7 +29,7 @@ router.post('/create-order', Auth.authenticate, async (req, res) => {
 
         res.json({
             success: true,
-            keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+            keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_RskOC9QoyBPh6a',
             order: rpOrder
         });
     } catch (error) {

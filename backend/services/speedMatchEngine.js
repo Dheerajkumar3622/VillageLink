@@ -16,13 +16,13 @@ import mongoose from 'mongoose';
 import { Ticket, DriverLocation, User, StopDemand, Notification } from '../models.js';
 
 // --- CONFIGURATION ---
-const MATCH_WINDOW_SECONDS = 60;       // Must match for 60 seconds
-const SPEED_TOLERANCE_KMPH = 5;        // Allow ±5 km/h difference
-const PROXIMITY_THRESHOLD_KM = 0.05;   // Must be within 50 meters
-const CORRELATION_THRESHOLD = 0.85;    // 85% correlation needed
-const CHECK_INTERVAL_MS = 10000;       // Check every 10 seconds
-const BUFFER_MAX_ENTRIES = 30;         // Max GPS samples per user (5 min at 10s intervals)
-const MIN_MOVING_SPEED = 5;            // Minimum speed to consider "moving" (km/h)
+const MATCH_WINDOW_SECONDS = 15;       // Must match for 15 seconds
+const SPEED_TOLERANCE_KMPH = 12;       // Allow ±12 km/h difference (handles GPS jitter)
+const PROXIMITY_THRESHOLD_KM = 0.2;    // Must be within 200 meters
+const CORRELATION_THRESHOLD = 0.70;    // 70% correlation needed
+const CHECK_INTERVAL_MS = 4000;        // Check every 4 seconds
+const BUFFER_MAX_ENTRIES = 30;         // Max GPS samples per user
+const MIN_MOVING_SPEED = 3;            // Minimum speed to consider "moving" (km/h)
 
 // Socket.IO reference
 let io = null;

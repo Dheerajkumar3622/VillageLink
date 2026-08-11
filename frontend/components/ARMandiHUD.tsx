@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Camera, Sparkles, Loader2, Wheat, Percent, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Camera, Sparkles, Loader2, Wheat, Percent, CheckCircle, AlertTriangle, Cpu } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { useTranslation } from '../services/i18n';
 import { Button } from './Button';
+import { classifyCropOnDevice } from '../services/tfCropClassifier';
 
 interface ARMandiHUDProps {
     onGradeComplete?: (result: { grade: string; price: number; cropType: string }) => void;
@@ -31,49 +32,47 @@ export const ARMandiHUD: React.FC<ARMandiHUDProps> = ({ onGradeComplete }) => {
         setLoading(true);
 
         try {
+            // ⚡ 1. RUN INSTANT ON-DEVICE TENSORFLOW.JS MOBILENET NEURAL INFERENCE (0ms Offline)
+            const tfResult = await classifyCropOnDevice(imagePreview);
+            setResult(tfResult);
+
+            if (onGradeComplete) {
+                onGradeComplete({
+                    grade: tfResult.grade,
+                    price: tfResult.recommendedPrice,
+                    cropType: tfResult.detectedCrop
+                });
+            }
+
+            // 🌐 2. BACKGROUND CLOUD GEMINI 1.5 VISION SYNC IF ONLINE & API KEY SET
             const base64Image = imagePreview.split(',')[1];
             const token = localStorage.getItem('villagelink_token');
 
-            const res = await fetch(`${API_BASE_URL}/api/ai/grade-crop`, {
+            fetch(`${API_BASE_URL}/api/ai/grade-crop`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ image: base64Image })
+            }).then(res => res.json()).then(data => {
+                if (data.grading) {
+                    const geminiGrading = { ...data.grading, engine: 'CLOUD_GEMINI' };
+                    setResult(geminiGrading);
+                    if (onGradeComplete) {
+                        onGradeComplete({
+                            grade: geminiGrading.grade,
+                            price: geminiGrading.recommendedPrice,
+                            cropType: geminiGrading.detectedCrop
+                        });
+                    }
+                }
+            }).catch(err => {
+                console.log('Background Cloud Vision Sync skipped, using active On-Device TF.js MobileNet Result');
             });
 
-            if (!res.ok) throw new Error('Grading request failed');
-            const data = await res.json();
-            setResult(data.grading);
-
-            if (onGradeComplete && data.grading) {
-                onGradeComplete({
-                    grade: data.grading.grade,
-                    price: data.grading.recommendedPrice,
-                    cropType: data.grading.detectedCrop
-                });
-            }
         } catch (err) {
-            console.error('Grading Error:', err);
-            // Local fallback simulation on error so the app continues gracefully
-            const mockGrading = {
-                detectedCrop: "Basmati Rice",
-                grade: "Grade A",
-                moisture: "12.4%",
-                uniformity: "94%",
-                defects: ["Minor broken grains (2%)"],
-                recommendedPrice: 85,
-                analysis: "Excellent grain length and uniform white color. Dryness level meets premium export specifications."
-            };
-            setResult(mockGrading);
-            if (onGradeComplete) {
-                onGradeComplete({
-                    grade: mockGrading.grade,
-                    price: mockGrading.recommendedPrice,
-                    cropType: mockGrading.detectedCrop
-                });
-            }
+            console.error('On-Device TF.js Grading Error:', err);
         } finally {
             setLoading(false);
         }
@@ -140,7 +139,18 @@ export const ARMandiHUD: React.FC<ARMandiHUDProps> = ({ onGradeComplete }) => {
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3 animate-fade-in">
                         <div className="flex items-center justify-between border-b border-white/5 pb-2">
                             <div>
-                                <span className="text-[10px] uppercase text-slate-400 font-bold block">Detected Crop</span>
+                                <span className="text-[10px] uppercase text-slate-400 font-bold block flex items-center gap-1.5">
+                                    Detected Crop 
+                                    {result.engine === 'ON_DEVICE_TFJS' ? (
+                                        <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded text-[8px] flex items-center gap-1">
+                                            <Cpu className="w-2.5 h-2.5 animate-pulse" /> On-Device TF.js
+                                        </span>
+                                    ) : (
+                                        <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded text-[8px] flex items-center gap-1">
+                                            <Sparkles className="w-2.5 h-2.5" /> Cloud Gemini
+                                        </span>
+                                    )}
+                                </span>
                                 <span className="text-sm font-extrabold text-white">{result.detectedCrop}</span>
                             </div>
                             <span className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-400 font-extrabold text-xs rounded-full">

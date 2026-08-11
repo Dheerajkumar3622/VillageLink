@@ -2,9 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, MenuVote, PrepSheet, WasteEntry } from '@villagelink/shared';
 import { Button } from './Button';
-import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users, Sparkles, TrendingUp, AlertTriangle, Monitor } from 'lucide-react';
+import { ArrowRight, BarChart3, Carrot, ChevronRight, ChefHat, ClipboardList, ThumbsDown, ThumbsUp, Trash2, Users, Sparkles, TrendingUp, AlertTriangle, Monitor, Bell } from 'lucide-react';
 import { getMenuVotes, submitVote, getPrepSheet, logWaste, getMockVote, getMockPrepSheet } from '../services/messMateService';
 import { API_BASE_URL } from '../config';
+import { io, Socket } from 'socket.io-client';
 
 interface MessManagerViewProps {
     user: User;
@@ -20,7 +21,24 @@ const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
     const [kitchenHub, setKitchenHub] = useState<any>(null);
     const [predictiveMenu, setPredictiveMenu] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [orderAlert, setOrderAlert] = useState<string | null>(null);
     const voteListRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const socket: Socket = io(API_BASE_URL, { transports: ['websocket'] });
+        const messId = user.id || 'mess_1';
+        socket.emit('join_mess_room', messId);
+
+        socket.on('new_food_order', (data: any) => {
+            console.log('🔔 New Food Order Received:', data);
+            setOrderAlert(data.message || 'Naya Food Order Aaya Hai!');
+            setTimeout(() => setOrderAlert(null), 8000);
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [user.id]);
 
     useEffect(() => {
         if (voteListRef.current) {
@@ -37,9 +55,33 @@ const MessManagerView: React.FC<MessManagerViewProps> = ({ user }) => {
     const [wasteKg, setWasteKg] = useState('');
 
     useEffect(() => {
-        // Initial Load - Mock Data for Demo
-        setActiveVote(getMockVote());
-        setPrepSheet(getMockPrepSheet());
+        const loadMessData = async () => {
+            const messId = 'mess_1';
+            const todayStr = new Date().toISOString().split('T')[0];
+            try {
+                const votes = await getMenuVotes(messId);
+                if (votes) {
+                    setActiveVote(votes);
+                } else {
+                    setActiveVote(getMockVote());
+                }
+            } catch (e) {
+                setActiveVote(getMockVote());
+            }
+
+            try {
+                const res = await getPrepSheet(messId, todayStr);
+                if (res && res.success && res.sheet) {
+                    setPrepSheet(res.sheet);
+                } else {
+                    setPrepSheet(getMockPrepSheet());
+                }
+            } catch (e) {
+                setPrepSheet(getMockPrepSheet());
+            }
+        };
+
+        loadMessData();
         fetchKitchenHub();
         fetchPredictiveMenu();
     }, []);

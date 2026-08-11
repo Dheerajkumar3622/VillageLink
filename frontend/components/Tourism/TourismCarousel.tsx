@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getNearbyTourismSpots, TourismSpot } from '../../utils/tourism/tourismData';
 import { MapPin, ArrowRight, Compass } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 interface TourismCarouselProps {
     userLocation?: { lat: number; lng: number };
@@ -16,8 +17,40 @@ export const TourismCarousel: React.FC<TourismCarouselProps> = ({ userLocation, 
     useEffect(() => {
         // Use user location if available, otherwise default to Sasaram for testing
         const loc = userLocation || DEFAULT_SASARAM_LOC;
-        const nearby = getNearbyTourismSpots(loc.lat, loc.lng, 30).slice(0, 10);
-        setSpots(nearby);
+
+        const fetchSpots = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/tourism/nearby?lat=${loc.lat}&lng=${loc.lng}&radius=30`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.spots && data.spots.length > 0) {
+                        const mappedSpots = data.spots.map((spot: any) => ({
+                            ...spot,
+                            id: spot.id || spot._id,
+                            location: {
+                                lat: spot.location.coordinates[1],
+                                lng: spot.location.coordinates[0]
+                            },
+                            packages: spot.packages.map((pkg: any) => ({
+                                ...pkg,
+                                id: pkg._id || pkg.id,
+                                providerName: pkg.providerName || 'Local Guide'
+                            }))
+                        }));
+                        setSpots(mappedSpots);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to fetch spots from API, falling back to local data:", e);
+            }
+            
+            // Fallback to local offline data
+            const nearby = getNearbyTourismSpots(loc.lat, loc.lng, 30).slice(0, 10);
+            setSpots(nearby);
+        };
+
+        fetchSpots();
     }, [userLocation]);
 
     useEffect(() => {
@@ -34,7 +67,7 @@ export const TourismCarousel: React.FC<TourismCarouselProps> = ({ userLocation, 
     if (spots.length === 0) return null;
 
     return (
-        <div className="mt-8 mb-6 animate-fade-in">
+        <div className="mt-8 mb-6">
             <div className="flex justify-between items-center px-4 mb-4">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                     <div className="bg-luxe-gold p-1.5 rounded-lg text-black shadow-lg shadow-luxe-gold/20">

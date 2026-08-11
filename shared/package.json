@@ -1,6 +1,7 @@
 {
     "name": "@villagelink/shared",
     "version": "1.0.0",
-    "main": "src/index.ts",
+    "type": "module",
+    "main": "src/index.js",
     "types": "src/index.ts"
 }

@@ -8,6 +8,7 @@ import jsQR from 'jsqr';
 import { User } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { Button } from './Button';
+import { AudioQRScanner } from './AudioQRScanner';
 import {
     X, Camera, Flashlight, Image, Clock, AlertCircle,
     Store, CreditCard, Ticket, Package, User as UserIcon, ShoppingBag,
@@ -45,6 +46,7 @@ const QR_TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; lab
 };
 
 const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, onResult }) => {
+    const [mode, setMode] = useState<'CAMERA' | 'ACOUSTIC'>('CAMERA');
     const [scanning, setScanning] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -82,10 +84,17 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
     }, [scanning]);
 
     useEffect(() => {
-        startCamera();
         loadScanHistory();
-        return () => stopCamera();
     }, []);
+
+    useEffect(() => {
+        if (scanning && mode === 'CAMERA') {
+            startCamera();
+        } else {
+            stopCamera();
+        }
+        return () => stopCamera();
+    }, [mode, scanning]);
 
     const startCamera = async () => {
         try {
@@ -259,15 +268,39 @@ const UniversalQRScanner: React.FC<UniversalQRScannerProps> = ({ user, onClose, 
         <div className="qr-scanner-modal">
             <div className="qr-scanner-container">
                 {/* Header */}
-                <div className="scanner-header">
+                <div className="scanner-header flex items-center justify-between">
                     <h2>Scan QR Code</h2>
-                    <button className="close-btn" aria-label="Close scanner" onClick={onClose}>
-                        <X className="w-6 h-6" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMode(mode === 'CAMERA' ? 'ACOUSTIC' : 'CAMERA')}
+                            className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border-none text-[10px] font-bold text-white uppercase tracking-wider transition-all"
+                        >
+                            {mode === 'CAMERA' ? '🎙️ Use Audio' : '📷 Use Camera'}
+                        </button>
+                        <button className="close-btn" aria-label="Close scanner" onClick={onClose}>
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
                 </div>
 
+                {/* Acoustic Soundbox Verification Mode */}
+                {mode === 'ACOUSTIC' && scanning && !scannedResult && (
+                    <div className="flex-grow flex items-center justify-center p-6 bg-slate-950">
+                        <AudioQRScanner onDecode={(payload) => {
+                            const ticketPayload = {
+                                app: 'villagelink',
+                                v: 1,
+                                type: 'TICKET',
+                                id: payload,
+                                data: { name: 'Acoustic Soundbox Ticket' }
+                            };
+                            simulateScan(JSON.stringify(ticketPayload));
+                        }} />
+                    </div>
+                )}
+
                 {/* Camera View */}
-                {scanning && !scannedResult && (
+                {scanning && mode === 'CAMERA' && !scannedResult && (
                     <div className="camera-view">
                         <video ref={videoRef} autoPlay playsInline muted />
                         <canvas ref={canvasRef} className="hidden" />

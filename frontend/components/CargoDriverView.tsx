@@ -10,6 +10,7 @@ import {
     Check, X, Loader2, Settings, ToggleLeft, ToggleRight,
     Navigation, Phone, Camera, AlertCircle, ChevronRight, Zap
 } from 'lucide-react';
+import { fetchSmartRoute } from '../services/graphService';
 
 interface CargoDriverViewProps {
     driverId: string;
@@ -83,6 +84,20 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
     const [selectedCargo, setSelectedCargo] = useState<CargoRequest | null>(null);
     const [otpInput, setOtpInput] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [cargoCorridorNodes, setCargoCorridorNodes] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (currentRoute && currentRoute.from && currentRoute.to) {
+            fetchSmartRoute(
+                { name: currentRoute.from, lat: currentRoute.fromLat || 0, lng: currentRoute.fromLng || 0, address: '', block: '', panchayat: '', villageCode: '' },
+                { name: currentRoute.to, lat: currentRoute.toLat || 0, lng: currentRoute.toLng || 0, address: '', block: '', panchayat: '', villageCode: '' }
+            ).then(res => {
+                if (res && res.pathDetails) {
+                    setCargoCorridorNodes(res.pathDetails);
+                }
+            }).catch(e => console.warn('Cargo route fetch error:', e));
+        }
+    }, [currentRoute]);
 
     useEffect(() => {
         fetchCapacity();
@@ -234,6 +249,24 @@ const CargoDriverView: React.FC<CargoDriverViewProps> = ({
 
     const renderCapacityStats = () => (
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-4 mb-4">
+            {cargoCorridorNodes.length > 0 && (
+                <div className="mb-4 p-3 rounded-xl bg-slate-950/80 border border-amber-500/30">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase text-amber-400 flex items-center gap-1">
+                            <Zap size={12} className="fill-amber-400 animate-pulse" /> Live Cargo Route Stops ({cargoCorridorNodes.length})
+                        </span>
+                        <span className="text-[8px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">OSM Snapped</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                        {cargoCorridorNodes.map((n: any, idx: number) => (
+                            <span key={idx} className="shrink-0 px-2 py-1 bg-white/10 text-white rounded-lg text-[9px] font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                {n.name || n.displayName}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="flex justify-between items-center mb-3">
                 <h3 className="text-white font-semibold flex items-center gap-2">
                     <Truck size={18} /> Cargo Status

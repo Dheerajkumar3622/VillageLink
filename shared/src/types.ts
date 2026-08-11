@@ -136,7 +136,7 @@ export interface Pass {
 // --- NEW RENTAL TYPES (v11.0 + v12.0 Escrow) ---
 export interface RentalVehicle {
   id: string;
-  type: 'HATCHBACK' | 'SUV' | 'TRAVELER' | 'WEDDING_FLEET' | 'AMBULANCE'; // Feature 7
+  type: 'HATCHBACK' | 'SUV' | 'TRAVELER' | 'WEDDING_FLEET' | 'AMBULANCE' | 'MOTO' | 'BIKE' | 'BUS' | 'TAXI' | 'AUTO'; // Feature 7
   model: string;
   capacity: number;
   baseRate: number; // Per Day or Base Fare
@@ -299,7 +299,7 @@ export interface Beneficiary {
 
 // NOTE: ProxyTransaction interface has been moved to Village Manager Types section (line ~1181)
 
-export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE';
+export type VehicleType = 'BUS' | 'TAXI' | 'AUTO' | 'BIKE' | 'MOTO' | 'HATCHBACK' | 'SUV' | 'TRAVELER' | 'WEDDING_FLEET' | 'AMBULANCE';
 export type VehicleStatusLabel = 'EN_ROUTE' | 'DELAYED' | 'MAINTENANCE' | 'IDLE';
 
 export interface User {
@@ -308,6 +308,7 @@ export interface User {
   role: UserRole;
   email?: string;
   phone?: string;
+  address?: string;
   vehicleCapacity?: number;
   vehicleType?: VehicleType;
   sessionToken?: string;
@@ -1377,3 +1378,134 @@ export interface AeroDashboardStats {
   activeAlerts: number;
   harvestingSoon: number;
 }
+
+// ============================================================================
+// UNIVERSAL CAPACITY EXCHANGE (UCE) CORE TYPES (v30.0 / PECE Architecture)
+// ============================================================================
+
+export type CapacityStatus = 'Available' | 'Reserved' | 'Accepted' | 'Loaded' | 'Delivered' | 'Closed';
+
+export interface UniversalCapacityObject {
+  capacityId: string;
+  ownerId: string;
+  vehicleId: string;
+  currentLocation: {
+    lat: number;
+    lng: number;
+    h3Index?: string;
+  };
+  destination: {
+    lat: number;
+    lng: number;
+    h3Index?: string;
+  };
+  intermediateStops: Array<{
+    lat: number;
+    lng: number;
+    stopName?: string;
+    h3Index?: string;
+  }>;
+  availableSeats: number;
+  availableWeightKg: number;
+  availableVolumeL: number;
+  departureTime: number;
+  arrivalTimeWindow: {
+    start: number;
+    end: number;
+  };
+  allowedCargoTypes: string[];
+  trustScore: number;
+  insuranceLevel: number;
+  pricePolicy?: string;
+  status: CapacityStatus;
+  liveGps: {
+    lat: number;
+    lng: number;
+    speed?: number;
+    bearing?: number;
+    timestamp: number;
+  };
+  expiryTime: number;
+}
+
+export type DemandType = 'Passenger' | 'Parcel' | 'AgriculturalGoods' | 'FoodDelivery' | 'Medicine' | 'Emergency';
+export type DemandPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type DemandStatus = 'Created' | 'Matching' | 'Assigned' | 'Picked' | 'InTransit' | 'Delivered' | 'Cancelled';
+
+export interface UniversalDemandObject {
+  demandId: string;
+  requesterId: string;
+  demandType: DemandType;
+  pickupLocation: {
+    lat: number;
+    lng: number;
+    address?: string;
+    h3Index?: string;
+  };
+  dropLocation: {
+    lat: number;
+    lng: number;
+    address?: string;
+    h3Index?: string;
+  };
+  weightKg: number;
+  volumeL: number;
+  passengerCount: number;
+  priority: DemandPriority;
+  deadlineWindow: {
+    pickupBefore: number;
+    dropBefore: number;
+  };
+  temperatureRequirement?: string;
+  fragile?: boolean;
+  insuranceNeeded?: boolean;
+  bidAllowed?: boolean;
+  maxBudget?: number;
+  trustRequirement?: number;
+  status: DemandStatus;
+  createdAt: number;
+}
+
+export interface CoordinationUnit {
+  cuId: string;
+  ucoId: string;
+  udoId: string;
+  matchScore: number;
+  segmentMatch: {
+    fromStop: string;
+    toStop: string;
+    overlapPercentage: number;
+  };
+  pricing: {
+    amount: number;
+    currency: string;
+    bidAllowed: boolean;
+  };
+  status: 'PROPOSED' | 'CONFIRMED' | 'IN_TRANSIT' | 'COMPLETED' | 'CANCELLED';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CapacityEvent {
+  eventId: string;
+  entityId: string;
+  entityType: 'Capacity' | 'Demand' | 'CoordinationUnit';
+  eventType: string;
+  payload: Record<string, any>;
+  timestamp: number;
+  metadata?: {
+    deviceFingerprint?: string;
+    ipAddress?: string;
+    sequenceId?: number;
+  };
+}
+
+export interface SpatialTemporalIndex {
+  h3Index: string;
+  resolution: number;
+  timeBucketStart: number;
+  timeBucketEnd: number;
+  activeCapacities: string[];
+  activeDemands: string[];
+}
+

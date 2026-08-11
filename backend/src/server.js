@@ -4,6 +4,7 @@
  */
 
 import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 import express from 'express';
 import http from 'http';
@@ -23,6 +24,7 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 // Note: xss-clean removed due to ESM incompatibility. Using helmet + mongoSanitize is sufficient.
 import Razorpay from 'razorpay';
+import { viiPhaseEngine } from './phaseEngine.js';
 
 // Import Modular Components
 import Models from '../models.js';
@@ -133,6 +135,44 @@ const razorpay = new Razorpay({
 
 app.get('/api/config/razorpay', (req, res) => {
     res.json({ key: razorpayKeyId });
+});
+
+// --- VII PHASE 1-30 EXECUTION API ENDPOINTS ---
+app.get('/api/phase/run-all', (req, res) => {
+    try {
+        const results = viiPhaseEngine.runAllPhases();
+        res.json({ success: true, count: results.length, phases: results });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/phase/crop-decay', (req, res) => {
+    try {
+        const decayResult = viiPhaseEngine.executePhase1CropDecay(req.body);
+        res.json({ success: true, result: decayResult });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+app.post('/api/phase/swarm-bid', (req, res) => {
+    try {
+        const bids = viiPhaseEngine.executePhase6SwarmNegotiation(req.body);
+        res.json({ success: true, bids });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+app.get('/api/phase/digital-twin', (req, res) => {
+    try {
+        const { startNode = 'Sasaram', endNode = 'Dehri' } = req.query;
+        const twinPath = viiPhaseEngine.executePhase7DigitalTwin(String(startNode), String(endNode));
+        res.json({ success: true, twinPath });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
 });
 
 // --- DATABASE STATE ---
@@ -283,7 +323,8 @@ app.post('/api/auth/forgot-password', Auth.requestPasswordReset);
 app.post('/api/auth/reset-password', Auth.resetPassword);
 app.post('/api/auth/reset-password-firebase', Auth.resetPasswordViaFirebase);
 app.post('/api/auth/register-firebase', Auth.registerViaFirebase);
-app.post('/api/auth/verify-otp-login', Auth.verifyOtpLogin);       // Backend SMS OTP Login Fallback
+app.post('/api/auth/send-otp', Auth.sendOtp);
+app.post('/api/auth/verify-otp-login', Auth.verifyOtpLogin);       // Backend SMS/Email OTP Login Fallback
 app.post('/api/auth/update-fcm-token', Auth.authenticate, Auth.updateFCMToken); // 1000x: FCM
 
 // --- GRAMMANDI ROUTES (Food Ecosystem) ---

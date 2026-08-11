@@ -20,13 +20,13 @@ export const submitVote = async (
 ): Promise<{ success: boolean; vote?: MenuVote }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/vote/${voteId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/vote`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ optionId }),
+            body: JSON.stringify({ voteId, optionId }),
         });
         const data = await response.json();
         return { success: true, vote: data.vote };
@@ -66,11 +66,11 @@ export const getPrepSheet = async (
 ): Promise<{ success: boolean; sheet?: PrepSheet }> => {
     try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/prep-sheet?messId=${messId}&date=${date}`, {
+        const response = await fetch(`${API_BASE_URL}/api/foodlink/mess/prepsheet?messId=${messId}&date=${date}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
-        return { success: true, sheet: data.sheet };
+        return { success: true, sheet: data.sheet || data };
     } catch (error) {
         return { success: false };
     }

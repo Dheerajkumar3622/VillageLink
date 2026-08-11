@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
+import { API_BASE_URL } from '../config';
 import { Html5Qrcode } from 'html5-qrcode';
 import { X, Camera, CheckCircle2, XCircle, AlertTriangle, Users, MapPin, CreditCard, Loader2, Volume2 } from 'lucide-react';
 import { Ticket } from '@villagelink/shared';
@@ -100,6 +102,19 @@ export const TicketScanner: React.FC<TicketScannerProps> = ({
 
             // Success haptic
             if (verificationResult.valid && navigator.vibrate) {
+                if (verificationResult.ticket) {
+                    try {
+                        const socket = io(API_BASE_URL, { transports: ['websocket'] });
+                        socket.emit('boarding_scanned', {
+                            ticketId: verificationResult.ticket.id,
+                            driverId,
+                            timestamp: Date.now()
+                        });
+                        setTimeout(() => socket.disconnect(), 1000);
+                    } catch (e) {
+                        console.warn('Socket boarding emit warning:', e);
+                    }
+                }
                 navigator.vibrate([100, 50, 100]);
             }
 

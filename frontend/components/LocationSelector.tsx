@@ -82,7 +82,7 @@ function highlightText(text: string, query: string): string {
   const tokens = query.toLowerCase().split(' ').filter(Boolean);
   if (tokens.length === 0) return text;
   const regex = new RegExp(`(${tokens.join('|')})`, 'gi');
-  return text.replace(regex, `<span class="bg-yellow-200/80 dark:bg-yellow-500/30 text-black dark:text-white rounded-sm px-0.5">$1</span>`);
+  return text.replace(regex, `<span class="bg-amber-400 text-slate-950 font-black rounded px-1">$1</span>`);
 }
 
 export const LocationSelector: React.FC<LocationSelectorProps> = ({ 
@@ -356,13 +356,13 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
              if (!isOpen) setIsOpen(true);
           }}
           onClick={() => !disabled && setIsOpen(true)}
-          className="w-full pl-12 pr-12 py-3.5 bg-white border border-[#4F46E5]/30 rounded-2xl text-base font-bold shadow-sm focus:bg-white focus:border-[#4F46E5] outline-none transition-all text-slate-900 placeholder:text-slate-500"
+          className="w-full pl-12 pr-12 py-3.5 bg-slate-900 border-2 border-amber-400/50 rounded-2xl text-base font-black shadow-md focus:border-amber-400 outline-none transition-all text-white placeholder:text-slate-400"
           disabled={disabled || loading}
         />
         
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 z-20">
           {searchTerm && !disabled && !isListening && (
-            <button onClick={handleClear} className="p-1 text-slate-400 hover:text-slate-700">
+            <button onClick={handleClear} className="p-1 text-slate-400 hover:text-white">
               <X size={16} />
             </button>
           )}
@@ -376,7 +376,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                    handleAutoDetect(); 
                 }
               }}
-              className={`p-1.5 rounded-full transition-all text-[#4F46E5]/70 hover:text-[#4F46E5] hover:bg-[#4F46E5]/10`}
+              className={`p-1.5 rounded-full transition-all text-amber-400 hover:text-amber-300 hover:bg-amber-400/20`}
               title={onMapTrigger ? "Select on Map" : "Auto Detect Location"}
             >
               {isLocating ? <span className="animate-spin inline-block text-[14px]">⌛</span> : <Navigation size={18} />}
@@ -386,30 +386,30 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
         {isOpen && !disabled && (
           <div 
-            className="absolute z-[100] left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-fade-in max-h-64 overflow-y-auto overscroll-contain no-swipe"
+            className="absolute z-[200] left-0 right-0 top-full mt-2 bg-[#0b0f19] rounded-2xl shadow-2xl border-2 border-amber-400/60 overflow-hidden animate-fade-in max-h-64 overflow-y-auto overscroll-contain no-swipe"
             onTouchStart={(e) => e.stopPropagation()}
             onWheel={(e) => e.stopPropagation()}
           >
             {!searchTerm && recentSearches.length > 0 && (
                 <>
-                    <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <History size={10} /> Recent Selections
+                    <div className="px-4 py-2 bg-slate-900/90 text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 border-b border-white/10">
+                        <History size={12} /> Recent Selections
                     </div>
                     {recentSearches.map((loc) => (
                         <div 
                             key={`recent-${loc.villageCode}-${loc.name}`}
                             onMouseDown={(e) => { e.preventDefault(); handleSelect(loc); }}
-                            className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-0 flex items-start gap-3 transition-colors"
+                            className="px-4 py-3 bg-[#111827] hover:bg-slate-800 cursor-pointer border-b border-white/10 last:border-0 flex items-start gap-3 transition-colors"
                         >
                             {/* Left Icon Container */}
-                            <div className="mt-0.5 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-slate-500 shrink-0">
-                                <History size={14} className="text-slate-400" />
+                            <div className="mt-0.5 w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                                <History size={14} />
                             </div>
 
                             {/* Right Content */}
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">{loc.name}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-normal">
+                                <p className="text-base font-black text-white truncate">{loc.name}</p>
+                                <p className="text-xs font-bold text-slate-300 mt-0.5 truncate leading-normal">
                                     {loc.block ? `${loc.block}, ` : ''}{loc.district ? `${loc.district}, ` : ''}{loc.state || 'India'}
                                 </p>
                             </div>
@@ -432,25 +432,25 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                 <div 
                     key={`${loc.villageCode}-${loc.name}`}
                     onMouseDown={(e) => { e.preventDefault(); handleSelect(loc); }}
-                    className="px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-50 dark:border-slate-800 last:border-0 flex items-start gap-3 transition-colors"
+                    className="px-4 py-3 bg-[#111827] hover:bg-slate-800 cursor-pointer border-b border-white/10 last:border-0 flex items-start gap-3 transition-colors"
                 >
-                    {/* Left Icon Container (Google Maps Style Pin) */}
-                    <div className="mt-0.5 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-850 flex items-center justify-center text-slate-500 shrink-0">
+                    {/* Left Icon Container */}
+                    <div className="mt-0.5 w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
                         {loc.isStation ? (
-                            <TrainTrack size={14} className="text-orange-500" />
+                            <TrainTrack size={14} className="text-amber-400" />
                         ) : (
-                            <MapPin size={14} className="text-indigo-500" />
+                            <MapPin size={14} className="text-amber-400" />
                         )}
                     </div>
 
                     {/* Right Address Content */}
                     <div className="flex-1 min-w-0">
                         <p 
-                           className="text-sm font-bold text-slate-800 dark:text-white truncate"
+                           className="text-base font-black text-white truncate"
                            dangerouslySetInnerHTML={{ __html: highlightText(titleText, searchTerm) }}
                         />
                         <p 
-                           className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-normal"
+                           className="text-xs font-bold text-slate-300 mt-0.5 truncate leading-normal"
                            dangerouslySetInnerHTML={{ __html: highlightText(subtitleText, searchTerm) }}
                         />
                     </div>
@@ -459,7 +459,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
             })}
             
             {searchTerm.length >= 2 && searchResults.length === 0 && !loading && (
-               <div className="px-4 py-3 text-center text-sm text-slate-400">
+               <div className="px-4 py-3 bg-[#111827] text-center text-xs font-black text-amber-300">
                   No place matched. Try different spelling.
                </div>
             )}

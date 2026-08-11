@@ -197,8 +197,14 @@ export const ProximityRadar3D: React.FC<ProximityRadar3DProps> = ({
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [voiceMuted, setVoiceMuted] = useState(false);
     const [sandboxOpen, setSandboxOpen] = useState(false);
-    const [useSandboxData, setUseSandboxData] = useState(true);
+    const [useSandboxData, setUseSandboxData] = useState(realTimeVehicles.length === 0);
     const [isFullscreen, setIsFullscreen] = useState(false);
+
+    useEffect(() => {
+        if (realTimeVehicles && realTimeVehicles.length > 0) {
+            setUseSandboxData(false);
+        }
+    }, [realTimeVehicles]);
     
     // UI View Settings
     const [viewMode, setViewMode] = useState<'PERSPECTIVE' | 'BIRDEYE'>('PERSPECTIVE');
@@ -1290,10 +1296,36 @@ export const ProximityRadar3D: React.FC<ProximityRadar3DProps> = ({
         }
     };
 
-    const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-        e.preventDefault();
-        cameraZoomRef.current = Math.max(0.5, Math.min(2.5, cameraZoomRef.current - e.deltaY * 0.001));
-    };
+    // Native non-passive wheel & touchmove listeners to allow preventDefault without browser console warnings
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const onWheelNative = (e: WheelEvent) => {
+            if (e.cancelable) e.preventDefault();
+            cameraZoomRef.current = Math.max(0.5, Math.min(2.5, cameraZoomRef.current - e.deltaY * 0.001));
+        };
+
+        const onTouchMoveNative = (e: TouchEvent) => {
+            if (!isDragging.current || e.touches.length !== 1) return;
+            if (e.cancelable) e.preventDefault();
+            const dx = e.touches[0].clientX - prevDragCoords.current.x;
+            const dy = e.touches[0].clientY - prevDragCoords.current.y;
+
+            cameraYawRef.current += dx * 0.01;
+            cameraPitchRef.current = Math.max(Math.PI * 0.05, Math.min(Math.PI * 0.45, cameraPitchRef.current - dy * 0.008));
+
+            prevDragCoords.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            clickMoveRef.current += Math.abs(dx) + Math.abs(dy);
+        };
+
+        canvas.addEventListener('wheel', onWheelNative, { passive: false });
+        canvas.addEventListener('touchmove', onTouchMoveNative, { passive: false });
+        return () => {
+            canvas.removeEventListener('wheel', onWheelNative);
+            canvas.removeEventListener('touchmove', onTouchMoveNative);
+        };
+    }, []);
 
     const resetCamera = () => {
         cameraYawRef.current = 0;
@@ -1446,9 +1478,7 @@ export const ProximityRadar3D: React.FC<ProximityRadar3DProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                onWheel={handleWheel}
                 onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
                 onTouchEnd={handleMouseUp}
                 className={`w-full ${isFullscreen ? 'h-screen' : 'h-[460px]'} block cursor-grab active:cursor-grabbing bg-slate-950`}
             />

@@ -4,6 +4,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { DroneFleetStatus } from './DroneFleetStatus';
+import { ChargingDockPanel } from './ChargingDockPanel';
+import { ControlCenterMap } from './ControlCenterMap';
 import {
     Droplets, Thermometer, Activity, Battery, Wifi, WifiOff,
     Play, Square, Zap, Settings, ChevronRight, AlertTriangle,
@@ -89,6 +92,7 @@ const AeroDashboard: React.FC<AeroDashboardProps> = ({ userId, onBack }) => {
     const [pairingId, setPairingId] = useState('');
     const [pairingMac, setPairingMac] = useState('');
     const [activeTab, setActiveTab] = useState<'live' | 'history'>('live');
+    const [viewMode, setViewMode] = useState<'AEROPONICS' | 'DRONES'>('AEROPONICS');
 
     // Load initial data
     useEffect(() => {
@@ -281,6 +285,38 @@ const AeroDashboard: React.FC<AeroDashboardProps> = ({ userId, onBack }) => {
                 </div>
             </div>
 
+            {/* Mode Switcher */}
+            <div className="flex gap-2 mb-6">
+                <button 
+                    onClick={() => setViewMode('AEROPONICS')}
+                    className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+                        viewMode === 'AEROPONICS' 
+                            ? 'bg-green-700 text-white' 
+                            : 'bg-white text-green-700 border border-green-200'
+                    }`}
+                >
+                    🌱 SMART AEROPONICS
+                </button>
+                <button 
+                    onClick={() => setViewMode('DRONES')}
+                    className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+                        viewMode === 'DRONES' 
+                            ? 'bg-green-700 text-white' 
+                            : 'bg-white text-green-700 border border-green-200'
+                    }`}
+                >
+                    🛸 AGRI DRONES
+                </button>
+            </div>
+
+            {viewMode === 'DRONES' ? (
+                <div className="space-y-6 text-slate-800">
+                    <ControlCenterMap />
+                    <DroneFleetStatus />
+                    <ChargingDockPanel />
+                </div>
+            ) : (
+                <>
             {/* Alerts Banner */}
             {alerts.length > 0 && (
                 <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
@@ -599,6 +635,8 @@ const AeroDashboard: React.FC<AeroDashboardProps> = ({ userId, onBack }) => {
                         </div>
                     </div>
                 </div>
+            )}
+            </>
             )}
         </div>
     );

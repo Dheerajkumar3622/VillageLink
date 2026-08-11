@@ -7,13 +7,18 @@ import { MapPin, Search, Navigation } from 'lucide-react';
  * A highly optimized, offline-first search component for Indian villages.
  * It loads a 28MB JSON dataset silently and provides <10ms latency search.
  */
-export default function UniversalVillageInput({ onSelect, placeholder = "Search your village name..." }) {
+interface UniversalVillageInputProps {
+  onSelect?: (selected: { name: string; pincode: string; district: string; state: string; raw: any }) => void;
+  placeholder?: string;
+}
+
+export default function UniversalVillageInput({ onSelect, placeholder = "Search your village name..." }: UniversalVillageInputProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [villages, setVillages] = useState([]);
+  const [results, setResults] = useState<any[]>([]);
+  const [villages, setVillages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Load the massive 600K+ village dataset in the background
   useEffect(() => {
@@ -44,11 +49,11 @@ export default function UniversalVillageInput({ onSelect, placeholder = "Search 
     const searchLower = query.toLowerCase();
     
     // Fast filtering: only return top 20 results to keep DOM light
-    const matched = [];
+    const matched: any[] = [];
     for (let i = 0; i < villages.length; i++) {
       const v = villages[i];
       // v[0] = Village Name, v[1] = Pincode, v[2] = District, v[3] = State
-      if (v[0].toLowerCase().startsWith(searchLower) || v[1].startsWith(searchLower)) {
+      if (v && v[0] && (String(v[0]).toLowerCase().startsWith(searchLower) || String(v[1] || '').startsWith(searchLower))) {
         matched.push(v);
         if (matched.length >= 20) break; 
       }
@@ -59,8 +64,8 @@ export default function UniversalVillageInput({ onSelect, placeholder = "Search 
 
   // Click outside to close helper
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsFocused(false);
       }
     };
@@ -68,7 +73,7 @@ export default function UniversalVillageInput({ onSelect, placeholder = "Search 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (v) => {
+  const handleSelect = (v: any) => {
     const displayName = `${v[0]}, ${v[2]}, ${v[3]} - ${v[1]}`;
     setQuery(displayName);
     setIsFocused(false);

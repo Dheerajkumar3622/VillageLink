@@ -6,18 +6,21 @@
 // 3. Copy config keys to .env file or replace below.
 // 4. Uncomment imports in authService.ts
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, setLogLevel } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-app",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: "AIzaSyA5ly1G-IcAs-We5Fl2_8YIoHgc_sPf7-A",
+  authDomain: "villagelink-96b4c.firebaseapp.com",
+  projectId: "villagelink-96b4c",
+  storageBucket: "villagelink-96b4c.firebasestorage.app",
+  messagingSenderId: "428748007277",
+  appId: "1:428748007277:web:76f0eec16523044b575c64",
+  measurementId: "G-TWQ8ELYRN1"
 };
+
+try { setLogLevel('error'); } catch (e) {}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

@@ -128,9 +128,11 @@ router.put('/:vehicleType', Auth.authenticate, async (req, res) => {
 router.post('/calculate', async (req, res) => {
     try {
         const {
-            vehicleType, distanceKm, weightKg = 0,
+            vehicleType: rawVehicleType, distanceKm = 10, weightKg = 0,
             isNight = false, fromVillage, toVillage
         } = req.body;
+
+        const vehicleType = (rawVehicleType || 'AUTO').toUpperCase();
 
         // Auto-compute surge from backend intel instead of trusting client
         const backendSurge = (fromVillage && toVillage) 
@@ -138,9 +140,10 @@ router.post('/calculate', async (req, res) => {
             : 1.0;
 
         let pricing = await TransportPricing.findOne({
-            vehicleType: vehicleType.toUpperCase(),
+            vehicleType,
             isActive: true
         });
+
 
         if (!pricing) {
             pricing = {
@@ -202,7 +205,7 @@ router.post('/calculate', async (req, res) => {
             calculatedAt: Date.now()
         });
 
-        await audit.save();
+        await audit.save().catch(e => console.warn('[PricingAudit] Save warning:', e.message));
 
         res.json({
             success: true,
@@ -211,6 +214,7 @@ router.post('/calculate', async (req, res) => {
             appliedRates: audit.appliedRates
         });
     } catch (error) {
+        console.error('[PricingCalculate] Error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

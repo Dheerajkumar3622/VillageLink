@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getStoredTickets, subscribeToUpdates, broadcastBusLocation, registerDriverOnNetwork, disconnectDriver, driverCollectTicket, driverWithdraw, getRentalRequests, getAllParcels, suggestLocation, getPathDemand, getAheadVehicles, checkKinematicLock, registerDriverTripTrajectory, endDriverTripTrajectory, initSocketConnection, emitUltrasonicVerifyRequest } from '../services/transportService';
-import { fetchSmartRoute } from '../services/graphService';
+import { fetchSmartRoute, resolveLocationCoords } from '../services/graphService';
 import { getRoutes } from '../services/adminService';
 import { getWallet } from '../services/blockchainService';
 import { Ticket, TicketStatus, User, LocationData, DeviationProposal, RentalBooking, VehicleComponentHealth, RouteDefinition, ParcelBooking, LedgerEntry, FuelAdvice } from '@villagelink/shared';
@@ -10,7 +10,7 @@ import { startPotholeMonitoring, stopPotholeMonitoring } from '../services/iotSe
 import { playSonicToken } from '../services/advancedFeatures';
 import { startUltrasonicListener, stopUltrasonicListener } from '../services/UltrasonicVerificationService';
 import { Button } from './Button';
-import { HeartHandshake, PhoneIcon, XIcon, ShieldOffIcon, AlertTriangleIcon, CheckCircle2, Navigation, Volume2, VolumeX, MenuSquare, ArrowUpRight, ArrowDownRight, Clock, MapPin, Search, Camera, Activity, Check, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight } from 'lucide-react';
+import { HeartHandshake, PhoneIcon, XIcon, ShieldOffIcon, AlertTriangleIcon, CheckCircle2, Navigation, Volume2, VolumeX, MenuSquare, ArrowUpRight, ArrowDownRight, Clock, MapPin, Search, Camera, Activity, Check, Mic, AlertOctagon, ScanLine, Coins, Wifi, Car, Package, ShieldAlert, Wallet as WalletIcon, Banknote, Plus, CreditCard, Users, TrendingDown, Info, ShoppingCart, ChevronRight, Layers, List } from 'lucide-react';
 import { LocationSelector } from './LocationSelector';
 import { Modal } from './Modal';
 import { useTranslation } from '../services/i18n';
@@ -23,6 +23,9 @@ import { DriverProfileModal } from './DriverProfileModal';
 import { InceptionGrid3D } from './InceptionGrid3D';
 import { GeminiCoPilot } from './GeminiCoPilot';
 import { ARMandiHUD } from './ARMandiHUD';
+import { SmartDriverDashboard } from './SmartDriverDashboard';
+import { SwarmNegotiationHUD } from './hud/SwarmNegotiationHUD';
+import { ProximityRadar3D } from './ProximityRadar3D';
 
 interface DriverViewProps {
     user: User;
@@ -124,13 +127,21 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     const [heroStats, setHeroStats] = useState<any>(null);
     const routeListRef = useRef<HTMLDivElement>(null);
 
-    // --- 1000x SMART DRIVER STATE ---
+    // --- 1000x SMART DRIVER & 3D SPATIAL COCKPIT STATE ---
+    const [stopViewMode, setStopViewMode] = useState<'STACK' | 'LIST'>('STACK');
+    const [stackFocusIndex, setStackFocusIndex] = useState<number>(0);
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+    const [autoTransitEnabled, setAutoTransitEnabled] = useState(true);
+    const [transitStatus, setTransitStatus] = useState<'DEPARTED' | 'APPROACHING' | 'ARRIVED'>('DEPARTED');
+    const [lastTransitTime, setLastTransitTime] = useState<number>(0);
+    const [segmentInfo, setSegmentInfo] = useState<{ distanceKm: number; arrivalThresholdKm: number } | null>(null);
     const [smartRoutes, setSmartRoutes] = useState<any[]>([]);
     const [smartLoading, setSmartLoading] = useState(false);
     const [liveSeats, setLiveSeats] = useState<{ total: number, occupied: number, parcels: number }>({ total: 20, occupied: 0, parcels: 0 });
     const [earnings, setEarnings] = useState<any>(null);
     const [deliveries, setDeliveries] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'ROUTE' | 'EARNINGS' | 'DELIVERIES'>('ROUTE');
+    const [activeTab, setActiveTab] = useState<'ROUTE' | 'EARNINGS' | 'DELIVERIES' | 'HUD'>('ROUTE');
     const [routeDemand, setRouteDemand] = useState<any[]>([]);
     const [aheadVehicles, setAheadVehicles] = useState<any[]>([]);
     const [selectedStopForParcels, setSelectedStopForParcels] = useState<string | null>(null);
@@ -510,10 +521,12 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         if (routeMode === 'OFFICIAL') {
             const route = officialRoutes.find(r => r.id === selectedRouteId);
             if (!route) return alert("Select a route from the list");
-            start = { name: route.from, lat: 0, lng: 0, address: '', block: '', panchayat: '', villageCode: '' };
-            end = { name: route.to, lat: 0, lng: 0, address: '', block: '', panchayat: '', villageCode: '' };
+            start = resolveLocationCoords({ name: route.from, lat: 0, lng: 0, address: '', block: '', panchayat: '', villageCode: '' });
+            end = resolveLocationCoords({ name: route.to, lat: 0, lng: 0, address: '', block: '', panchayat: '', villageCode: '' });
         } else {
             if (!start || !end) return alert("Select Start and End points");
+            start = resolveLocationCoords(start);
+            end = resolveLocationCoords(end);
         }
         try {
             const routeData = await fetchSmartRoute(start!, end!);
@@ -606,41 +619,110 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
         if (res.success) { announce("Location marked. Thank you."); alert("Chowk suggestion sent to community map."); }
     };
 
-    // --- AUTO GPS STOP VERIFICATION ---
-    useEffect(() => {
-        if (!tripConfig.isActive || !currentGPS || routeMode !== 'OFFICIAL') return;
-        
-        // Auto-verify current stop based on GPS proximity (e.g., within 500 meters)
-        const checkStopProximity = () => {
-            if (currentStopIndex >= tripConfig.pathDetails.length) return;
-            
-            const upcomingStop = tripConfig.pathDetails[currentStopIndex];
-            if (!upcomingStop || typeof upcomingStop === 'string') return; // Needs coordinate data
-            
-            // Haversine distance formula approximation (in KM)
-            const toRad = (value: number) => value * Math.PI / 180;
-            const R = 6371; // Earth's radius in km
-            const dLat = toRad(currentGPS.lat - upcomingStop.lat);
-            const dLon = toRad(currentGPS.lng - upcomingStop.lng);
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(toRad(upcomingStop.lat)) * Math.cos(toRad(currentGPS.lat)) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2); 
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-            const distanceKM = R * c;
-            
-            // If within 500 meters (0.5 km) of the stop, auto-verify
-            if (distanceKM <= 0.5) {
-                setCurrentStopIndex(i => Math.min(i + 1, tripConfig.path.length - 1));
-                setHoldProgress(100); // Trigger UI success animation
-                announce(`${tripConfig.path[currentStopIndex]} Stop Verified Automatically.`);
-                setTimeout(() => setHoldProgress(0), 3000); // Reset animation
-            }
-        };
+    // Helper: Haversine distance formula in KM
+    const getHaversineDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const toRad = (val: number) => val * Math.PI / 180;
+        const R = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    };
 
-        const timer = setInterval(checkStopProximity, 5000); // Check every 5 seconds
-        return () => clearInterval(timer);
-    }, [currentGPS, tripConfig.isActive, currentStopIndex, routeMode, tripConfig.pathDetails]);
+    // --- DYNAMIC 20% DISTANCE AUTO-TRANSIT & 3-STAGE TRANSIT ENGINE ---
+    useEffect(() => {
+        if (!tripConfig.isActive || !currentGPS || !autoTransitEnabled) return;
+
+        const pathDetails = tripConfig.pathDetails || [];
+        const pathStops = tripConfig.path || [];
+        const currentIdx = currentStopIndex;
+        const nextIdx = currentIdx + 1;
+
+        if (nextIdx >= pathStops.length) return; // Reached end of route
+
+        const currentStopObj = pathDetails[currentIdx];
+        const nextStopObj = pathDetails[nextIdx];
+
+        // 1. Calculate inter-stop segment distance
+        let segmentDistKm = 2.0; // Default 2.0 km fallback
+        let hasCoords = false;
+
+        if (currentStopObj && nextStopObj && 
+            typeof currentStopObj !== 'string' && typeof nextStopObj !== 'string' &&
+            currentStopObj.lat && currentStopObj.lng && nextStopObj.lat && nextStopObj.lng) {
+            segmentDistKm = getHaversineDistanceKm(currentStopObj.lat, currentStopObj.lng, nextStopObj.lat, nextStopObj.lng);
+            hasCoords = true;
+        }
+
+        // DYNAMIC THRESHOLD RULE: 20% of inter-stop distance (clamped between 150m and 2.0km)
+        const arrivalThresholdKm = Math.min(Math.max(0.15, segmentDistKm * 0.20), 2.0);
+        setSegmentInfo({ distanceKm: segmentDistKm, arrivalThresholdKm });
+
+        // 2. Measure distance from vehicle to Next Stop and Current Stop
+        let distToNextStopKm = 1.5;
+        let distFromCurrentStopKm = 0.2;
+
+        if (hasCoords && nextStopObj && typeof nextStopObj !== 'string') {
+            distToNextStopKm = getHaversineDistanceKm(currentGPS.lat, currentGPS.lng, nextStopObj.lat, nextStopObj.lng);
+        }
+
+        if (hasCoords && currentStopObj && typeof currentStopObj !== 'string') {
+            distFromCurrentStopKm = getHaversineDistanceKm(currentGPS.lat, currentGPS.lng, currentStopObj.lat, currentStopObj.lng);
+        }
+
+        const now = Date.now();
+
+        // Stage 1: DEPARTED - Vehicle moves > 50 meters away from Current Stop
+        if (distFromCurrentStopKm >= 0.05 && transitStatus !== 'DEPARTED' && transitStatus !== 'APPROACHING') {
+            setTransitStatus('DEPARTED');
+            announce(`Departed from ${pathStops[currentIdx]}. En route to ${pathStops[nextIdx]}.`);
+        }
+
+        // Stage 2: APPROACHING - Vehicle is en route towards Next Stop
+        if (distToNextStopKm > arrivalThresholdKm && distFromCurrentStopKm > 0.1 && transitStatus !== 'APPROACHING' && transitStatus !== 'ARRIVED') {
+            setTransitStatus('APPROACHING');
+        }
+
+        // Stage 3: ARRIVED (AUTO-TRANSITION) - Vehicle enters the 20% distance threshold zone of Next Stop!
+        if (hasCoords && distToNextStopKm <= arrivalThresholdKm && now - lastTransitTime > 15000) {
+            setLastTransitTime(now);
+            setTransitStatus('ARRIVED');
+            setHoldProgress(100); // Trigger UI success animation
+
+            // Convert Next Stop into Current Stop automatically!
+            const newNextIndex = nextIdx;
+            setCurrentStopIndex(newNextIndex);
+
+            const arrivedStopName = pathStops[newNextIndex];
+            const upcomingStopName = pathStops[newNextIndex + 1] || 'Final Destination';
+
+            announce(`Arrived at ${arrivedStopName}. Next stop is ${upcomingStopName}.`);
+
+            // Send telemetry update to server
+            try {
+                fetch(`${API_BASE_URL}/api/driver/stop-reached`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${tokenRef.current}`
+                    },
+                    body: JSON.stringify({
+                        driverId: user.id,
+                        stopName: arrivedStopName,
+                        stopIndex: newNextIndex,
+                        lat: currentGPS.lat,
+                        lng: currentGPS.lng,
+                        timestamp: now
+                    })
+                }).catch(e => console.warn('Stop telemetry warning:', e));
+            } catch (e) { }
+
+            setTimeout(() => setHoldProgress(0), 3000);
+        }
+    }, [currentGPS, tripConfig.isActive, currentStopIndex, autoTransitEnabled, tripConfig.pathDetails, tripConfig.path, transitStatus, lastTransitTime]);
 
     // Clean up acoustic listener on unmount
     useEffect(() => {
@@ -648,6 +730,11 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             stopUltrasonicListener();
         };
     }, []);
+
+    // Keep 3D Deck focus synchronized with active currentStopIndex
+    useEffect(() => {
+        setStackFocusIndex(currentStopIndex);
+    }, [currentStopIndex]);
 
     const toggleAcousticListener = async (forceState?: boolean) => {
         const newState = forceState !== undefined ? forceState : !isAcousticListenerActive;
@@ -849,413 +936,709 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto pb-32 animate-fade-in font-sans relative">
+        <div className="max-w-5xl mx-auto pb-32 animate-fade-in font-sans relative w-full overflow-x-hidden">
 
-                <div className="flex flex-col-reverse lg:flex-row gap-6">
-                {/* Left Side: Journey Timeline */}
-                {tripConfig.isActive && (
-                    <aside className="w-full lg:w-80 whisk-trip-card p-6 rounded-[32px] max-h-[60vh] lg:max-h-[calc(100vh-200px)] flex flex-col lg:sticky lg:top-[180px]">
-                        <div className="flex items-center gap-3 mb-6 shrink-0">
-                            <div className="w-10 h-10 rounded-xl bg-luxe-sienna/20 flex items-center justify-center text-xl shadow-glow-sm">🚀</div>
-                            <div>
-                                <h1 className="font-black text-slate-900 dark:text-white text-lg tracking-tight">Trip VL-{user.id.slice(-3).toUpperCase()}</h1>
-                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Route: {officialRoutes.find(r => r.id === selectedRouteId)?.name || 'Custom'}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto scrollbar-hide pr-2">
-                            <div className="space-y-0 relative">
-                                <div className="absolute left-[11px] top-3 bottom-3 w-px bg-slate-800/50"></div>
-                                {tripConfig.path.map((stop, idx) => {
-                                    const isCurrent = idx === currentStopIndex;
-                                    const isPassed = idx < currentStopIndex;
-                                    const waitingCount = (pathDemand[stop] || 0) + (serverStopDemand[stop] || 0);
-                                    const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
-                                    const parcelsAtThisStop = parcels.filter(p => p.status === 'PENDING' && p.from === stop);
-                                    const estPerPassenger = 15;
-                                    const stopBenefit = waitingCount * estPerPassenger + parcelsAtThisStop.reduce((s, p) => s + (Number(p.price) || 0), 0);
-
-                                    return (
-                                        <div key={idx} className={`relative pl-8 pb-6 last:pb-0 transition-opacity duration-500 ${isCurrent ? 'opacity-100 scale-105' : 'opacity-80'}`}>
-                                            <div className={`absolute left-0 top-1 w-6 h-6 rounded-full flex items-center justify-center border-2 z-10 transition-all duration-300 ${isCurrent ? 'border-luxe-teal bg-luxe-teal/20 shadow-glow-sm' : (isPassed ? 'border-indigo-500/50 bg-indigo-500/50' : 'border-slate-200 dark:border-slate-800')}`}>
-                                                {isCurrent && <div className="w-2 h-2 bg-slate-900 dark:bg-white rounded-full animate-pulse"></div>}
-                                                {isPassed && <Check size={12} className="text-white" />}
-                                            </div>
-                                            <div className="flex justify-between items-start">
-                                                <span className={`text-xs font-black transition-colors ${isCurrent ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'}`}>{stop}</span>
-                                                {!isPassed && waitingCount > 0 && (
-                                                    <div className="px-1.5 py-0.5 bg-emerald-500/20 rounded text-[8px] font-black text-emerald-400 animate-pulse uppercase tracking-tighter">
-                                                        {waitingCount} WAITING
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-4 mt-2">
-                                                <div className="flex items-center gap-1.5 opacity-60">
-                                                    <Users size={10} className="text-luxe-sienna" />
-                                                    <span className="text-[10px] font-bold text-slate-500">{waitingCount} waiting</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5 opacity-60">
-                                                    <Package size={10} className="text-luxe-teal" />
-                                                    <span className="text-[10px] font-bold text-slate-500">{parcelsAtThisStop.length} parcel{parcelsAtThisStop.length !== 1 ? 's' : ''}</span>
-                                                </div>
-                                                {!isPassed && (
-                                                    <div className="mt-1 text-[9px] font-black text-emerald-600 dark:text-emerald-400">
-                                                        ~₹{Math.round(stopBenefit)} est. at this stop
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {isCurrent && (
-                                                <div className="mt-2 flex gap-2">
-                                                    <button onClick={handleMarkChowk} className="text-[9px] font-black bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white px-2 py-1 rounded-lg border border-slate-200 dark:border-white/10 uppercase tracking-widest transition-all">Mark Chowk</button>
-                                                </div>
-                                            )}
-                                            {!isPassed && aheadBusesAtStop.length > 0 && (
-                                                <p className="text-[8px] font-black text-rose-400 uppercase mt-1">Bus {aheadBusesAtStop[0].driverId.slice(-3).toUpperCase()} is here</p>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                        
-                        {/* --- ACOUSTIC AUTO-VALIDATION TOGGLE (Phase 1) --- */}
-                        {isOnline && routeMode === 'OFFICIAL' && (
-                            <div className="mt-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-lg ${isAcousticListenerActive ? 'bg-purple-100 text-purple-600 animate-pulse' : 'bg-slate-200 text-slate-500'}`}>
-                                            <Mic size={14} />
-                                        </div>
-                                        AI Acoustic Verification
-                                    </h3>
-                                    <div 
-                                        className={`w-10 h-5 rounded-full flex items-center p-1 cursor-pointer transition-colors ${isAcousticListenerActive ? 'bg-purple-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-                                        onClick={() => toggleAcousticListener()}
-                                    >
-                                        <div className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm transform transition-transform ${isAcousticListenerActive ? 'translate-x-5' : 'translate-x-0'}`} />
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                                    {isAcousticListenerActive ? "Listening for ultrasonic handshakes from boarding passengers..." : "Turn on to automatically verify tickets using inaudible sound waves."}
-                                </p>
+                {/* --- PRIMARY ACTIVE TRIP ("TRIP VL") COMMAND CENTER --- */}
+                {tripConfig.isActive ? (
+                    <div className="space-y-6 animate-fade-in w-full">
+                        {/* Overlays (Fatigue & Pothole) */}
+                        {fatigueAlert && (
+                            <div className="fixed inset-0 z-[100] bg-red-600 flex flex-col items-center justify-center text-white animate-pulse p-6 text-center">
+                                <AlertOctagon size={80} className="mb-4 animate-bounce" />
+                                <h1 className="text-3xl font-black mb-2 uppercase tracking-widest">Driver Fatigue Detected!</h1>
+                                <p className="text-lg font-bold mb-8 opacity-90">Microsleep pattern identified by sensors. Please pull over safely.</p>
+                                <button onClick={() => setFatigueAlert(false)} className="bg-white text-red-600 px-8 py-3 rounded-full font-black shadow-xl uppercase tracking-widest text-sm">I am Awake</button>
                             </div>
                         )}
-                        
-                    </aside>
-                )}
-
-                {/* Right Side: Main Display */}
-                <div className="flex-1 space-y-6">
-                    {/* Overlays (Fatigue & Pothole) */}
-                    {fatigueAlert && (
-                        <div className="fixed inset-0 z-[100] bg-red-600 flex flex-col items-center justify-center text-white animate-pulse">
-                            <AlertOctagon size={80} className="mb-4 animate-bounce" />
-                            <h1 className="text-3xl font-black mb-2 uppercase tracking-widest text-center px-4">Driver Fatigue Detected!</h1>
-                            <p className="text-lg font-bold mb-8 opacity-90 text-center px-6">Microsleep pattern identified by sensors. Please stop.</p>
-                            <button onClick={() => setFatigueAlert(false)} className="bg-white text-red-600 px-8 py-3 rounded-full font-bold shadow-xl">I am Awake</button>
-                        </div>
-                    )}
-                    {potholeDetected && (
-                        <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-white px-6 py-3 rounded-full shadow-2xl z-[90] animate-bounce flex items-center gap-2 font-bold">
-                            <Activity size={20} /> Pothole Detected & Logged!
-                        </div>
-                    )}
-
-                    {/* Hero Stats Card */}
-                    {heroStats && (
-                        <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                                    <TrendingDown className="w-4 h-4 text-[var(--accent-primary)] rotate-180" />
-                                    Hero Performance
-                                </h3>
-                                <div className="px-3 py-1 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded-full text-[10px] font-black uppercase">
-                                    Grade: {heroStats.heroLevel > 5 ? 'A+' : 'B'}
-                                </div>
+                        {potholeDetected && (
+                            <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 px-6 py-3 rounded-full shadow-2xl z-[90] animate-bounce flex items-center gap-2 font-black text-sm uppercase tracking-wider">
+                                <Activity size={20} /> Pothole Detected & Logged!
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="text-center group cursor-help transition-transform hover:scale-105">
-                                    <span className="block text-2xl font-black text-slate-900 dark:text-white transition-all group-hover:text-luxe-gold">{heroStats.totalTrips}</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase group-hover:text-slate-400 transition-colors">Trips</span>
-                                </div>
-                                <div className="text-center group cursor-help transition-transform hover:scale-105">
-                                    <span className="block text-2xl font-black text-luxe-sienna dark:text-[var(--accent-warm)] transition-all group-hover:scale-110">{heroStats.heroPoints}</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Points</span>
-                                </div>
-                                <div className="text-center group cursor-help transition-transform hover:scale-105">
-                                    <span className="block text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums transition-all group-hover:brightness-125">₹{heroStats.totalEarnings}</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Revenue</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Demand Heatmap Visualization */}
-                    {demandHeatmap.length > 0 && (
-                        <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-rose-500" />
-                                Live Demand Heatmap
-                            </h3>
-                            <div className="relative h-48 bg-slate-900/50 rounded-2xl border border-white/5 overflow-hidden transition-all hover:bg-slate-900/70">
-                                {/* Pulse Overlays for Heatmap (V5 Parity) */}
-                                {(demandHeatmap || []).slice(0, 3).map((point, i) => (
-                                    <div key={i} title={`${point.location}: ${point.intensity}/10 demand`}>
-                                        <HeatPulse top={20 + i * 25} left={30 + i * 20} opacity={point.intensity / 10} />
+                        {/* 🚀 MAIN ACTIVE TRIP HERO CARD */}
+                        <div className="whisk-trip-card p-4 sm:p-6 md:p-8 rounded-[28px] sm:rounded-[36px] shadow-2xl relative w-full overflow-hidden">
+                            {/* Top Telemetry & Route Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-white/10">
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-2xl sm:text-3xl shadow-glow-sm shrink-0">
+                                        🚀
                                     </div>
-                                ))}
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-950/80 px-4 py-2 rounded-full border border-white/5 backdrop-blur-sm shadow-glow-sm">
-                                        NavIC Grid Overlay Active
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-slate-950/60 px-2 py-1 rounded-lg">
-                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                                    <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">You are here</span>
-                                </div>
-                            </div>
-                            <div className="space-y-3 mt-4">
-                                {(demandHeatmap || []).slice(0, 4).map((point, i) => (
-                                    <div key={i} className="flex items-center justify-between group">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${point.intensity > 7 ? 'bg-rose-500 animate-pulse' : point.intensity > 4 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{point.location}</span>
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {/* Dynamic 3-Stage Transit Pill */}
+                                            {transitStatus === 'ARRIVED' && (
+                                                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm animate-pulse">
+                                                    🏁 Arrived at {tripConfig.path[currentStopIndex] || 'Stop'}
+                                                </span>
+                                            )}
+                                            {transitStatus === 'DEPARTED' && (
+                                                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                                                    🚀 Departed {tripConfig.path[currentStopIndex - 1] || tripConfig.path[0] || 'Origin'}
+                                                </span>
+                                            )}
+                                            {transitStatus === 'APPROACHING' && (
+                                                <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm animate-pulse">
+                                                    📍 Approaching {tripConfig.path[currentStopIndex + 1] || 'Next Stop'}
+                                                </span>
+                                            )}
+
+                                            {/* Auto GPS Transit Toggle */}
+                                            <button
+                                                onClick={() => setAutoTransitEnabled(!autoTransitEnabled)}
+                                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-1.5 ${
+                                                    autoTransitEnabled
+                                                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-sm'
+                                                        : 'bg-slate-800/80 text-slate-400 border-white/10'
+                                                }`}
+                                            >
+                                                <span>🤖 Auto GPS:</span>
+                                                <span className={autoTransitEnabled ? 'text-emerald-400 font-black' : 'text-slate-400'}>
+                                                    {autoTransitEnabled ? 'ON' : 'OFF'}
+                                                </span>
+                                            </button>
+                                            
+                                            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                                 🟢 GPS + GSM Triangulation Active
+                                             </span>
+
+                                             <span className="text-xs font-black text-slate-400">VL-{user.id.slice(-3).toUpperCase()}</span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-24 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                <HeatmapBar intensity={point.intensity} />
+                                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight mt-1">
+                                            {officialRoutes.find(r => r.id === selectedRouteId)?.name || (tripConfig.startLocation && tripConfig.endLocation ? `${tripConfig.startLocation.name} → ${tripConfig.endLocation.name}` : 'Custom Route')}
+                                        </h1>
+                                        <p className="text-xs font-bold text-amber-200/80 mt-0.5 flex flex-wrap items-center gap-2">
+                                            <span>Current Stop ({currentStopIndex + 1}/{tripConfig.path.length}): <span className="text-emerald-400 font-black">{tripConfig.path[currentStopIndex] || 'In Transit'}</span></span>
+                                            {segmentInfo?.arrivalThresholdKm && (
+                                                <span className="text-[10px] font-bold text-cyan-300/80 bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                                                    ⚡ 20% Zone: {Math.round(segmentInfo.arrivalThresholdKm * 1000)}m
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Seat Occupancy Gauge */}
+                                <div className="flex items-center gap-2 sm:gap-3 self-stretch md:self-auto w-full md:w-auto">
+                                    <div className="flex-1 md:flex-none glass-3 bg-white/10 border border-white/20 p-2.5 sm:p-4 rounded-2xl text-center min-w-[90px] sm:min-w-[120px]">
+                                        <p className="text-[8px] sm:text-[9px] font-black text-amber-300 uppercase tracking-widest mb-1">Seats Occupied</p>
+                                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-widest">
+                                            <span className="text-emerald-400">{liveSeats.occupied}</span> / <span className="text-slate-300">{liveSeats.total}</span>
+                                        </h2>
+                                    </div>
+                                    {liveSeats.parcels > 0 && (
+                                        <div className="glass-3 bg-yellow-500/10 border border-yellow-500/30 p-2.5 sm:p-4 rounded-2xl text-center min-w-[80px] sm:min-w-[100px]">
+                                            <p className="text-[8px] sm:text-[9px] font-black text-yellow-300 uppercase tracking-widest mb-1">Onboard Cargo</p>
+                                            <h2 className="text-xl sm:text-2xl font-black text-yellow-400">📦 {liveSeats.parcels}</h2>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Sticky Action Command Bar */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-6 sm:mb-8">
+                                <button
+                                    onClick={() => { setVerifyId(''); setVerifyResult(null); setShowQRScanner(false); setShowVerifyModal(true); }}
+                                    className="py-3 px-2 sm:px-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white font-black rounded-xl sm:rounded-2xl shadow-glow-sm shadow-emerald-500/30 flex items-center justify-center gap-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-all"
+                                >
+                                    <ScanLine size={16} /> Enter Code / QR
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        announce("Cash passenger added");
+                                        setLiveSeats(prev => ({ ...prev, occupied: Math.min(prev.total, prev.occupied + 1) }));
+                                    }}
+                                    className="py-3 px-2 sm:px-4 bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black rounded-xl sm:rounded-2xl shadow-glow-sm shadow-amber-500/30 flex items-center justify-center gap-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-all"
+                                >
+                                    <Plus size={16} strokeWidth={3} /> +1 Cash Fare
+                                </button>
+                                <button
+                                    onClick={() => setShowInceptionGrid(!showInceptionGrid)}
+                                    className={`py-3 px-2 sm:px-4 rounded-xl sm:rounded-2xl font-black flex items-center justify-center gap-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-all border ${showInceptionGrid ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                                >
+                                    <Navigation size={16} /> {showInceptionGrid ? '3D Grid' : '3D Grid'}
+                                </button>
+                                <button
+                                    onClick={() => setShowGeminiCoPilot(!showGeminiCoPilot)}
+                                    className={`py-3 px-2 sm:px-4 rounded-xl sm:rounded-2xl font-black flex items-center justify-center gap-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-all border ${showGeminiCoPilot ? 'bg-purple-500/20 border-purple-400 text-purple-300' : 'bg-purple-600/30 border-purple-500/40 text-purple-200 hover:bg-purple-600/50'}`}
+                                >
+                                    <Mic size={16} /> Voice Co-Pilot
+                                </button>
+                            </div>
+
+                            {/* Kinematic Lock Notification */}
+                            {provisionalTickets.length > 0 && (
+                                <div className="mb-6 bg-amber-500/15 border border-amber-500/40 rounded-2xl p-4 animate-fade-in shadow-glow-sm">
+                                    <p className="text-xs font-black text-amber-300 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                        <span className="animate-spin text-base">⚙️</span> Automatic Kinematic Lock Pending ({provisionalTickets.length})
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {provisionalTickets.map(pt => (
+                                            <div key={pt.id} className="bg-slate-900/80 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center">
+                                                <div>
+                                                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">Ultrasonic Auto-Matched</span>
+                                                    <span className="text-sm font-black text-white">{pt.id}</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-amber-300 animate-pulse">Syncing Speed...</span>
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">{point.intensity}/10</span>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                </div>
+                            )}
 
-                    {viewMode === 'UTILITIES' && (
-                        <div className="space-y-6 animate-fade-in shadow-whisk-float rounded-[32px]">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div onClick={() => setIsMobileATM(!isMobileATM)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isMobileATM ? 'bg-emerald-500/10 border-emerald-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isMobileATM ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Coins size={24} /></div>
-                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isMobileATM ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>Mobile ATM</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isMobileATM ? 'Broadcast Active' : 'Enable Cash-Out'}</p>
-                                </div>
-                                <div onClick={() => setIsDataMuleActive(!isDataMuleActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isDataMuleActive ? 'bg-blue-500/10 border-blue-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDataMuleActive ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Wifi size={24} /></div>
-                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isDataMuleActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'}`}>Data Mule</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isDataMuleActive ? 'Hosting Content' : 'Sync Content'}</p>
-                                </div>
-                                <div onClick={() => setIsRoadAIActive(!isRoadAIActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isRoadAIActive ? 'bg-amber-500/10 border-amber-500/50 shadow-glow-sm' : 'glass-3 border-slate-200 dark:border-white/5 text-slate-500'}`}>
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isRoadAIActive ? 'bg-amber-500 text-white animate-pulse' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}><Activity size={24} /></div>
-                                    <h4 className={`font-black tracking-widest text-sm uppercase ${isRoadAIActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>Road AI</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 mt-1">{isRoadAIActive ? 'Sensor Active' : 'Detect Potholes'}</p>
-                                </div>
-                                <div onClick={handleAudioCount} className="p-6 rounded-3xl border glass-3 border-slate-200 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-all group">
-                                    <div className="w-12 h-12 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 mb-4 group-hover:text-luxe-teal transition-colors">
-                                        {isCountingAudio ? <span className="animate-spin text-2xl">⌛</span> : <Mic size={24} />}
+                            {/* Live Route Stepper Timeline & 3D Spatial Cockpit Deck */}
+                            <div className="mb-8">
+                                {/* Timeline Header & Mode Switcher Bar */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-white/10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="text-amber-400" size={20} />
+                                        <h3 className="text-base font-black text-white uppercase tracking-wider">Stops Timeline</h3>
+                                        <span className="text-xs font-bold text-slate-400 bg-white/10 px-2.5 py-0.5 rounded-full">
+                                            {tripConfig.path.length} Stops
+                                        </span>
                                     </div>
-                                    <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Count Crowd</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 mt-1">Use Audio AI Analysis</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
-                    {!tripConfig.isActive && viewMode !== 'UTILITIES' && (
-                        <div className="whisk-trip-card p-8 rounded-[40px] animate-fade-in-up">
-                            <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-6 text-center tracking-tight">Begin Shift</h3>
-
-                            {/* Smart / Manual Route Toggle */}
-                             <div className="flex bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl mb-6">
-                                <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'OFFICIAL' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-600 hover:text-slate-800 dark:hover:text-slate-300'}`}>Smart Route</button>
-                                <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${routeMode === 'CUSTOM' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-600 hover:text-slate-800 dark:hover:text-slate-300'}`}>Custom Path</button>
-                            </div>
-
-                            {routeMode === 'OFFICIAL' ? (
-                                <div className="mb-6">
-                                    {/* AI Smart Go Online Button */}
-                                    {!isOnline && (
+                                    {/* View Mode Switcher Button */}
+                                    <div className="flex items-center gap-2">
                                         <button
-                                            onClick={handleSmartGoOnline}
-                                            disabled={smartLoading}
-                                            className="w-full mb-6 py-5 bg-gradient-to-r from-luxe-sienna to-luxe-gold text-white font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-glow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                            onClick={() => setStopViewMode(stopViewMode === 'STACK' ? 'LIST' : 'STACK')}
+                                            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-400/40 text-amber-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                                         >
-                                            {smartLoading ? (
-                                                <><span className="animate-spin text-xl">⌛</span> AI Route Analysis...</>
+                                            {stopViewMode === 'STACK' ? (
+                                                <><Layers size={14} /> 🃏 3D Spatial Deck</>
                                             ) : (
-                                                <>🟢 Go Online — Get AI Routes</>
+                                                <><List size={14} /> 📋 Full List View</>
                                             )}
                                         </button>
-                                    )}
+                                    </div>
+                                </div>
 
-                                    {/* AI Suggested Routes */}
-                                    {(smartRoutes || []).length > 0 && (
-                                        <div className="space-y-3 mb-6">
-                                            <p className="text-[9px] font-black text-luxe-gold uppercase tracking-[0.3em] mb-3">🤖 AI Recommended Routes</p>
-                                            {smartRoutes.map((route: any, idx: number) => (
+                                {/* Mini Quick-Jump Stepper Bar */}
+                                <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
+                                    {tripConfig.path.map((sName, sIdx) => (
+                                        <button
+                                            key={sIdx}
+                                            onClick={() => { setStackFocusIndex(sIdx); announce(`Viewing stop ${sIdx + 1}: ${sName}`); }}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-black shrink-0 transition-all border flex items-center gap-1.5 ${
+                                                sIdx === stackFocusIndex
+                                                    ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-glow-sm scale-105'
+                                                    : sIdx === currentStopIndex
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                    : sIdx < currentStopIndex
+                                                    ? 'bg-slate-900/60 text-slate-400 border-white/5'
+                                                    : 'bg-white/5 text-slate-300 border-white/10 hover:border-white/20'
+                                            }`}
+                                        >
+                                            <span>{sIdx + 1}. {sName}</span>
+                                            {sIdx === currentStopIndex && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* MODE 1: 3D SPATIAL ISOMETRIC DEPTH DECK */}
+                                {stopViewMode === 'STACK' && (
+                                    <div className="relative">
+                                        {/* Swipe Instructions / Deck Navigator Header */}
+                                        <div className="flex items-center justify-between mb-3 text-xs font-bold text-amber-200/80 px-1">
+                                            <span className="flex items-center gap-1">
+                                                <span>👈 Swipe Deck or use Arrows 👉</span>
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setStackFocusIndex(prev => Math.max(0, prev - 1))}
+                                                    disabled={stackFocusIndex === 0}
+                                                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center font-bold text-base transition-all"
+                                                >
+                                                    ‹
+                                                </button>
+                                                <span className="text-white font-black text-xs">
+                                                    {stackFocusIndex + 1} / {tripConfig.path.length}
+                                                </span>
+                                                <button
+                                                    onClick={() => setStackFocusIndex(prev => Math.min(tripConfig.path.length - 1, prev + 1))}
+                                                    disabled={stackFocusIndex === tripConfig.path.length - 1}
+                                                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center font-bold text-base transition-all"
+                                                >
+                                                    ›
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Touch & Pointer Gesture Container */}
+                                        <div
+                                            onTouchStart={(e) => {
+                                                touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                                            }}
+                                            onTouchEnd={(e) => {
+                                                if (!touchStartRef.current) return;
+                                                const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+                                                const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+                                                touchStartRef.current = null;
+                                                if (Math.abs(dx) > 40 || Math.abs(dy) > 40) {
+                                                    if (dx < -40 || dy < -40) {
+                                                        setStackFocusIndex(prev => Math.min(tripConfig.path.length - 1, prev + 1));
+                                                    } else if (dx > 40 || dy > 40) {
+                                                        setStackFocusIndex(prev => Math.max(0, prev - 1));
+                                                    }
+                                                }
+                                            }}
+                                            className="relative min-h-[320px] select-none cursor-grab active:cursor-grabbing"
+                                        >
+                                            {/* Stacked 3D Cards Representation */}
+                                            {tripConfig.path.slice(stackFocusIndex, stackFocusIndex + 3).map((stop, stackOffset) => {
+                                                const idx = stackFocusIndex + stackOffset;
+                                                const isCurrent = idx === currentStopIndex;
+                                                const isNext = idx === currentStopIndex + 1;
+                                                const isPassed = idx < currentStopIndex;
+                                                const waitingCount = (pathDemand[stop] || 0) + (serverStopDemand[stop] || 0);
+                                                const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
+                                                const parcelsAtThisStop = parcels.filter(p => (p.status === 'PENDING' || p.status === 'POSTED') && p.from === stop);
+                                                const estPerPassenger = 15;
+                                                const stopBenefit = waitingCount * estPerPassenger + parcelsAtThisStop.reduce((s, p) => s + (Number(p.price) || 0), 0);
+
+                                                let liveDistanceText = 'Live GPS Syncing...';
+                                                const stopDetails = tripConfig.pathDetails ? tripConfig.pathDetails[idx] : null;
+                                                if (currentGPS && stopDetails && typeof stopDetails !== 'string' && stopDetails.lat && stopDetails.lng) {
+                                                    const dKm = getHaversineDistanceKm(currentGPS.lat, currentGPS.lng, stopDetails.lat, stopDetails.lng);
+                                                    const inArrivalZone = isNext && segmentInfo?.arrivalThresholdKm && dKm <= segmentInfo.arrivalThresholdKm;
+                                                    if (inArrivalZone) {
+                                                        liveDistanceText = `${dKm < 1 ? Math.round(dKm * 1000) + ' m' : dKm.toFixed(1) + ' km'} (Inside 20% Zone 🏁)`;
+                                                    } else {
+                                                        liveDistanceText = dKm < 1 ? `${Math.round(dKm * 1000)} m away` : `${dKm.toFixed(1)} km away`;
+                                                    }
+                                                } else {
+                                                    const gap = idx - currentStopIndex;
+                                                    if (gap === 0) liveDistanceText = 'At Location';
+                                                    else if (gap < 0) liveDistanceText = 'Passed Stop';
+                                                    else liveDistanceText = `${(gap * 1.8).toFixed(1)} km away`;
+                                                }
+
+                                                // 3D Depth Stack Transformations
+                                                const scale = stackOffset === 0 ? 1 : stackOffset === 1 ? 0.95 : 0.90;
+                                                const translateY = stackOffset === 0 ? 0 : stackOffset === 1 ? 16 : 32;
+                                                const opacity = stackOffset === 0 ? 1 : stackOffset === 1 ? 0.7 : 0.4;
+                                                const zIndex = 30 - stackOffset;
+
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        style={{
+                                                            transform: `scale(${scale}) translateY(${translateY}px)`,
+                                                            opacity,
+                                                            zIndex,
+                                                            transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+                                                        }}
+                                                        className={`p-6 rounded-[28px] border relative overflow-hidden shadow-2xl ${
+                                                            stackOffset === 0 ? 'relative' : 'absolute top-0 left-0 right-0 pointer-events-none'
+                                                        } ${
+                                                            isCurrent 
+                                                                ? 'bg-slate-900/95 border-amber-400/80 ring-2 ring-amber-400/40 shadow-amber-500/10' 
+                                                                : isPassed 
+                                                                ? 'bg-slate-950/60 border-white/5 opacity-60' 
+                                                                : 'bg-slate-900/90 border-white/10 hover:border-white/20'
+                                                        }`}
+                                                    >
+                                                        {/* 1st ROW */}
+                                                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/10 mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
+                                                                    isCurrent ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-glow-sm' :
+                                                                    isPassed ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                                                    'bg-white/10 text-white border-white/20'
+                                                                }`}>
+                                                                    {isPassed ? <Check size={18} className="text-emerald-400" /> : idx + 1}
+                                                                </div>
+                                                                <h4 className="text-xl font-black text-white tracking-tight">{stop}</h4>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2">
+                                                                {isCurrent && (
+                                                                    <span className="px-3 py-1 bg-amber-400 text-slate-950 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse border border-amber-300 flex items-center gap-1 shadow-sm">
+                                                                        📍 Current Stop
+                                                                    </span>
+                                                                )}
+                                                                {isNext && (
+                                                                    <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                                        ➡️ Next Stop
+                                                                    </span>
+                                                                )}
+                                                                {isPassed && (
+                                                                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                                        ✓ Passed
+                                                                    </span>
+                                                                )}
+                                                                {!isCurrent && !isNext && !isPassed && (
+                                                                    <span className="px-3 py-1 bg-white/5 text-slate-400 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                                        ⏱️ Upcoming
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* MIDDLE SECTION */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-center">
+                                                            <div className="md:col-span-2 space-y-2.5">
+                                                                <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-950/80 border border-emerald-500/30 rounded-2xl">
+                                                                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                                                        <Users size={15} />
+                                                                    </div>
+                                                                    <span className="text-xs font-black text-emerald-300 tracking-wide">
+                                                                        Waiting Passengers: <span className="text-white text-sm font-black ml-1">{waitingCount} Pax</span>
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-950/80 border border-yellow-500/30 rounded-2xl">
+                                                                    <div className="w-7 h-7 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                                                                        <Package size={15} />
+                                                                    </div>
+                                                                    <span className="text-xs font-black text-yellow-300 tracking-wide">
+                                                                        Cargo Parcels: <span className="text-white text-sm font-black ml-1">{parcelsAtThisStop.length} Items</span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="md:col-span-1 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/40 border border-emerald-500/40 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
+                                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                                    💰 Est. Revenue
+                                                                </span>
+                                                                <span className="text-2xl font-black text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
+                                                                    ₹{Math.round(stopBenefit)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 4th ROW (BOTTOM) */}
+                                                        <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                {isCurrent && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={handleMarkChowk}
+                                                                            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                                                                        >
+                                                                            Mark Chowk
+                                                                        </button>
+                                                                        {idx < tripConfig.path.length - 1 ? (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setCurrentStopIndex(i => i + 1);
+                                                                                    announce(`Arrived at next stop: ${tripConfig.path[idx + 1]}`);
+                                                                                }}
+                                                                                className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1 active:scale-95"
+                                                                            >
+                                                                                Next Stop ➔
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={handleEndTripAndShowRecommendations}
+                                                                                className="px-4 py-2.5 bg-purple-500 hover:bg-purple-400 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                                                                            >
+                                                                                Complete Trip
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+
+                                                                {parcelsAtThisStop.length > 0 && !isPassed && (
+                                                                    <button
+                                                                        onClick={() => setSelectedStopForParcels(stop)}
+                                                                        className="px-3.5 py-2.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
+                                                                    >
+                                                                        View Cargo ({parcelsAtThisStop.length})
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-950/90 border border-cyan-500/40 rounded-xl text-cyan-300 text-xs font-black shadow-inner">
+                                                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                                                <MapPin size={14} className="text-cyan-400" />
+                                                                <span>Distance: <span className="text-white ml-0.5">{liveDistanceText}</span></span>
+                                                            </div>
+                                                        </div>
+
+                                                        {!isPassed && aheadBusesAtStop.length > 0 && (
+                                                            <div className="mt-3 pt-2 border-t border-rose-500/30 flex items-center gap-2 text-xs font-black text-rose-400">
+                                                                <AlertTriangleIcon size={14} />
+                                                                <span>Bus {aheadBusesAtStop[0].driverId.slice(-3).toUpperCase()} is currently at this stop!</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* MODE 2: FULL LIST VIEW */}
+                                {stopViewMode === 'LIST' && (
+                                    <div className="space-y-4">
+                                        {tripConfig.path.map((stop, idx) => {
+                                            const isCurrent = idx === currentStopIndex;
+                                            const isNext = idx === currentStopIndex + 1;
+                                            const isPassed = idx < currentStopIndex;
+                                            const waitingCount = (pathDemand[stop] || 0) + (serverStopDemand[stop] || 0);
+                                            const aheadBusesAtStop = aheadCompetitors.filter(c => (c.activePath || [])[c.currentStopIndex || 0] === stop);
+                                            const parcelsAtThisStop = parcels.filter(p => (p.status === 'PENDING' || p.status === 'POSTED') && p.from === stop);
+                                            const estPerPassenger = 15;
+                                            const stopBenefit = waitingCount * estPerPassenger + parcelsAtThisStop.reduce((s, p) => s + (Number(p.price) || 0), 0);
+
+                                            let liveDistanceText = 'Live GPS Syncing...';
+                                            const stopDetails = tripConfig.pathDetails ? tripConfig.pathDetails[idx] : null;
+                                            if (currentGPS && stopDetails && typeof stopDetails !== 'string' && stopDetails.lat && stopDetails.lng) {
+                                                const dKm = getHaversineDistanceKm(currentGPS.lat, currentGPS.lng, stopDetails.lat, stopDetails.lng);
+                                                const inArrivalZone = isNext && segmentInfo?.arrivalThresholdKm && dKm <= segmentInfo.arrivalThresholdKm;
+                                                if (inArrivalZone) {
+                                                    liveDistanceText = `${dKm < 1 ? Math.round(dKm * 1000) + ' m' : dKm.toFixed(1) + ' km'} (Inside 20% Zone 🏁)`;
+                                                } else {
+                                                    liveDistanceText = dKm < 1 ? `${Math.round(dKm * 1000)} m away` : `${dKm.toFixed(1)} km away`;
+                                                }
+                                            } else {
+                                                const gap = idx - currentStopIndex;
+                                                if (gap === 0) liveDistanceText = 'At Location';
+                                                else if (gap < 0) liveDistanceText = 'Passed Stop';
+                                                else liveDistanceText = `${(gap * 1.8).toFixed(1)} km away`;
+                                            }
+
+                                            return (
                                                 <div
-                                                    key={route.routeId || idx}
-                                                    onClick={() => handleSmartSelectRoute(route.routeId || route.id)}
-                                                    className={`p-5 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${
-                                                        selectedRouteId === (route.routeId || route.id)
-                                                            ? 'bg-luxe-sienna/20 border-luxe-sienna/50 shadow-glow-sm'
-                                                            : 'glass-3 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                                                    key={idx}
+                                                    className={`p-6 rounded-[28px] border transition-all relative overflow-hidden shadow-xl ${
+                                                        isCurrent 
+                                                            ? 'bg-slate-900/95 border-amber-400/80 ring-2 ring-amber-400/40 shadow-amber-500/10' 
+                                                            : isPassed 
+                                                            ? 'bg-slate-950/60 border-white/5 opacity-60' 
+                                                            : 'bg-slate-900/80 border-white/10 hover:border-white/20'
                                                     }`}
                                                 >
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div>
-                                                            <h4 className="font-black text-slate-900 dark:text-white text-sm">{route.name || route.routeName}</h4>
-                                                            <p className="text-[10px] text-slate-500 font-bold">{route.from} → {route.to}</p>
-                                                        </div>
-                                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
-                                                            route.tag === 'HOT🔥' ? 'bg-rose-500/20 text-rose-400' :
-                                                            route.tag === 'GOOD👍' ? 'bg-emerald-500/20 text-emerald-400' :
-                                                            'bg-slate-500/20 text-slate-400'
-                                                        }`}>{route.tag || 'NORMAL'}</span>
-                                                    </div>
-                                                    <div className="flex gap-4 mt-3">
-                                                        <div className="flex items-center gap-1">
-                                                            <Users size={12} className="text-luxe-teal" />
-                                                            <span className="text-[10px] font-black text-slate-400">{route.demand?.passengers || 0} waiting</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Package size={12} className="text-luxe-gold" />
-                                                            <span className="text-[10px] font-black text-slate-400">{route.demand?.parcels || 0} parcels</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Car size={12} className="text-slate-500" />
-                                                            <span className="text-[10px] font-black text-slate-400">{route.competition || 0} buses</span>
-                                                        </div>
-                                                    </div>
-                                                     {route.aiScore && (
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <div className="flex-1 h-1.5 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-gradient-to-r from-luxe-sienna to-luxe-gold rounded-full transition-all" style={{ width: `${route.aiScore}%` }}></div>
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/10 mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
+                                                                isCurrent ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-glow-sm' :
+                                                                isPassed ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                                                'bg-white/10 text-white border-white/20'
+                                                            }`}>
+                                                                {isPassed ? <Check size={18} className="text-emerald-400" /> : idx + 1}
                                                             </div>
-                                                            <span className="text-[9px] font-black text-luxe-gold">{route.aiScore}%</span>
+                                                            <h4 className="text-xl font-black text-white tracking-tight">{stop}</h4>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {isCurrent && (
+                                                                <span className="px-3 py-1 bg-amber-400 text-slate-950 rounded-full text-[10px] font-black uppercase tracking-widest animate-pulse border border-amber-300 flex items-center gap-1 shadow-sm">
+                                                                    📍 Current Stop
+                                                                </span>
+                                                            )}
+                                                            {isNext && (
+                                                                <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                                    ➡️ Next Stop
+                                                                </span>
+                                                            )}
+                                                            {isPassed && (
+                                                                <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                                                    ✓ Passed
+                                                                </span>
+                                                            )}
+                                                            {!isCurrent && !isNext && !isPassed && (
+                                                                <span className="px-3 py-1 bg-white/5 text-slate-400 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                                    ⏱️ Upcoming
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 items-center">
+                                                        <div className="md:col-span-2 space-y-2.5">
+                                                            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-950/80 border border-emerald-500/30 rounded-2xl">
+                                                                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                                                    <Users size={15} />
+                                                                </div>
+                                                                <span className="text-xs font-black text-emerald-300 tracking-wide">
+                                                                    Waiting Passengers: <span className="text-white text-sm font-black ml-1">{waitingCount} Pax</span>
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-950/80 border border-yellow-500/30 rounded-2xl">
+                                                                <div className="w-7 h-7 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                                                                    <Package size={15} />
+                                                                </div>
+                                                                <span className="text-xs font-black text-yellow-300 tracking-wide">
+                                                                    Cargo Parcels: <span className="text-white text-sm font-black ml-1">{parcelsAtThisStop.length} Items</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="md:col-span-1 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/40 border border-emerald-500/40 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-lg relative overflow-hidden">
+                                                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                                                💰 Est. Revenue
+                                                            </span>
+                                                            <span className="text-2xl font-black text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
+                                                                ₹{Math.round(stopBenefit)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {isCurrent && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={handleMarkChowk}
+                                                                        className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                                                                    >
+                                                                        Mark Chowk
+                                                                    </button>
+                                                                    {idx < tripConfig.path.length - 1 ? (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setCurrentStopIndex(i => i + 1);
+                                                                                announce(`Arrived at next stop: ${tripConfig.path[idx + 1]}`);
+                                                                            }}
+                                                                            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md flex items-center gap-1 active:scale-95"
+                                                                        >
+                                                                            Next Stop ➔
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={handleEndTripAndShowRecommendations}
+                                                                            className="px-4 py-2.5 bg-purple-500 hover:bg-purple-400 text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
+                                                                        >
+                                                                            Complete Trip
+                                                                        </button>
+                                                                    )}
+                                                                </>
+                                                            )}
+
+                                                            {parcelsAtThisStop.length > 0 && !isPassed && (
+                                                                <button
+                                                                    onClick={() => setSelectedStopForParcels(stop)}
+                                                                    className="px-3.5 py-2.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
+                                                                >
+                                                                    View Cargo ({parcelsAtThisStop.length})
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 px-3.5 py-2 bg-slate-950/90 border border-cyan-500/40 rounded-xl text-cyan-300 text-xs font-black shadow-inner">
+                                                            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                                            <MapPin size={14} className="text-cyan-400" />
+                                                            <span>Distance: <span className="text-white ml-0.5">{liveDistanceText}</span></span>
+                                                        </div>
+                                                    </div>
+
+                                                    {!isPassed && aheadBusesAtStop.length > 0 && (
+                                                        <div className="mt-3 pt-2 border-t border-rose-500/30 flex items-center gap-2 text-xs font-black text-rose-400">
+                                                            <AlertTriangleIcon size={14} />
+                                                            <span>Bus {aheadBusesAtStop[0].driverId.slice(-3).toUpperCase()} is currently at this stop!</span>
                                                         </div>
                                                     )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
 
-                                    {/* Fallback: Manual Route Select */}
-                                    {(smartRoutes || []).length === 0 && isOnline && (
+                            {/* Acoustic Auto Verification Banner */}
+                            {isOnline && routeMode === 'OFFICIAL' && (
+                                <div className="bg-purple-900/40 border border-purple-500/30 rounded-2xl p-4 flex justify-between items-center mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2.5 rounded-xl ${isAcousticListenerActive ? 'bg-purple-500 text-white animate-pulse' : 'bg-white/10 text-slate-400'}`}>
+                                            <Mic size={18} />
+                                        </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Assigned Route</label>
-                                             <div className="relative">
-                                                <select value={selectedRouteId} onChange={(e) => { setSelectedRouteId(e.target.value); handleSmartSelectRoute(e.target.value); }} className="w-full p-5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl appearance-none outline-none text-slate-900 dark:text-white font-black text-sm tracking-tight" aria-label="Select Route">
-                                                    <option value="" className="bg-white dark:bg-slate-950">-- Select Hub Route --</option>
-                                                    {officialRoutes.map(route => (<option key={route.id} value={route.id} className="bg-white dark:bg-slate-950">{route.name} ({route.from} - {route.to})</option>))}
-                                                </select>
-                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">▼</div>
-                                            </div>
+                                            <h4 className="text-sm font-black text-white flex items-center gap-2">
+                                                AI Acoustic Ticket Verification
+                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${isAcousticListenerActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'}`}>
+                                                    {isAcousticListenerActive ? 'Active' : 'Off'}
+                                                </span>
+                                            </h4>
+                                            <p className="text-xs text-purple-200/70 mt-0.5">
+                                                {isAcousticListenerActive ? "Listening for passenger ultrasonic sound code..." : "Automatically validates tickets via inaudible sound waves."}
+                                            </p>
                                         </div>
-                                    )}
-
-                                    {!isOnline && (smartRoutes || []).length === 0 && (
-                                        <div>
-                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Or Select Manually</label>
-                                             <div className="relative">
-                                                <select value={selectedRouteId} onChange={(e) => setSelectedRouteId(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl appearance-none outline-none text-slate-900 dark:text-white font-black text-sm tracking-tight" aria-label="Select Route">
-                                                    <option value="" className="bg-white dark:bg-slate-950">-- Select Hub Route --</option>
-                                                    {officialRoutes.map(route => (<option key={route.id} value={route.id} className="bg-white dark:bg-slate-950">{route.name} ({route.from} - {route.to})</option>))}
-                                                </select>
-                                                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">▼</div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Per-Stop Demand Preview */}
-                                    {(routeDemand || []).length > 0 && (
-                                        <div className="mt-4 glass-3 p-4 rounded-2xl border border-slate-200 dark:border-white/5">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">📊 Stop-Wise Demand</p>
-                                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                 {routeDemand.map((stop: any, i: number) => (
-                                                    <div key={i} className="flex justify-between items-center">
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{stop.stopName}</span>
-                                                        <div className="flex gap-3">
-                                                            {stop.waitingPassengers > 0 && (
-                                                                <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{stop.waitingPassengers}👤</span>
-                                                            )}
-                                                            {stop.parcels > 0 && (
-                                                                <span className="text-[9px] font-black text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded">{stop.parcels}📦</span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="space-y-4 mb-8">
-                                    <LocationSelector label="Start Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, startLocation: loc }))} />
-                                    <LocationSelector label="End Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, endLocation: loc }))} />
+                                    </div>
+                                    <button
+                                        onClick={() => toggleAcousticListener()}
+                                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${isAcousticListenerActive ? 'bg-purple-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                                    >
+                                        {isAcousticListenerActive ? 'Disable' : 'Enable'}
+                                    </button>
                                 </div>
                             )}
-                            <Button variant="primary" fullWidth onClick={handleStartTrip} className="h-16 text-lg font-black uppercase tracking-[0.2em] rounded-[24px] shadow-glow-md">Initialize NavIC</Button>
-                        </div>
-                    )}
 
-                    {tripConfig.isActive && viewMode !== 'UTILITIES' && (
-                        <div className="space-y-6 animate-fade-in relative">
-                             {/* Main Active HUD */}
-                            <div className="whisk-trip-card rounded-[40px] p-8 flex flex-col items-center">
-                                <div className="w-full flex justify-between items-center mb-6">
-                                    <div className="flex gap-4">
-                                        {/* Live Seat HUD */}
-                                        <div className="glass-3 border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 py-3 px-6 rounded-2xl">
-                                            <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Seats</p>
-                                            <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-widest">
-                                                {liveSeats.occupied} / <span className="text-slate-400 dark:text-slate-600">{liveSeats.total}</span>
-                                            </h3>
-                                        </div>
-                                        {liveSeats.parcels > 0 && (
-                                            <div className="glass-3 border-white/5 bg-yellow-500/5 py-3 px-4 rounded-2xl">
-                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Parcels</p>
-                                                <h3 className="text-xl font-black text-yellow-400">📦 {liveSeats.parcels}</h3>
+                            {/* Bottom Telemetry & Emergency Shift End */}
+                            <div className="pt-4 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div className="flex items-center gap-6 text-xs font-bold text-slate-300">
+                                    <span className="flex items-center gap-1.5"><Volume2 size={14} className="text-emerald-400 animate-pulse" /> Ultrasonic Sync Active</span>
+                                    <span className="flex items-center gap-1.5"><Wifi size={14} className="text-cyan-400" /> NavIC GPS Live</span>
+                                </div>
+                                <button
+                                    onClick={handleEndTrip}
+                                    className="w-full md:w-auto px-6 py-3 bg-red-600/80 hover:bg-red-600 text-white font-black rounded-2xl text-xs uppercase tracking-widest transition-all shadow-md"
+                                >
+                                    Emergency Shift End
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Secondary Command Tabs (Ahead, Earnings, Deliveries, 3D Radar) */}
+                        <div className="whisk-trip-card rounded-[32px] overflow-hidden">
+                            <div className="flex border-b border-white/10 bg-white/5">
+                                {(['ROUTE', 'EARNINGS', 'DELIVERIES', 'HUD'] as const).map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => { setActiveTab(tab); if (tab === 'EARNINGS') loadEarnings(); if (tab === 'DELIVERIES') loadDeliveries(); }}
+                                        className={`flex-1 py-4 text-xs font-black uppercase tracking-wider transition-all ${activeTab === tab ? 'text-amber-300 border-b-2 border-amber-300 bg-white/10' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        {tab === 'ROUTE' ? '🚌 Vehicles Ahead' : tab === 'EARNINGS' ? '💰 Earnings' : tab === 'DELIVERIES' ? '📦 Cargo' : '🖥️ 3D Radar'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="p-6">
+                                {activeTab === 'ROUTE' && (
+                                    <div className="space-y-4">
+                                        {showInceptionGrid && (
+                                            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                                                <InceptionGrid3D
+                                                    stops={tripConfig.path.map((name, idx) => ({
+                                                        name,
+                                                        waitingPassengers: (routeDemand.find((d: any) => d.stopName === name) as any)?.waitingPassengers || 0,
+                                                        parcels: (routeDemand.find((d: any) => d.stopName === name) as any)?.pendingParcels || 0,
+                                                        isCurrentStop: idx === currentStopIndex
+                                                    }))}
+                                                    currentStopIndex={currentStopIndex}
+                                                    currentSpeed={currentGPS?.speed || 0}
+                                                    aheadVehicles={(aheadVehicles || []).map((v: any, i: number) => ({
+                                                        id: v.driverId || `v-${i}`,
+                                                        name: v.driverName || `Bus ${(v.driverId || '').slice(-3)}`,
+                                                        distance: v.distanceAhead || (i + 1) * 2,
+                                                        speed: v.speed || 30,
+                                                        capacity: v.seatsTotal || 20,
+                                                        occupancy: v.seatsOccupied || 0
+                                                    }))}
+                                                    tripDistance={tripConfig.totalDistance}
+                                                />
                                             </div>
                                         )}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => { setVerifyId(''); setVerifyResult(null); setShowQRScanner(false); setShowVerifyModal(true); }}
-                                            className="bg-slate-200 dark:bg-slate-800 px-6 py-4 rounded-2xl text-[10px] font-black flex items-center gap-2 hover:bg-slate-300 dark:hover:bg-slate-700 transition-all uppercase tracking-widest text-slate-800 dark:text-white border border-slate-300 dark:border-white/10 shadow-sm"
-                                        >
-                                            <ScanLine size={16} /> Enter Code
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                announce("Cash passenger added");
-                                                setLiveSeats(prev => ({...prev, occupied: prev.occupied + 1}));
-                                                // Trigger a quick flash animation on the button could be handled here
-                                            }}
-                                            className="bg-emerald-500 px-6 py-4 rounded-2xl text-[10px] font-black flex items-center gap-2 hover:bg-emerald-400 active:scale-95 transition-all shadow-glow-sm shadow-emerald-500/30 uppercase tracking-widest text-white transform"
-                                        >
-                                            <Plus size={16} strokeWidth={3} /> <span className="text-xl leading-none -mt-0.5">1</span> Cash
-                                        </button>
-                                    </div>
-                                </div>
 
-                                {/* --- KINEMATIC LOCK PENDING UI --- */}
-                                {provisionalTickets.length > 0 && (
-                                    <div className="w-full mb-6 relative z-10">
-                                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <span className="animate-spin text-lg">⚙️</span> Kinematic Lock Pending ({provisionalTickets.length})
-                                        </p>
-                                        <div className="space-y-2">
-                                            {provisionalTickets.map(pt => (
-                                                <div key={pt.id} className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex justify-between items-center transition-all animate-fade-in shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-                                                    <div>
-                                                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-0.5">Ultrasonic Match</span>
-                                                        <span className="text-sm font-black text-white">{pt.id}</span>
+                                        <div className="space-y-3">
+                                            <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest">Ahead Vehicles on Route</h4>
+                                            {(aheadVehicles || []).length === 0 ? (
+                                                <p className="text-xs text-slate-400 text-center py-4">No ahead vehicles reported</p>
+                                            ) : aheadVehicles.map((v: any, i: number) => (
+                                                <div key={i} className="flex justify-between items-center p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-black">🚌</div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3).toUpperCase()}`}</p>
+                                                            <p className="text-xs text-slate-400">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'Ahead on route'}</p>
+                                                        </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <span className="text-[9px] font-bold text-amber-500/70 block uppercase tracking-widest">Speed Sync</span>
-                                                        <span className="text-xs font-black text-amber-400 animate-pulse tracking-widest">&gt; 10 KMPH Wait...</span>
+                                                        <p className="text-sm font-black text-emerald-400">{v.seatsAvailable || '?'} seats open</p>
+                                                        <p className="text-xs text-slate-400">{v.seatsOccupied || 0} / {v.seatsTotal || 20} occupied</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1263,223 +1646,242 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                                     </div>
                                 )}
 
-                                {/* Background Geofencing Active - No Center HUD */}
-
-                                {/* HUD Bottom Bar */}
-                                <div className="w-full flex justify-center gap-6 md:gap-12 mt-4 flex-wrap pb-4">
-                                    <div className="flex flex-col items-center">
-                                        <p className="text-[8px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-[0.3em] mb-2">NavIC Sat</p>
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4, 5].map(i => (
-                                                <div key={i} className={`w-1.5 h-4 rounded-full ${i <= 4 ? 'bg-luxe-teal shadow-glow-sm' : 'bg-slate-300 dark:bg-slate-800'}`}></div>
-                                            ))}
+                                {activeTab === 'EARNINGS' && (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                <p className="text-xs font-black text-slate-400 uppercase mb-1">Today</p>
+                                                <p className="text-2xl font-black text-emerald-400">₹{earnings?.today?.totalEarnings || 0}</p>
+                                                <p className="text-xs text-slate-400 mt-1">{earnings?.today?.trips || 0} trips</p>
+                                            </div>
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                <p className="text-xs font-black text-slate-400 uppercase mb-1">This Week</p>
+                                                <p className="text-2xl font-black text-amber-300">₹{earnings?.week?.totalEarnings || 0}</p>
+                                            </div>
+                                            <div className="text-center p-4 rounded-2xl bg-white/5 border border-white/10">
+                                                <p className="text-xs font-black text-slate-400 uppercase mb-1">This Month</p>
+                                                <p className="text-2xl font-black text-white">₹{earnings?.month?.totalEarnings || 0}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-center text-emerald-600 dark:text-emerald-400">
-                                        <p className="text-[8px] font-black uppercase tracking-[0.3em] mb-2 opacity-90 border-b border-emerald-500/30 pb-1">Ultrasonic Sync</p>
-                                        <span className="text-xs font-black tracking-widest flex items-center gap-1 text-slate-900 dark:text-white"><Volume2 size={12} className="animate-pulse text-emerald-600 dark:text-emerald-400" /> LISTENING...</span>
+                                )}
+
+                                {activeTab === 'DELIVERIES' && (
+                                    <div className="space-y-3">
+                                        {(deliveries || []).length === 0 ? (
+                                            <p className="text-xs text-slate-400 text-center py-4">No active cargo deliveries</p>
+                                        ) : deliveries.map((d: any, i: number) => (
+                                            <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center">
+                                                <div>
+                                                    <p className="text-sm font-black text-white">📦 {d.itemType || d.cropName || 'Parcel'}</p>
+                                                    <p className="text-xs text-slate-400">{d.pickupLocation} → {d.deliveryLocation}</p>
+                                                </div>
+                                                <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs font-black uppercase">
+                                                    {d.status}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="flex flex-col items-center">
-                                        <p className="text-[8px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-[0.3em] mb-2">Network</p>
-                                        <span className="text-xs font-black text-slate-900 dark:text-white tracking-widest">LIVE</span>
+                                )}
+
+                                {activeTab === 'HUD' && (
+                                    <div className="space-y-6">
+                                        <div className="rounded-2xl overflow-hidden border border-white/10 bg-slate-950">
+                                            <ProximityRadar3D
+                                                realTimeVehicles={aheadCompetitors}
+                                                userLocation={currentGPS || { lat: 25.612, lng: 85.131 }}
+                                            />
+                                        </div>
+                                        <SmartDriverDashboard vehicleId={`BUS_${user.id.slice(-2).toUpperCase()}`} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* NON-ACTIVE TRIP VIEW ("BEGIN SHIFT") WITH HIGH CONTRAST BENTO CARDS */
+                    <div className="flex-1 space-y-6 flex flex-col justify-center min-h-[calc(100vh-180px)] py-8 max-w-2xl mx-auto w-full">
+                        {/* Overlays (Fatigue & Pothole) */}
+                        {fatigueAlert && (
+                            <div className="fixed inset-0 z-[100] bg-red-600 flex flex-col items-center justify-center text-white animate-pulse p-6 text-center">
+                                <AlertOctagon size={80} className="mb-4 animate-bounce" />
+                                <h1 className="text-3xl font-black mb-2 uppercase tracking-widest">Driver Fatigue Detected!</h1>
+                                <p className="text-lg font-bold mb-8 opacity-90">Microsleep pattern identified by sensors. Please pull over safely.</p>
+                                <button onClick={() => setFatigueAlert(false)} className="bg-white text-red-600 px-8 py-3 rounded-full font-black shadow-xl uppercase tracking-widest text-sm">I am Awake</button>
+                            </div>
+                        )}
+                        {potholeDetected && (
+                            <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 px-6 py-3 rounded-full shadow-2xl z-[90] animate-bounce flex items-center gap-2 font-black text-sm uppercase tracking-wider">
+                                <Activity size={20} /> Pothole Detected & Logged!
+                            </div>
+                        )}
+
+                        {/* Hero Stats Summary */}
+                        {heroStats && (
+                            <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <TrendingDown className="w-4 h-4 text-amber-400 rotate-180" />
+                                        Hero Performance
+                                    </h3>
+                                    <div className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-black uppercase border border-amber-500/30">
+                                        Grade: {heroStats.heroLevel > 5 ? 'A+' : 'B'}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="text-center group cursor-pointer transition-transform hover:scale-105">
+                                        <span className="block text-2xl font-black text-white">{heroStats.totalTrips}</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase">Trips Completed</span>
+                                    </div>
+                                    <div className="text-center group cursor-pointer transition-transform hover:scale-105">
+                                        <span className="block text-2xl font-black text-amber-300">{heroStats.heroPoints}</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase">Hero Points</span>
+                                    </div>
+                                    <div className="text-center group cursor-pointer transition-transform hover:scale-105">
+                                        <span className="block text-2xl font-black text-emerald-400 tabular-nums">₹{heroStats.totalEarnings}</span>
+                                        <span className="text-xs font-bold text-slate-400 uppercase">Total Revenue</span>
                                     </div>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Alert Notifications */}
-                            {deviation && (
-                                <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-6 rounded-[32px] flex items-center gap-4 animate-pulse shadow-glow-sm">
-                                    <ShieldAlert size={28} />
-                                    <div>
-                                        <p className="font-black text-xs uppercase tracking-widest">Off-Route Critical</p>
-                                        <p className="text-[11px] font-bold opacity-80">{deviation.extraDistance.toFixed(2)}km deviation from assigned grid path.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {profitWarning && (
-                                <div className="glass-3 profit-alert-glow p-8 rounded-[40px] flex gap-8 items-center bg-indigo-500/5 dark:bg-indigo-900/10 border-slate-200 dark:border-white/5 shadow-yhisk-float animate-fade-in-up transition-all hover:bg-indigo-500/10 dark:hover:bg-indigo-900/20">
-                                    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-3xl shadow-glow-md animate-float-banana">🤖</div>
-                                    <div className="flex-1">
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-amber-500 mb-2 flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                                            AI Profitability Advisor
-                                        </p>
-                                        <h2 className="text-xl font-black text-white leading-tight">Switch to <span className="text-emerald-400">Cargo Link</span> mode</h2>
-                                        <p className="text-[11px] font-bold text-slate-500 mt-2 leading-relaxed">{profitWarning}</p>
-                                    </div>
-                                    <button onClick={() => setViewMode('CARGO')} className="px-8 py-4 bg-luxe-teal text-white text-[10px] font-black rounded-2xl hover:bg-luxe-teal/80 transition-all uppercase tracking-[0.2em] shadow-glow-sm">Optimize Now</button>
-                                </div>
-                            )}
-
-                            {logisticsAdvice && (
-                                <div
-                                    onClick={() => { setViewMode('CARGO'); setLogisticsAdvice(null); }}
-                                    className="bg-luxe-rust text-white p-6 rounded-[32px] flex items-center justify-between gap-4 shadow-glow-sm cursor-pointer hover:scale-[1.02] transition-all transform active:scale-95"
-                                >
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner">
-                                            <ShoppingCart size={28} />
+                        {/* Live Demand Heatmap */}
+                        {demandHeatmap.length > 0 && (
+                            <div className="whisk-trip-card p-6 rounded-[32px] animate-fade-in mb-6">
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-rose-500" />
+                                    Live Demand Heatmap Grid
+                                </h3>
+                                <div className="relative h-44 bg-slate-950/80 rounded-2xl border border-white/10 overflow-hidden">
+                                    {(demandHeatmap || []).slice(0, 3).map((point, i) => (
+                                        <div key={i} title={`${point.location}: ${point.intensity}/10 demand`}>
+                                            <HeatPulse top={20 + i * 25} left={30 + i * 20} opacity={point.intensity / 10} />
                                         </div>
-                                        <div>
-                                            <p className="font-black text-[10px] uppercase tracking-[0.3em] opacity-70 mb-1">Fill Capacity Gap</p>
-                                            <h4 className="font-black text-lg tracking-tight">Pickup {logisticsAdvice.itemType}</h4>
-                                            <p className="text-[11px] font-bold">Collect at {logisticsAdvice.from} • ₹{logisticsAdvice.price || 450}</p>
-                                        </div>
-                                    </div>
-                                    <ChevronRight size={24} className="opacity-50" />
-                                </div>
-                            )}
-
-                            <Button variant="danger" fullWidth onClick={handleEndTrip} className="h-14 rounded-2xl opacity-70 hover:opacity-100 transition-opacity uppercase font-black text-xs tracking-widest text-white shadow-md">Emergency Shift End</Button>
-
-                            {/* --- 1000x: Smart Tabs (Earnings / Deliveries / Ahead) --- */}
-                            <div className="mt-6 glass-3 rounded-[32px] border-white/5 overflow-hidden">
-                                <div className="flex border-b border-white/5">
-                                    {(['ROUTE', 'EARNINGS', 'DELIVERIES'] as const).map(tab => (
-                                        <button key={tab} onClick={() => { setActiveTab(tab); if (tab === 'EARNINGS') loadEarnings(); if (tab === 'DELIVERIES') loadDeliveries(); }}
-                                            className={`flex-1 py-4 text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'text-luxe-gold border-b-2 border-luxe-gold bg-white/5' : 'text-slate-500 hover:text-slate-300'}`}>
-                                            {tab === 'ROUTE' ? '🚌 Ahead' : tab === 'EARNINGS' ? '💰 Earnings' : '📦 Deliveries'}
-                                        </button>
                                     ))}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="text-xs font-black text-amber-300 uppercase tracking-widest bg-slate-950/90 px-4 py-2 rounded-full border border-amber-400/30 backdrop-blur-sm">
+                                            NavIC Grid Overlay Active
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Begin Shift Form */}
+                        {viewMode !== 'UTILITIES' && (
+                            <div className="whisk-trip-card p-4 sm:p-6 md:p-8 rounded-[28px] sm:rounded-[40px] animate-fade-in-up w-full max-w-full overflow-hidden">
+                                <h3 className="text-2xl font-black text-white mb-6 text-center tracking-tight">Begin Driver Shift</h3>
+
+                                <div className="flex bg-white/10 p-1.5 rounded-2xl mb-6 border border-white/10">
+                                    <button onClick={() => setRouteMode('OFFICIAL')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${routeMode === 'OFFICIAL' ? 'bg-amber-400 text-slate-950 shadow-xl' : 'text-slate-300 hover:text-white'}`}>Smart AI Route</button>
+                                    <button onClick={() => setRouteMode('CUSTOM')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${routeMode === 'CUSTOM' ? 'bg-amber-400 text-slate-950 shadow-xl' : 'text-slate-300 hover:text-white'}`}>Custom Path</button>
                                 </div>
 
-                                <div className="p-5">
-                                    {activeTab === 'ROUTE' && (
-                                        <div className="space-y-4">
-                                            {/* --- NavIC Inception Grid 3D HUD --- */}
-                                            {showInceptionGrid && tripConfig.path.length > 0 && (
-                                                <div className="rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
-                                                    <InceptionGrid3D
-                                                        stops={tripConfig.path.map((name, idx) => ({
-                                                            name,
-                                                            waitingPassengers: (routeDemand.find((d: any) => d.stopName === name) as any)?.waitingPassengers || 0,
-                                                            parcels: (routeDemand.find((d: any) => d.stopName === name) as any)?.pendingParcels || (routeDemand.find((d: any) => d.stopName === name) as any)?.parcels || 0,
-                                                            isCurrentStop: idx === currentStopIndex
-                                                        }))}
-                                                        currentStopIndex={currentStopIndex}
-                                                        currentSpeed={currentGPS?.speed || 0}
-                                                        aheadVehicles={(aheadVehicles || []).map((v: any, i: number) => ({
-                                                            id: v.driverId || `v-${i}`,
-                                                            name: v.driverName || `Bus ${(v.driverId || '').slice(-3)}`,
-                                                            distance: v.distanceAhead || (i + 1) * 2,
-                                                            speed: v.speed || 30,
-                                                            capacity: v.seatsTotal || 20,
-                                                            occupancy: v.seatsOccupied || 0
-                                                        }))}
-                                                        tripDistance={tripConfig.totalDistance}
-                                                    />
-                                                </div>
-                                            )}
+                                {routeMode === 'OFFICIAL' ? (
+                                    <div className="mb-6">
+                                        {!isOnline && (
+                                            <button
+                                                onClick={handleSmartGoOnline}
+                                                disabled={smartLoading}
+                                                className="w-full mb-6 py-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm uppercase tracking-[0.2em] rounded-2xl shadow-glow-md transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                                            >
+                                                {smartLoading ? (
+                                                    <><span className="animate-spin text-xl">⌛</span> Analyzing Live Demand...</>
+                                                ) : (
+                                                    <>🟢 Go Online — Get AI Routes</>
+                                                )}
+                                            </button>
+                                        )}
 
-                                            {/* Toggle + AR Mandi Button */}
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => setShowInceptionGrid(!showInceptionGrid)}
-                                                    className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
-                                                        showInceptionGrid
-                                                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-                                                            : 'bg-white/5 border-white/5 text-slate-500 hover:text-white'
-                                                    }`}
-                                                >
-                                                    {showInceptionGrid ? '🌐 Grid Active' : '🌐 Show Grid'}
-                                                </button>
-                                                <button
-                                                    onClick={() => setShowARMandiHUD(true)}
-                                                    className="flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                                                >
-                                                    📍 AR Mandi View
-                                                </button>
-                                            </div>
-
-                                            {/* Ahead Vehicles List */}
-                                            <div className="space-y-2">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Vehicles Ahead</p>
-                                                {(aheadVehicles || []).length === 0 ? (
-                                                    <p className="text-xs text-slate-500 text-center py-3">No vehicles ahead on this route</p>
-                                                ) : aheadVehicles.map((v: any, i: number) => (
-                                                    <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-white/5">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-luxe-sienna/20 flex items-center justify-center text-sm shadow-inner">🚌</div>
+                                        {(smartRoutes || []).length > 0 && (
+                                            <div className="space-y-3 mb-6">
+                                                <p className="text-xs font-black text-amber-300 uppercase tracking-[0.2em] mb-3">🤖 AI Recommended High Revenue Routes</p>
+                                                {smartRoutes.map((route: any, idx: number) => (
+                                                    <div
+                                                        key={route.routeId || idx}
+                                                        onClick={() => handleSmartSelectRoute(route.routeId || route.id)}
+                                                        className={`p-5 rounded-2xl border cursor-pointer transition-all hover:scale-[1.01] ${selectedRouteId === (route.routeId || route.id) ? 'bg-amber-500/20 border-amber-400 shadow-glow-sm' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                                                    >
+                                                        <div className="flex justify-between items-start mb-2">
                                                             <div>
-                                                                <p className="text-xs font-black text-slate-900 dark:text-white">{v.driverName || `Bus ${(v.driverId || '').slice(-3)}`.toUpperCase()}</p>
-                                                                <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.distanceAhead ? `${v.distanceAhead.toFixed(1)} km ahead` : 'On route'}</p>
+                                                                <h4 className="font-black text-white text-base">{route.name || route.routeName}</h4>
+                                                                <p className="text-xs text-slate-300 font-bold">{route.from} → {route.to}</p>
                                                             </div>
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${route.tag === 'HOT🔥' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : route.tag === 'GOOD👍' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-500/20 text-slate-300'}`}>{route.tag || 'NORMAL'}</span>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">{v.seatsAvailable || '?'} seats</p>
-                                                            <p className="text-[9px] text-slate-600 dark:text-slate-400">{v.seatsOccupied || 0}/{v.seatsTotal || 20}</p>
+                                                        <div className="flex gap-4 mt-3">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Users size={14} className="text-cyan-400" />
+                                                                <span className="text-xs font-black text-slate-300">{route.demand?.passengers || 0} waiting</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Package size={14} className="text-yellow-400" />
+                                                                <span className="text-xs font-black text-slate-300">{route.demand?.parcels || 0} parcels</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Car size={14} className="text-slate-400" />
+                                                                <span className="text-xs font-black text-slate-300">{route.competition || 0} buses</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {activeTab === 'EARNINGS' && earnings && (
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <div className="text-center p-3 rounded-xl bg-white/5">
-                                                    <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Today</p>
-                                                    <p className="text-lg font-black text-emerald-400">₹{earnings.today?.totalEarnings || 0}</p>
-                                                    <p className="text-[9px] text-slate-500">{earnings.today?.trips || 0} trips</p>
-                                                </div>
-                                                <div className="text-center p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                                                    <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Week</p>
-                                                    <p className="text-lg font-black text-slate-900 dark:text-white">₹{earnings.week?.totalEarnings || 0}</p>
-                                                </div>
-                                                <div className="text-center p-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5">
-                                                    <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Month</p>
-                                                    <p className="text-lg font-black text-slate-900 dark:text-white">₹{earnings.month?.totalEarnings || 0}</p>
+                                        {isOnline && (smartRoutes || []).length === 0 && (
+                                            <div>
+                                                <label className="text-xs font-black text-slate-300 uppercase tracking-widest mb-3 block">Select Assigned Hub Route</label>
+                                                <div className="relative">
+                                                    <select value={selectedRouteId} onChange={(e) => { setSelectedRouteId(e.target.value); handleSmartSelectRoute(e.target.value); }} className="w-full p-5 bg-slate-900 border border-white/20 rounded-2xl outline-none text-white font-black text-base" aria-label="Select Route">
+                                                        <option value="" className="bg-slate-950 text-white">-- Select Hub Route --</option>
+                                                        {officialRoutes.map(route => (<option key={route.id} value={route.id} className="bg-slate-950 text-white">{route.name} ({route.from} - {route.to})</option>))}
+                                                    </select>
+                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-amber-400">▼</div>
                                                 </div>
                                             </div>
-                                            {earnings.today?.autoVerified > 0 && (
-                                                <div className="p-3 rounded-xl bg-luxe-teal/10 border border-luxe-teal/20">
-                                                    <p className="text-[9px] font-black text-luxe-teal">⚡ {earnings.today.autoVerified} tickets auto-verified by GPS Speed Match</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    {activeTab === 'EARNINGS' && !earnings && (
-                                        <p className="text-xs text-slate-500 text-center py-4">Loading earnings...</p>
-                                    )}
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4 mb-8">
+                                        <LocationSelector label="Start Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, startLocation: loc }))} />
+                                        <LocationSelector label="End Village" onSelect={(loc) => setTripConfig(prev => ({ ...prev, endLocation: loc }))} />
+                                    </div>
+                                )}
+                                <button onClick={handleStartTrip} className="w-full h-16 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-base uppercase tracking-[0.2em] rounded-[24px] shadow-glow-md transition-all flex items-center justify-center gap-2">
+                                    🚀 Initialize NavIC Active Trip
+                                </button>
+                            </div>
+                        )}
 
-                                    {activeTab === 'DELIVERIES' && (
-                                        <div className="space-y-3">
-                                            {(deliveries || []).length === 0 ? (
-                                                <p className="text-xs text-slate-500 text-center py-4">No pending deliveries</p>
-                                            ) : deliveries.map((d: any, i: number) => (
-                                                <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div>
-                                                            <p className="text-xs font-black text-slate-900 dark:text-white">{d.type === 'PARCEL' ? `📦 ${d.itemType}` : `🌾 ${d.cropName}`}</p>
-                                                            <p className="text-[9px] text-slate-500">{d.pickupLocation} → {d.deliveryLocation}</p>
-                                                        </div>
-                                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                                                            d.status === 'PENDING' || d.status === 'ACCEPTED' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            d.status === 'PICKED_UP' ? 'bg-blue-500/20 text-blue-400' :
-                                                            'bg-slate-500/20 text-slate-400'
-                                                        }`}>{d.status}</span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        {d.status === 'PENDING' && (
-                                                            <button onClick={() => handleDeliveryAction(d.id, 'accept')} className="flex-1 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-[9px] font-black uppercase hover:bg-emerald-500/30 transition-all">Accept</button>
-                                                        )}
-                                                        {(d.status === 'ACCEPTED' || d.status === 'DRIVER_ASSIGNED') && (
-                                                            <button onClick={() => handleDeliveryAction(d.id, 'pickup')} className="flex-1 py-2 bg-blue-500/20 text-blue-400 rounded-lg text-[9px] font-black uppercase hover:bg-blue-500/30 transition-all">Pickup</button>
-                                                        )}
-                                                        {d.status === 'PICKED_UP' && (
-                                                            <button onClick={() => handleDeliveryAction(d.id, 'deliver')} className="flex-1 py-2 bg-luxe-gold/20 text-luxe-gold rounded-lg text-[9px] font-black uppercase hover:bg-luxe-gold/30 transition-all">Deliver</button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                        {/* Utilities Grid */}
+                        {viewMode === 'UTILITIES' && (
+                            <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                                <div onClick={() => setIsMobileATM(!isMobileATM)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isMobileATM ? 'bg-emerald-500/20 border-emerald-400 shadow-glow-sm' : 'whisk-trip-card text-white'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isMobileATM ? 'bg-emerald-400 text-slate-950' : 'bg-white/10 text-white'}`}><Coins size={24} /></div>
+                                    <h4 className="font-black tracking-widest text-base uppercase">Mobile ATM</h4>
+                                    <p className="text-xs font-bold text-slate-300 mt-1">{isMobileATM ? 'Broadcast Active' : 'Enable Cash-Out'}</p>
+                                </div>
+                                <div onClick={() => setIsDataMuleActive(!isDataMuleActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isDataMuleActive ? 'bg-blue-500/20 border-blue-400 shadow-glow-sm' : 'whisk-trip-card text-white'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isDataMuleActive ? 'bg-blue-400 text-slate-950' : 'bg-white/10 text-white'}`}><Wifi size={24} /></div>
+                                    <h4 className="font-black tracking-widest text-base uppercase">Data Mule</h4>
+                                    <p className="text-xs font-bold text-slate-300 mt-1">{isDataMuleActive ? 'Hosting Content' : 'Sync Content'}</p>
+                                </div>
+                                <div onClick={() => setIsRoadAIActive(!isRoadAIActive)} className={`p-6 rounded-3xl border transition-all cursor-pointer ${isRoadAIActive ? 'bg-amber-500/20 border-amber-400 shadow-glow-sm' : 'whisk-trip-card text-white'}`}>
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${isRoadAIActive ? 'bg-amber-400 text-slate-950 animate-pulse' : 'bg-white/10 text-white'}`}><Activity size={24} /></div>
+                                    <h4 className="font-black tracking-widest text-base uppercase">Road AI</h4>
+                                    <p className="text-xs font-bold text-slate-300 mt-1">{isRoadAIActive ? 'Sensor Active' : 'Detect Potholes'}</p>
+                                </div>
+                                <div onClick={handleAudioCount} className="p-6 rounded-3xl whisk-trip-card cursor-pointer hover:border-amber-400 transition-all">
+                                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-amber-300 mb-4">
+                                        {isCountingAudio ? <span className="animate-spin text-2xl">⌛</span> : <Mic size={24} />}
+                                    </div>
+                                    <h4 className="font-black text-white text-base uppercase tracking-widest">Count Crowd</h4>
+                                    <p className="text-xs font-bold text-slate-300 mt-1">Audio AI Analysis</p>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                )}
 
                     {/* --- Parcel Bid Popup Modal --- */}
                     {selectedStopForParcels && (
@@ -1624,10 +2026,6 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
-
-
 
             {/* --- AR Mandi HUD Overlay --- */}
             {showARMandiHUD && (

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { Ticket, TicketStatus, PaymentMethod, User, LocationData, Pass, SeatConfig, ChurnRiskAnalysis, RentalVehicle, RentalBooking, ParcelBooking, Wallet as WalletType, GeoLocation, CrowdForecast, DynamicFareResult, MandiRate, JobOpportunity, MarketItem, PilgrimagePackage, NewsItem, Shop, Product, LostItem, LeafDiagnosisResult, BusState } from '@villagelink/shared';
 import { RENTAL_FLEET, TRANSLATIONS } from '@villagelink/shared';
-import { generateTicketId, generatePassId, generateRentalId, generateParcelId, saveTicket, savePass, getStoredTickets, getMyPasses, bookRental, bookParcel, getAllParcels, getActiveBuses, cancelTicket } from '../services/transportService';
+import { generateTicketId, generatePassId, generateRentalId, generateParcelId, saveTicket, savePass, getStoredTickets, syncTicketsFromServer, getMyPasses, bookRental, bookParcel, getAllParcels, getActiveBuses, cancelTicket, fetchLiveCorridorNodes } from '../services/transportService';
 import { calculateDynamicFare, getCrowdForecast, formatCurrency, analyzeChurnRisk, calculateLogisticsCost, getMandiRates, getJobs, getMarketItems, getPackages, diagnoseLeaf, estimateParcelSize, findPoolMatches } from '../services/mlService';
 import { getWallet, mintPassNFT, createEscrow, earnGramCoin, spendGramCoin } from '../services/blockchainService';
 import { signTransaction, updateLastLocation } from '../services/securityService';
@@ -28,6 +29,7 @@ import { FloatingVehicle } from './FloatingVehicle';
 import { FlashPass } from './FlashPass';
 import { JourneyCinematic } from './JourneyCinematic';
 import { TourismCarousel } from './Tourism/TourismCarousel';
+import { SmartStopPanel } from './SmartStopPanel';
 import { TourismDetailView } from './Tourism/TourismDetailView';
 import { TourismSpot, TourismPackage } from '../utils/tourism/tourismData';
 import { TransitHubWidget } from './TransitHubWidget';
@@ -215,6 +217,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
     const [wallet, setWallet] = useState<WalletType | null>(null);
     const [trustScore, setTrustScore] = useState(1.0);
     const [marketBooking, setMarketBooking] = useState<{ product: Product, shop: Shop } | null>(null);
+    const [liveCorridorNodes, setLiveCorridorNodes] = useState<any[]>([]);
 
     useEffect(() => {
         window.addEventListener('online', () => setIsOfflineMode(false));
@@ -239,10 +242,28 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             { id: 'L2', item: 'Watch (Titan)', location: 'Sasaram Stand', date: 'Today', contact: '8877...', status: 'FOUND' }
         ]);
 
-        const fetchTickets = () => {
+        const fetchTickets = async (skipSync = false) => {
             const all = getStoredTickets().filter(t => t.userId === user.id);
             setActiveTickets(all.filter(t => ['PENDING', 'BOARDED', 'PAID'].includes(t.status)));
+            
+            if (!skipSync) {
+                const synced = await syncTicketsFromServer(user.id);
+                const userSynced = synced.filter(t => t.userId === user.id);
+                setActiveTickets(userSynced.filter(t => ['PENDING', 'BOARDED', 'PAID'].includes(t.status)));
+            }
         };
+
+        const socket = io(API_BASE_URL, { transports: ['websocket'] });
+        socket.emit('join_user_room', user.id);
+        socket.on('boarding_confirmed', (data: any) => {
+            console.log('🎫 Boarding Confirmed via Socket:', data);
+            fetchTickets(false);
+            setSnackbar('Ticket Verified by Conductor! Happy Journey 🚍');
+            setTimeout(() => setSnackbar(null), 5000);
+        });
+        socket.on('tickets_updated', () => {
+            fetchTickets(false);
+        });
         const fetchPasses = async () => {
             const passes = await getMyPasses(user.id);
             setMyPasses(passes);
@@ -277,7 +298,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         filterUpcomingBuses();
 
         // Listen for instant ticket state changes (e.g. cancel from tracker overlay)
-        const onTicketsChanged = () => fetchTickets();
+        const onTicketsChanged = () => fetchTickets(true);
         window.addEventListener('tickets_changed', onTicketsChanged);
 
         const interval = setInterval(() => {
@@ -448,6 +469,14 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             setTripDistance(routeData.distance);
             setCalculatedPath(routeData.path);
             setPathDetails(routeData.pathDetails || []);
+
+            // Dynamic Google Polyline + 4.75 Lakh OSM Node Intersect
+            if (routeData.pathDetails && routeData.pathDetails.length > 1) {
+                const vnisData = await fetchLiveCorridorNodes(routeData.pathDetails, 0.8);
+                if (vnisData && Array.isArray(vnisData.nodesSequence)) {
+                    setLiveCorridorNodes(vnisData.nodesSequence);
+                }
+            }
         } catch (error) {
             console.error("Error searching smart route:", error);
             setHasSearchedRoute(false);
@@ -831,6 +860,22 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
         
         setCancelLoadingId(ticketId);
         try {
+            if (ticketId.startsWith('TOUR-')) {
+                const isBackendTicket = ticketId.length > 10;
+                const backendId = isBackendTicket ? ticketId.replace('TOUR-', '') : null;
+                if (backendId) {
+                    try {
+                        await fetch(`${API_BASE_URL}/api/tourism/cancel`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': getAuthToken() || '' },
+                            body: JSON.stringify({ bookingId: backendId })
+                        });
+                    } catch (e) {
+                        console.warn("Tourism cancel API failed:", e);
+                    }
+                }
+            }
+
             const res = await cancelTicket(ticketId);
             if (res.success) {
                 alert(`Ticket Cancelled! Refund processing: ₹${res.refundAmount || (activeTickets.find(t => t.id === ticketId)?.totalPrice! * 0.9).toFixed(2)}`);
@@ -1215,7 +1260,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                     ) : (
                         <>
                             {activeTab === 'HOME' && currentView === 'DASHBOARD' && (
-                                <div className="space-y-6">
+                                <div className="space-y-6 px-4">
                                     {activeTickets.length > 0 && (() => {
                                         const currentTicket = activeTickets[currentTicketIndex] || activeTickets[0];
                                         
@@ -1328,7 +1373,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                                     Open Chat
                                                                 </button>
                                                             )}
-                                                            {(currentTicket.status === 'PENDING' || currentTicket.status === 'PROVISIONAL' || currentTicket.status === 'PAID') && (
+                                                            {(currentTicket.status === 'PENDING' || currentTicket.status === 'PROVISIONAL' || currentTicket.status === 'PAID' || currentTicket.status === 'BOARDED') && (
                                                                 <button
                                                                     onClick={() => handleCancelActiveTicket(currentTicket.id)}
                                                                     disabled={cancelLoadingId === currentTicket.id}
@@ -1390,7 +1435,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                             </div>
 
                                             {/* Location Selectors Container */}
-                                            <div className="space-y-4 relative z-10 mt-6">
+                                            <div className="space-y-4 relative z-30 mt-6">
                                                 <LocationSelector
                                                     label="Pickup Point"
                                                     defaultAutoDetect={true}
@@ -1517,6 +1562,32 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                 </div>
                                             </div>
                                         )}
+
+                                         {/* Dynamic Ground Truth Village Node Stepper (100% Precise OSM Nodes) */}
+                                         {hasSearchedRoute && !isCalculatingRoute && liveCorridorNodes.length > 0 && (
+                                             <div className="mt-4 p-5 rounded-2xl border border-amber-500/30 bg-slate-900/80 backdrop-blur-xl shadow-2xl animate-fade-in space-y-3">
+                                                 <div className="flex items-center justify-between">
+                                                     <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                                                         <Zap size={14} className="text-amber-400 fill-amber-400 animate-pulse" />
+                                                         Live Village Route Stops ({liveCorridorNodes.length} Nodes Intersected)
+                                                     </span>
+                                                     <span className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">100% Ground Precise</span>
+                                                 </div>
+
+                                                 <div className="space-y-2 relative pl-3 border-l-2 border-amber-500/40 my-2">
+                                                     {liveCorridorNodes.map((n: any, idx: number) => (
+                                                         <div key={n.node?.nodeId || idx} className="flex items-center justify-between text-xs py-1">
+                                                             <div className="flex items-center gap-2">
+                                                                 <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+                                                                 <span className="font-bold text-white">{n.displayName || n.node?.name}</span>
+                                                                 <span className="text-[10px] text-slate-400">({n.displayHindiName || n.node?.localNameHindi})</span>
+                                                             </div>
+                                                             <span className="text-[10px] font-mono text-amber-300 font-bold">{n.cumulativeDistanceKm} km</span>
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                             </div>
+                                         )}
 
                                         {hasSearchedRoute && !isCalculatingRoute && calculatedPath.length > 0 && (
                                             <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 bg-brand-900/10`}>

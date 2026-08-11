@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const API_URL = `${API_BASE_URL}/api/user`;
+const getApiUrl = () => `${API_BASE_URL}/api/user`;
 
 // Standard ERC-20 ABI for Transfers
 const ERC20_ABI = [
@@ -25,10 +25,15 @@ export const getWallet = async (userId: string): Promise<Wallet | null> => {
   if (!token) return null;
 
   try {
-    const res = await fetch(`${API_URL}/wallet`, {
-      headers: { 'Authorization': token }
+    const res = await fetch(`${getApiUrl()}/wallet`, {
+      headers: { 'Authorization': token ? `Bearer ${token}` : '' }
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 401) {
+        window.dispatchEvent(new Event('auth_error'));
+      }
+      return null;
+    }
     return await res.json();
   } catch (e) {
     console.error("Wallet Fetch Error:", e);
@@ -64,7 +69,7 @@ export const earnGramCoin = async (userId: string, amount: number, reason: strin
 
   // Log to Internal Ledger (Off-chain speed)
   try {
-    await fetch(`${API_URL}/transaction`, {
+    await fetch(`${getApiUrl()}/transaction`, {
       method: 'POST',
       headers: {
         'Authorization': token,
@@ -99,7 +104,7 @@ export const spendGramCoin = async (userId: string, amount: number, reason: stri
         await tx.wait();
 
         // If on-chain success, update DB ledger
-        const res = await fetch(`${API_URL}/transaction`, {
+        const res = await fetch(`${getApiUrl()}/transaction`, {
           method: 'POST',
           headers: {
             'Authorization': token,
@@ -116,7 +121,7 @@ export const spendGramCoin = async (userId: string, amount: number, reason: stri
     }
 
     // 2. Fallback to Database Ledger
-    const res = await fetch(`${API_URL}/transaction`, {
+    const res = await fetch(`${getApiUrl()}/transaction`, {
       method: 'POST',
       headers: {
         'Authorization': token,
@@ -169,7 +174,7 @@ export const addToTrustChain = async (
       signature: ''
     };
 
-    const res = await fetch(`${API_URL}/trust-chain`, {
+    const res = await fetch(`${getApiUrl()}/trust-chain`, {
       method: 'POST',
       headers: { 'Authorization': token || '', 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -185,7 +190,7 @@ export const addToTrustChain = async (
 export const getSupplyChainHistory = async (entityId: string): Promise<any[]> => {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_URL}/trust-chain/${encodeURIComponent(entityId)}`, {
+    const res = await fetch(`${getApiUrl()}/trust-chain/${encodeURIComponent(entityId)}`, {
       headers: { 'Authorization': token || '' }
     });
     if (!res.ok) return [];
@@ -199,7 +204,7 @@ export const getSupplyChainHistory = async (entityId: string): Promise<any[]> =>
 export const getVehicleHealth = async (vehicleId: string) => {
   try {
     const token = await getAuthToken();
-    const res = await fetch(`${API_URL}/vehicle-health/${encodeURIComponent(vehicleId)}`, {
+    const res = await fetch(`${getApiUrl()}/vehicle-health/${encodeURIComponent(vehicleId)}`, {
       headers: { 'Authorization': token || '' }
     });
     if (!res.ok) return null;

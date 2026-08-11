@@ -2090,5 +2090,234 @@ const outboxEventSchema = new mongoose.Schema({
 export const OutboxEvent = mongoose.model('OutboxEvent', outboxEventSchema);
 Models.OutboxEvent = OutboxEvent;
 
+// --- NEXT-GEN INTELLIGENT LOGISTICS & DRONE FLEET SCHEMAS ---
+
+const droneSchema = new mongoose.Schema({
+  droneId: { type: String, unique: true, required: true, index: true },
+  name: { type: String, required: true },
+  type: {
+    type: String,
+    enum: ['SMALL', 'MEDIUM', 'HEAVY', 'MEDICAL', 'INDUSTRIAL', 'EMERGENCY'],
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['IDLE', 'ASSIGNED', 'IN_FLIGHT', 'CHARGING', 'MAINTENANCE'],
+    default: 'IDLE'
+  },
+  batteryLevel: { type: Number, min: 0, max: 100, default: 100 },
+  batteryHealth: { type: Number, min: 0, max: 100, default: 100 },
+  motorHealth: { type: String, enum: ['GOOD', 'WARNING', 'FAIL'], default: 'GOOD' },
+  maxPayloadKg: { type: Number, required: true },
+  maxVolumeCm3: { type: Number, required: true },
+  currentPayloadWeightKg: { type: Number, default: 0 },
+  telemetry: {
+    lat: { type: Number, default: 25.612 },
+    lng: { type: Number, default: 85.131 },
+    alt: { type: Number, default: 0.0 },
+    speedMps: { type: Number, default: 0.0 },
+    windSpeedMps: { type: Number, default: 0.0 }
+  },
+  lastMaintenanceDate: { type: Number, default: () => Date.now() }
+});
+
+const smartPackageSchema = new mongoose.Schema({
+  packageId: { type: String, unique: true, required: true, index: true },
+  type: {
+    type: String,
+    enum: ['FOOD', 'MEDICINE', 'GROCERY', 'ECOMMERCE', 'DOCUMENT', 'COURIER'],
+    required: true
+  },
+  weightKg: { type: Number, required: true },
+  volumeCm3: { type: Number, required: true },
+  pickupCoordinates: {
+    lat: Number,
+    lng: Number,
+    address: String
+  },
+  dropCoordinates: {
+    lat: Number,
+    lng: Number,
+    address: String
+  },
+  priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], default: 'MEDIUM' },
+  fragile: { type: Boolean, default: false },
+  requiredTempCelsius: { type: Number, default: 22.0 },
+  deliveryDeadline: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ['PENDING', 'ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED'],
+    default: 'PENDING'
+  },
+  assignedCarrierId: { type: String, default: null }, // Vehicle ID or Drone ID
+  carrierType: { type: String, enum: ['VEHICLE', 'DRONE', 'NONE'], default: 'NONE' },
+  otpCode: { type: String, required: true },
+  qrCodeUrl: { type: String, default: null },
+  proofUrl: { type: String, default: null },
+  proofPhotoBase64: { type: String, default: null },
+  proofSignature: { type: String, default: null },
+  createdAt: { type: Number, default: () => Date.now() }
+});
+
+const chargingDockSchema = new mongoose.Schema({
+  dockId: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
+  lat: { type: Number, required: true },
+  lng: { type: Number, required: true },
+  totalSlots: { type: Number, required: true },
+  occupiedSlots: { type: Number, default: 0 },
+  powerOutputKw: { type: Number, default: 22 },
+  queue: [{ type: String }], // Array of droneIds
+  status: { type: String, enum: ['ACTIVE', 'MAINTENANCE'], default: 'ACTIVE' }
+});
+
+const flightCorridorSchema = new mongoose.Schema({
+  corridorId: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
+  type: { type: String, enum: ['CORRIDOR', 'NO_FLY_ZONE', 'SAFE_LANDING_ZONE'], default: 'CORRIDOR' },
+  boundaryPolygon: {
+    type: { type: String, enum: ['Polygon'], default: 'Polygon' },
+    coordinates: { type: [[[Number]]], required: true } // GeoJSON Polygon
+  },
+  minAltitudeMeters: { type: Number, default: 30 },
+  maxAltitudeMeters: { type: Number, default: 120 }
+});
+flightCorridorSchema.index({ boundaryPolygon: '2dsphere' });
+
+const passengerPresenceSchema = new mongoose.Schema({
+  passengerId: { type: String, required: true, index: true },
+  passengerName: String,
+  ticketId: String,
+  vehicleId: { type: String, index: true }, // Current vehicle if onboard
+  stopId: { type: String, index: true },    // Near stop if waiting
+  detectionMethod: { type: String, enum: ['BLE', 'UWB', 'GPS', 'QR', 'NONE'], default: 'NONE' },
+  rssi: Number,
+  lastSeen: { type: Number, default: () => Date.now() },
+  status: { type: String, enum: ['WAITING', 'BOARDING', 'ONBOARD', 'DROPPED'], default: 'WAITING' },
+  category: { type: String, enum: ['WOMEN', 'SENIOR_CITIZEN', 'DISABLED', 'CHILDREN', 'VIP', 'STUDENT', 'REGULAR'], default: 'REGULAR' }
+});
+
+const smartStopSchema = new mongoose.Schema({
+  stopId: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
+  lat: Number,
+  lng: Number,
+  waitingCount: { type: Number, default: 0 },
+  incomingVehiclesCount: { type: Number, default: 0 },
+  etaSeconds: { type: Number, default: 0 },
+  avgWaitingTimeSeconds: { type: Number, default: 0 },
+  crowdDensity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW' },
+  liveOccupancyPercent: { type: Number, default: 0 },
+  passengerCategories: {
+    women: { type: Number, default: 0 },
+    senior: { type: Number, default: 0 },
+    disabled: { type: Number, default: 0 },
+    children: { type: Number, default: 0 },
+    vip: { type: Number, default: 0 },
+    student: { type: Number, default: 0 }
+  }
+});
+
+export const Drone = mongoose.model('Drone', droneSchema);
+export const SmartPackage = mongoose.model('SmartPackage', smartPackageSchema);
+export const ChargingDock = mongoose.model('ChargingDock', chargingDockSchema);
+export const FlightCorridor = mongoose.model('FlightCorridor', flightCorridorSchema);
+export const PassengerPresence = mongoose.model('PassengerPresence', passengerPresenceSchema);
+export const SmartStop = mongoose.model('SmartStop', smartStopSchema);
+
+Models.Drone = Drone;
+Models.SmartPackage = SmartPackage;
+Models.ChargingDock = ChargingDock;
+Models.FlightCorridor = FlightCorridor;
+Models.PassengerPresence = PassengerPresence;
+Models.SmartStop = SmartStop;
+
+// --- GEN-2 LMIS COGNITIVE SYSTEMS SCHEMAS ---
+
+const passengerDigitalTwinSchema = new mongoose.Schema({
+  passengerId: { type: String, unique: true, required: true, index: true },
+  behavioralData: {
+    walkingSpeedMps: { type: Number, default: 1.2 },
+    typicalCommuteSchedule: [{
+      dayOfWeek: { type: Number, min: 0, max: 6 },
+      hour: { type: Number, min: 0, max: 23 },
+      originStopId: String,
+      destStopId: String
+    }],
+    comfortPreference: { type: String, enum: ['AC', 'NON_AC', 'WINDOW', 'NO_PREF'], default: 'NO_PREF' }
+  },
+  journeyConfidence: {
+    boardingProbability: { type: Number, default: 0.95 },
+    cancellationProbability: { type: Number, default: 0.05 },
+    lateArrivalProbability: { type: Number, default: 0.10 },
+    wrongStopProbability: { type: Number, default: 0.01 },
+    fraudRiskProbability: { type: Number, default: 0.001 }
+  },
+  accessibilityNeeds: {
+    wheelchairRequired: { type: Boolean, default: false },
+    elderlyAssistance: { type: Boolean, default: false },
+    childAccompanied: { type: Boolean, default: false }
+  },
+  carbonFootprintSavingsKg: { type: Number, default: 0.0 },
+  lastTelemetry: {
+    lat: Number,
+    lng: Number,
+    velocityMps: Number,
+    deviceBatteryPercent: Number,
+    signalStrengthRssi: Number,
+    timestamp: { type: Number, default: Date.now }
+  }
+});
+
+const swarmBidSchema = new mongoose.Schema({
+  bidId: { type: String, unique: true, required: true, index: true },
+  senderAgentId: { type: String, required: true, index: true },
+  receiverAgentId: { type: String, required: true, index: true },
+  type: {
+    type: String,
+    enum: ['PASSENGER_REDISTRIBUTION', 'PARCEL_TRANSFER', 'POWER_SHARING'],
+    required: true
+  },
+  offerAmountPoints: { type: Number, default: 0 },
+  details: {
+    packageId: String,
+    passengerCount: Number,
+    gpsCoordinates: { lat: Number, lng: Number },
+    urgencyLevel: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], default: 'MEDIUM' }
+  },
+  status: {
+    type: String,
+    enum: ['PENDING', 'NEGOTIATING', 'ACCEPTED', 'REJECTED', 'COMPLETED'],
+    default: 'PENDING'
+  },
+  createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now }
+});
+
+const vehiclePhysicsSchema = new mongoose.Schema({
+  vehicleId: { type: String, unique: true, required: true, index: true },
+  curbWeightKg: { type: Number, required: true },
+  passengerPayloadKg: { type: Number, default: 0 },
+  dragCoefficient: { type: Number, default: 0.38 },
+  frontalAreaM2: { type: Number, default: 7.5 },
+  tyreGripCoefficient: { type: Number, min: 0, max: 1, default: 0.8 },
+  liveSlopeDegrees: { type: Number, default: 0.0 },
+  energyEfficiencyRate: { type: Number, default: 1.2 },
+  powerBatteryKwh: {
+    capacityKwh: { type: Number, default: 120 },
+    currentChargeKwh: { type: Number, default: 100 },
+    batteryHealthPercent: { type: Number, default: 98 }
+  },
+  lastUpdated: { type: Number, default: Date.now }
+});
+
+export const PassengerDigitalTwin = mongoose.model('PassengerDigitalTwin', passengerDigitalTwinSchema);
+export const SwarmBid = mongoose.model('SwarmBid', swarmBidSchema);
+export const VehiclePhysics = mongoose.model('VehiclePhysics', vehiclePhysicsSchema);
+
+Models.PassengerDigitalTwin = PassengerDigitalTwin;
+Models.SwarmBid = SwarmBid;
+Models.VehiclePhysics = VehiclePhysics;
+
 export default Models;
 

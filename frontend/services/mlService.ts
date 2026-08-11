@@ -120,6 +120,44 @@ export const diagnoseLeaf = async (): Promise<LeafDiagnosisResult> => {
 // === DYNAMIC PRICING & CROWD FORECASTING ===
 
 export const calculateDynamicFare = async (distance: number, timestamp: number): Promise<DynamicFareResult> => {
+    try {
+        const token = getAuthToken();
+        const hour = new Date(timestamp).getHours();
+        const res = await fetch(`${API_BASE_URL}/api/pricing/calculate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token || ''}`
+            },
+            body: JSON.stringify({
+                vehicleType: 'BUS', // Default type for general passenger view
+                distanceKm: distance,
+                weightKg: 0,
+                isNight: hour >= 20 || hour < 6
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                return {
+                    totalFare: data.fare,
+                    baseFare: data.breakdown.base + data.breakdown.distance,
+                    surgeAmount: data.breakdown.surge,
+                    discountAmount: 0,
+                    isRushHour: data.appliedRates.surgeMultiplier > 1.0,
+                    isHappyHour: false,
+                    message: data.appliedRates.surgeMultiplier > 1.0 
+                        ? `Demand surge applied (x${data.appliedRates.surgeMultiplier})`
+                        : "Standard fare applied from system configuration"
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Live pricing API failed, falling back to local heuristic:", e);
+    }
+
+    // LOCAL FALLBACK HEURISTIC (OFFLINE/DISCONNECTED STATE)
     const hour = new Date(timestamp).getHours();
     const baseFare = distance * 2; // ₹2 per km base rate
 
@@ -130,14 +168,14 @@ export const calculateDynamicFare = async (distance: number, timestamp: number):
 
     let surgeAmount = 0;
     let discountAmount = 0;
-    let message = "Standard fare";
+    let message = "Standard fare (offline fallback)";
 
     if (isRushHour) {
         surgeAmount = baseFare * 0.2;
-        message = "Rush hour surge applied (+20%)";
+        message = "Rush hour surge applied (+20%) (offline fallback)";
     } else if (isHappyHour) {
         discountAmount = baseFare * 0.1;
-        message = "Happy hour discount applied (-10%)";
+        message = "Happy hour discount applied (-10%) (offline fallback)";
     }
 
     return {

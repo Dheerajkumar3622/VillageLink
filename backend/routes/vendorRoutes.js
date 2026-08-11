@@ -1,5 +1,5 @@
 import express from 'express';
-import { FoodVendor, FoodOrder, VendorMenuItem, User, FoodReview } from '../models.js';
+import { FoodVendor, FoodOrder, VendorMenuItem, User, FoodReview, CreditScore, VendorKhata } from '../models.js';
 import { authenticate as authenticateToken } from '../auth.js';
 import { rewardUserForOrder, rewardVendorBonus } from '../services/rewardService.js';
 import crypto from 'crypto';
@@ -523,6 +523,99 @@ router.get('/fssai/compliance/:vendorId', authenticateToken, async (req, res) =>
         res.json({ isCompliant, pendingActions });
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// Get Credit Score
+router.get('/credit-score', authenticateToken, async (req, res) => {
+    try {
+        let score = await CreditScore.findOne({ vendorId: req.user.id });
+        
+        // Calculate the actual credit score dynamically based on the vendor's digital Khata history!
+        const khata = await VendorKhata.findOne({ vendorId: req.user.id });
+        
+        let avgDailySales = 0;
+        let upiRatio = 0.5; // default 50%
+        let totalSalesCount = 0;
+        let scoreVal = 600; // default baseline
+
+        if (khata && khata.entries && khata.entries.length > 0) {
+            const sales = khata.entries.filter(e => e.type === 'SALE');
+            totalSalesCount = sales.length;
+            
+            const totalSalesSum = sales.reduce((sum, s) => sum + s.amount, 0);
+            avgDailySales = Math.round(totalSalesSum / Math.max(1, Math.min(30, khata.entries.length)));
+            
+            const upiSales = sales.filter(e => e.paymentMethod === 'UPI' || e.paymentMethod === 'DIGITAL');
+            upiRatio = sales.length > 0 ? upiSales.length / sales.length : 0.5;
+
+            scoreVal = 500 + Math.min(250, Math.round(totalSalesSum / 100)) + Math.round(upiRatio * 100);
+            scoreVal = Math.min(850, Math.max(300, scoreVal));
+        }
+
+        let tier = 'GOOD';
+        if (scoreVal >= 750) tier = 'EXCELLENT';
+        else if (scoreVal >= 700) tier = 'VERY_GOOD';
+        else if (scoreVal >= 650) tier = 'GOOD';
+        else if (scoreVal >= 550) tier = 'FAIR';
+        else tier = 'UNSCORED';
+
+        const loanEligibility = {
+            pmSvanidhi: { 
+                eligible: scoreVal >= 600, 
+                maxAmount: scoreVal >= 750 ? 50000 : (scoreVal >= 650 ? 20000 : 10000), 
+                tier: scoreVal >= 750 ? 3 : (scoreVal >= 650 ? 2 : 1) 
+            },
+            workingCapital: { 
+                eligible: scoreVal >= 650, 
+                maxAmount: Math.round(avgDailySales * 15), 
+                interestRate: scoreVal >= 750 ? 8.5 : 12.0 
+            }
+        };
+
+        const factors = [
+            { name: 'UPI Velocity', impact: upiRatio >= 0.7 ? 'POSITIVE' : 'NEUTRAL', weight: 30, value: Math.round(upiRatio * 100) },
+            { name: 'Sales Consistency', impact: totalSalesCount >= 5 ? 'POSITIVE' : 'NEUTRAL', weight: 40, value: totalSalesCount },
+            { name: 'Daily Average Volume', impact: avgDailySales >= 500 ? 'POSITIVE' : 'NEUTRAL', weight: 30, value: avgDailySales }
+        ];
+
+        if (!score) {
+            score = new CreditScore({
+                vendorId: req.user.id,
+                score: scoreVal,
+                tier,
+                factors,
+                metrics: {
+                    avgDailySales,
+                    salesConsistencyScore: Math.min(100, totalSalesCount * 10),
+                    upiTransactionRatio: Math.round(upiRatio * 100),
+                    repaymentHistory: 100,
+                    businessAge: 3,
+                    appEngagementScore: 85
+                },
+                loanEligibility,
+                lastCalculated: new Date()
+            });
+        } else {
+            score.score = scoreVal;
+            score.tier = tier;
+            score.factors = factors;
+            score.metrics = {
+                avgDailySales,
+                salesConsistencyScore: Math.min(100, totalSalesCount * 10),
+                upiTransactionRatio: Math.round(upiRatio * 100),
+                repaymentHistory: 100,
+                businessAge: 3,
+                appEngagementScore: 85
+            };
+            score.loanEligibility = loanEligibility;
+            score.lastCalculated = new Date();
+        }
+
+        await score.save();
+        res.json({ success: true, score });
+    } catch (e) { 
+        res.status(500).json({ error: e.message }); 
     }
 });
 

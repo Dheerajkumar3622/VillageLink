@@ -101,19 +101,19 @@ export const LocationSelectorV2: React.FC<LocationSelectorV2Props> = ({
 
         setIsLoading(true);
         try {
-            // 1. Primary DB Search (Source of Truth) for absolute precision with multi-tokens like "Padariya Tilauthu"
-            const localResponse = await fetch(`${API_BASE_URL}/api/locations/search?q=${encodeURIComponent(searchQuery)}`);
-            const localData = await localResponse.json();
+            // 1. Primary VNIS 4,75,014 Village Junction Node Search (Source of Truth)
+            const vnisResponse = await fetch(`${API_BASE_URL}/api/vnis/nodes/search?q=${encodeURIComponent(searchQuery)}`);
+            const vnisData = await vnisResponse.json();
             
-            if (Array.isArray(localData) && localData.length > 0) {
-                setResults(localData.map((item: any) => ({
-                    name: item.name,
-                    lat: item.lat || 0,
-                    lng: item.lng || 0,
-                    type: 'VILLAGE',
-                    district: item.district,
-                    state: item.state || 'Bihar',
-                    pincode: item.pincode
+            if (vnisData.success && Array.isArray(vnisData.data) && vnisData.data.length > 0) {
+                setResults(vnisData.data.map((item: any) => ({
+                    name: item.name || item.n,
+                    lat: item.lat || (item.loc?.coordinates ? item.loc.coordinates[1] : 0),
+                    lng: item.lng || (item.loc?.coordinates ? item.loc.coordinates[0] : 0),
+                    type: item.type === 'station' ? 'STATION' : 'VILLAGE',
+                    district: item.district || item.d,
+                    state: item.state || item.s || 'Bihar',
+                    pincode: item.pincode || item.p
                 })));
                 setIsLoading(false);
                 return;

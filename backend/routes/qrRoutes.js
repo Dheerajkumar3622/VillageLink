@@ -116,10 +116,31 @@ router.get('/:id/info', async (req, res) => {
 router.post('/:id/scan', Auth.authenticate, async (req, res) => {
     try {
         const { location, action } = req.body;
-        const qrCode = await QRCode.findOne({ id: req.params.id });
+        let qrCode = await QRCode.findOne({ id: req.params.id });
 
         if (!qrCode) {
-            return res.status(404).json({ success: false, error: 'QR Code not found' });
+            const isUssPattern = req.params.id.startsWith('QR-') || req.body.payload;
+            if (isUssPattern) {
+                const payloadObj = req.body.payload || {
+                    app: 'villagelink',
+                    v: 1,
+                    type: req.params.id.includes('SHOP') ? 'SHOP' : (req.params.id.includes('PAY') ? 'PAYMENT' : 'USER'),
+                    id: req.params.id,
+                    data: { name: 'Dynamic QR Reference' }
+                };
+                qrCode = new QRCode({
+                    id: req.params.id,
+                    ownerId: req.user.id,
+                    ownerType: payloadObj.type === 'SHOP' ? 'SHOP' : 'USER',
+                    qrType: payloadObj.type,
+                    payload: JSON.stringify(payloadObj),
+                    name: 'Dynamic Scan',
+                    createdAt: Date.now()
+                });
+                await qrCode.save();
+            } else {
+                return res.status(404).json({ success: false, error: 'QR Code not found' });
+            }
         }
 
         // Update scan count

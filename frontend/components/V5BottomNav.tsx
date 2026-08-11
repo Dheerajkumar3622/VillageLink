@@ -36,13 +36,15 @@ interface V5BottomNavProps {
     onTabChange: (tab: TabType) => void;
     progress?: number;
     isSwiping?: boolean;
+    isDevMode?: boolean;
 }
 
 export const V5BottomNav: React.FC<V5BottomNavProps> = ({
     activeTab,
     onTabChange,
     progress,
-    isSwiping = false
+    isSwiping = false,
+    isDevMode = false
 }) => {
     return (
         <nav className="v5-bottom-nav fixed bottom-0 left-0 right-0 px-4 py-2 pb-6 h-22 flex items-center justify-center z-[100]">
@@ -53,18 +55,22 @@ export const V5BottomNav: React.FC<V5BottomNavProps> = ({
                     active={activeTab === 'rides'}
                     onClick={() => onTabChange('rides')}
                 />
-                <NavItem
-                    icon={<Sprout size={22} />}
-                    label="Mandi"
-                    active={activeTab === 'haat'}
-                    onClick={() => onTabChange('haat')}
-                />
-                <NavItem
-                    icon={<Utensils size={22} />}
-                    label="Food"
-                    active={activeTab === 'food'}
-                    onClick={() => onTabChange('food')}
-                />
+                {isDevMode && (
+                    <>
+                        <NavItem
+                            icon={<Sprout size={22} />}
+                            label="Mandi"
+                            active={activeTab === 'haat'}
+                            onClick={() => onTabChange('haat')}
+                        />
+                        <NavItem
+                            icon={<Utensils size={22} />}
+                            label="Food"
+                            active={activeTab === 'food'}
+                            onClick={() => onTabChange('food')}
+                        />
+                    </>
+                )}
                 {/* Temporarily hidden 
                 <NavItem
                     icon={<Film size={22} />}

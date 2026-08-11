@@ -214,6 +214,19 @@ export const updateDriverLocation = async (driverId, locationData) => {
             },
             { upsert: true, new: true }
         );
+
+        // Redis cache update
+        try {
+            const cacheService = (await import('./cacheService.js')).default;
+            await cacheService.cacheDriverLocation(driverId, {
+                lat: locationData.lat,
+                lng: locationData.lng,
+                speed: locationData.speed || 0,
+                heading: locationData.heading || 0
+            });
+        } catch (cacheErr) {
+            console.warn('⚠️ Redis cache update warning:', cacheErr.message);
+        }
     } catch (error) {
         console.error('❌ Location update error:', error);
     }
@@ -229,6 +242,14 @@ export const setDriverOnline = async (driverId, vehicleType = 'BUS') => {
         { upsert: true }
     );
     console.log(`🟢 Driver ${driverId} is ONLINE`);
+
+    // Redis cache update
+    try {
+        const cacheService = (await import('./cacheService.js')).default;
+        await cacheService.cacheDriverLocation(driverId, { lat: 0, lng: 0, speed: 0, heading: 0 });
+    } catch (cacheErr) {
+        console.warn('⚠️ Redis cache online warning:', cacheErr.message);
+    }
 };
 
 export const setDriverOffline = async (driverId) => {
@@ -237,6 +258,14 @@ export const setDriverOffline = async (driverId) => {
         { isOnline: false, currentTripId: null, lastUpdated: new Date() }
     );
     console.log(`⚫ Driver ${driverId} is OFFLINE`);
+
+    // Redis cache removal
+    try {
+        const cacheService = (await import('./cacheService.js')).default;
+        await cacheService.removeDriverFromIndex(driverId);
+    } catch (cacheErr) {
+        console.warn('⚠️ Redis cache offline warning:', cacheErr.message);
+    }
 };
 
 // Default export for CJS compatibility

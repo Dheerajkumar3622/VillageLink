@@ -5,7 +5,7 @@ import { getAuthToken } from '../services/authService';
 import { getWallet } from '../services/blockchainService';
 import { calculateGramScore } from '../services/mlService';
 import { getStoredTickets, getMyPasses, getAllParcels, cancelTicket } from '../services/transportService';
-import { ArrowLeft, History, MapPin, Calendar, CreditCard, Wallet as WalletIcon, User as UserIcon, Mail, Phone, Shield, Bus, Package, Car, Ticket as TicketIcon, Gem, Layers, Filter, CheckCircle2, Clock, Users, TrendingUp, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, History, MapPin, Calendar, CreditCard, Wallet as WalletIcon, User as UserIcon, Mail, Phone, Shield, Bus, Package, Car, Ticket as TicketIcon, Gem, Layers, Filter, CheckCircle2, Clock, Users, TrendingUp, ShieldCheck, Compass, Wheat } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 interface UserProfileProps {
@@ -14,11 +14,13 @@ interface UserProfileProps {
     onShowPayments?: () => void;
     onShowAdmin?: () => void;
     onLogout?: () => void;
+    isDevMode?: boolean;
+    onToggleDevMode?: () => void;
 }
 
-type FilterType = 'ALL' | 'TRIPS' | 'PASSES' | 'PARCELS';
+type FilterType = 'ALL' | 'TRIPS' | 'PASSES' | 'PARCELS' | 'MANDI';
 
-export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPayments, onShowAdmin, onLogout }) => {
+export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPayments, onShowAdmin, onLogout, isDevMode, onToggleDevMode }) => {
     const [history, setHistory] = useState<any[]>([]);
     const [wallet, setWallet] = useState<Wallet | null>(null);
     const [activeTab, setActiveTab] = useState<'HISTORY' | 'WALLET' | 'REFERRAL'>('HISTORY');
@@ -31,34 +33,84 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
         const fetchHistory = async () => {
             const token = getAuthToken();
             let serverData: any[] = [];
+            let mandiOrders: any[] = [];
+
+            const headers = { 'Authorization': token ? `Bearer ${token}` : '' };
 
             try {
                 // Fetch from backend
-                const res = await fetch(`${API_BASE_URL}/api/user/history?userId=${user.id}`, {
-                    headers: { 'Authorization': token || '' }
-                });
+                const res = await fetch(`${API_BASE_URL}/api/user/history?userId=${user.id}`, { headers });
                 if (res.ok) {
                     serverData = await res.json();
                 } else {
                     console.warn("History API returned non-200 status");
+                    if (res.status === 401) {
+                        window.dispatchEvent(new Event('auth_error'));
+                    }
                 }
             } catch (e) {
                 console.error("Failed to load history from server", e);
             }
 
+            try {
+                // Fetch Mandi orders
+                const res = await fetch(`${API_BASE_URL}/api/grammandi/orders/my`, { headers });
+                if (res.ok) {
+                    mandiOrders = await res.json();
+                } else if (res.status === 401) {
+                    window.dispatchEvent(new Event('auth_error'));
+                }
+            } catch (e) {
+                console.error("Failed to load Mandi history from server", e);
+            }
+
+            // Merge local Mandi orders
+            const localMandi = localStorage.getItem('grammandi_orders');
+            const localMandiParsed = localMandi ? JSON.parse(localMandi) : [];
+            const mergedMandi = [...mandiOrders];
+            localMandiParsed.forEach((lo: any) => {
+                if (!mergedMandi.some(o => o.id === lo.id)) {
+                    mergedMandi.push(lo);
+                }
+            });
+
+            const formattedMandi = mergedMandi.map(o => ({
+                ...o,
+                historyType: 'MANDI',
+                sortDate: o.createdAt || Date.now()
+            }));
+
             // MERGE LOCAL CACHE (Recent bookings not yet synced or offline bookings)
             const localTickets = getStoredTickets()
                 .filter(t => t.userId === user.id)
-                .map(t => ({ ...t, historyType: 'TICKET', sortDate: t.timestamp }));
+                .map(t => {
+                    let hType = 'TICKET';
+                    if (t.id && t.id.startsWith('TOUR-')) hType = 'TOUR';
+                    else if (t.id && t.id.startsWith('LT-')) hType = 'PARCEL';
+                    return { ...t, historyType: hType, sortDate: t.timestamp };
+                });
 
             // Use a Map for O(1) deduplication by ID
             const historyMap = new Map();
 
             // Add Server Data First
-            serverData.forEach(item => historyMap.set(item.id, item));
+            serverData.forEach(item => {
+                let hType = item.historyType || 'TICKET';
+                if (item.id && item.id.startsWith('TOUR-')) hType = 'TOUR';
+                else if (item.id && item.id.startsWith('LT-')) hType = 'PARCEL';
+                
+                historyMap.set(item.id, {
+                    ...item,
+                    historyType: hType,
+                    sortDate: item.sortDate || item.timestamp || item.purchaseDate || (item.date ? new Date(item.date).getTime() : Date.now())
+                });
+            });
 
             // Add/Overwrite with Local Data (Latest state)
             localTickets.forEach(item => historyMap.set(item.id, item));
+
+            // Add Mandi Data
+            formattedMandi.forEach(item => historyMap.set(item.id, item));
 
             const merged = Array.from(historyMap.values());
 
@@ -92,9 +144,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
     const getFilteredHistory = () => {
         return history.filter(item => {
             if (filter === 'ALL') return true;
-            if (filter === 'TRIPS') return item.historyType === 'TICKET' || item.historyType === 'RENTAL';
+            if (filter === 'TRIPS') return item.historyType === 'TICKET' || item.historyType === 'RENTAL' || item.historyType === 'TOUR';
             if (filter === 'PASSES') return item.historyType === 'PASS';
             if (filter === 'PARCELS') return item.historyType === 'PARCEL';
+            if (filter === 'MANDI') return item.historyType === 'MANDI';
             return true;
         });
     };
@@ -243,6 +296,56 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                         </div>
                     </div>
                 );
+            case 'TOUR':
+                return (
+                    <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-brand-500/10 dark:bg-brand-500/20 p-2.5 rounded-full text-brand-500">
+                                <Compass size={18} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                                    {item.to || 'Adventure Package'}
+                                </h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                    {item.toDetails || 'Tourism Package'} • {item.driverId || 'Local Guide'}
+                                </p>
+                                {item.transactionId && <p className="text-[9px] text-slate-400 font-mono mt-1">Txn: {item.transactionId}</p>}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="font-bold text-slate-800 dark:text-white">₹{item.totalPrice}</p>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400`}>
+                                {item.status}
+                            </span>
+                        </div>
+                    </div>
+                );
+            case 'MANDI':
+                return (
+                    <div key={item.id} className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-emerald-500/10 dark:bg-emerald-500/20 p-2.5 rounded-full text-emerald-600">
+                                <Wheat size={18} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                                    {item.sender || 'Direct Sourced Produce'}
+                                </h4>
+                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                    Direct Farm Fresh Vegetables • {item.items?.map((it: any) => `${it.name} x${it.quantity}`).join(', ') || 'Fresh Items'}
+                                </p>
+                                {item.id && <p className="text-[9px] text-slate-400 font-mono mt-1">ID: {item.id}</p>}
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="font-bold text-slate-800 dark:text-white">₹{item.totalAmount || item.total || item.totalPrice || item.charge || 150}</p>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${item.status === 'CANCELLED' || item.status === 'REFUNDED' ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-455' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                                {item.status || 'Completed'}
+                            </span>
+                        </div>
+                    </div>
+                );
             default: return null;
         }
     }
@@ -264,8 +367,30 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                         <Users size={14} /> Invite
                     </button>
                 </div>
+                {onToggleDevMode && (
+                    <div className="flex items-center justify-between mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                        <div>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                🛠️ Developer Mode (Testing Panels)
+                            </p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                Unlock Mandi & Mess panels for internal testing
+                            </p>
+                        </div>
+                        <button
+                            onClick={onToggleDevMode}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm ${
+                                isDevMode 
+                                    ? 'bg-amber-500 text-black shadow-amber-500/30 scale-105' 
+                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                            }`}
+                        >
+                            {isDevMode ? 'ENABLED' : 'DISABLED'}
+                        </button>
+                    </div>
+                )}
                 {user.role === 'ADMIN' && onShowAdmin && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-3">
                         <button onClick={onShowAdmin} className="text-[10px] font-bold bg-[#BE5103] text-white px-6 py-2 rounded-full flex items-center gap-1.5 shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-transform">
                             <ShieldCheck size={14} /> Open Admin Panel
                         </button>
@@ -340,6 +465,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                         <button onClick={() => setFilter('TRIPS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'TRIPS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'TRIPS' ? '#475569' : undefined }}>Trips</button>
                         <button onClick={() => setFilter('PASSES')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PASSES' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'PASSES' ? '#475569' : undefined }}>Passes</button>
                         <button onClick={() => setFilter('PARCELS')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'PARCELS' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'PARCELS' ? '#475569' : undefined }}>Parcels</button>
+                        <button onClick={() => setFilter('MANDI')} className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${filter === 'MANDI' ? 'bg-[#BE5103] text-white border-[#BE5103]' : 'bg-white dark:bg-slate-900 !text-slate-600 dark:!text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: filter !== 'MANDI' ? '#475569' : undefined }}>Mandi 🌾</button>
                         <div className="flex-1"></div>
                         {onShowPayments && (
                             <button onClick={onShowPayments} className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#BE5103] text-white shadow-lg shadow-[#BE5103]/20 whitespace-nowrap flex items-center gap-2">

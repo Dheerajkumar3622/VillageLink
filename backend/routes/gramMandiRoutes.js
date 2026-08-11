@@ -562,6 +562,17 @@ router.post('/wholesale/bid', Auth.authenticate, async (req, res) => {
         });
 
         await bid.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`kisan_${listing.farmerId}`).emit('new_crop_bid', {
+                bid,
+                listing,
+                message: `New bid of ₹${bidPricePerUnit}/${listing.unit || 'kg'} from ${req.user.name}`
+            });
+            io.emit('produce_listing_bid_update', { listingId, newBidCount: (listing.bidCount || 0) + 1, topBidPrice: bidPricePerUnit });
+        }
+
         res.json({ success: true, bid });
     } catch (e) {
         console.error('Bid placement error:', e);
@@ -591,6 +602,17 @@ router.put('/wholesale/bid/:bidId', Auth.authenticate, async (req, res) => {
             { new: true }
         );
         if (!bid) return res.status(404).json({ error: 'Bid not found' });
+
+        const io = req.app.get('io');
+        if (io && bid) {
+            io.emit('bid_status_changed', {
+                bidId: bid.id,
+                status: bid.status,
+                farmerId: req.user.id,
+                vendorId: bid.vendorId
+            });
+        }
+
         res.json({ success: true, bid });
     } catch (e) {
         res.status(500).json({ error: e.message });

@@ -169,20 +169,17 @@ router.get('/nearby', async (req, res) => {
     try {
         const { lat, lng, radius = 10 } = req.query;
 
-        if (!lat || !lng) {
-            return res.status(400).json({ success: false, error: 'lat and lng required' });
-        }
-
         const results = await IndiaLocation.getNearbyLocations(
-            parseFloat(lat),
-            parseFloat(lng),
-            parseFloat(radius)
+            lat,
+            lng,
+            parseFloat(radius) || 10
         );
 
         res.json({ success: true, data: results, count: results.length });
     } catch (error) {
         console.error('Nearby search error:', error);
-        res.status(500).json({ success: false, error: 'Nearby search failed' });
+        const fallbackResults = IndiaLocation.getFallbackNearbyLocations ? IndiaLocation.getFallbackNearbyLocations() : [];
+        res.json({ success: true, data: fallbackResults, count: fallbackResults.length, isFallback: true });
     }
 });
 

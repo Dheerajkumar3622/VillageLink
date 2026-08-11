@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TourismSpot, TourismPackage } from '../../utils/tourism/tourismData';
 import { ArrowLeft, Clock, MapPin, IndianRupee, Map, Car, Share2, Navigation2 } from 'lucide-react';
 import { Button } from '../Button';
@@ -13,8 +14,13 @@ interface TourismDetailViewProps {
 export const TourismDetailView: React.FC<TourismDetailViewProps> = ({ spot, onClose, onBookPackage, userLocation }) => {
     const [confirmBooking, setConfirmBooking] = useState<TourismPackage | null>(null);
 
-    return (
-        <div className="fixed inset-0 z-[9999] bg-slate-950 overflow-y-auto animate-fade-in pb-24">
+    return createPortal(
+        <div 
+            className="fixed inset-0 z-[9999] bg-slate-950 overflow-y-auto pb-24"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+        >
             
             {/* Hero Image Section */}
             <div className="relative h-[45vh] w-full">
@@ -132,7 +138,7 @@ export const TourismDetailView: React.FC<TourismDetailViewProps> = ({ spot, onCl
                                         style={{ color: '#ffffff' }}
                                         onClick={() => {
                                             if (navigator.share) {
-                                                navigator.share({ title: pkg.title, text: pkg.description, url: window.location.href });
+                                                navigator.share({ title: pkg.title, text: spot.description, url: window.location.href });
                                             }
                                         }}
                                     >
@@ -193,6 +199,7 @@ export const TourismDetailView: React.FC<TourismDetailViewProps> = ({ spot, onCl
                     </div>
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 };

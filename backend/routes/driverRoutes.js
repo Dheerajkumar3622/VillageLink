@@ -772,4 +772,33 @@ router.get('/history', Auth.authenticate, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/driver/stop-reached
+ * Log telemetry when driver automatically or manually reaches a stop
+ */
+router.post('/stop-reached', Auth.authenticate, async (req, res) => {
+  try {
+    const driverId = req.user.id;
+    const { stopName, stopIndex, lat, lng, timestamp } = req.body;
+
+    const updatedLoc = await DriverLocation.findOneAndUpdate(
+      { driverId },
+      {
+        $set: {
+          currentStop: stopName,
+          currentStopIndex: stopIndex,
+          lat: lat || 0,
+          lng: lng || 0,
+          updatedAt: new Date()
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.json({ success: true, currentStop: stopName, stopIndex, updatedLoc });
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Stop telemetry recorded' });
+  }
+});
+
 export default router;

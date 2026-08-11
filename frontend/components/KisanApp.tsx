@@ -13,7 +13,13 @@ import {
     Camera, Calendar, Check, Clock, Sun, Cloud, CloudRain
 } from 'lucide-react';
 import { ARMandiHUD } from './ARMandiHUD';
+import AeroDashboard from './aero/AeroDashboard';
 import { Sparkles as SparklesIcon } from 'lucide-react';
+
+import { io, Socket } from 'socket.io-client';
+
+const getWeatherData = async () => ({ temp: '28°C', condition: 'Sunny', humidity: '65%' });
+const getNewsData = async () => ([{ id: 1, title: 'PM Kisan 16th Installment Credited', date: 'Today' }]);
 
 type ViewState = 'AUTH' | 'DASHBOARD' | 'CREATE_LISTING' | 'DAIRY' | 'ORDERS' | 'AEROPONICS' | 'CROP_GRADING';
 
@@ -55,6 +61,7 @@ export const KisanApp: React.FC = () => {
     const [weather, setWeather] = useState<any>(null);
     const [news, setNews] = useState<any[]>([]);
     const [selectedUnit, setSelectedUnit] = useState('kg');
+    const [bidAlert, setBidAlert] = useState<string | null>(null);
 
     useEffect(() => {
         // Check if already logged in
@@ -63,6 +70,23 @@ export const KisanApp: React.FC = () => {
             checkAuth();
         }
     }, []);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        const socket: Socket = io(API_BASE_URL, { transports: ['websocket'] });
+        socket.emit('join_kisan_room', user.id);
+
+        socket.on('new_crop_bid', (data: any) => {
+            console.log('🔔 Live Crop Bid Received:', data);
+            setBidAlert(data.message || 'Nayi Boli Aayi Hai!');
+            fetchData();
+            setTimeout(() => setBidAlert(null), 6000);
+        });
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [user?.id]);
 
     const checkAuth = async () => {
         try {

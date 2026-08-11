@@ -3,7 +3,7 @@ import { User, AdminStats, RouteDefinition } from '@villagelink/shared';
 import { getAuthToken } from './authService';
 import { API_BASE_URL } from '../config';
 
-const API_URL = `${API_BASE_URL}/api/admin`;
+const getApiUrl = () => `${API_BASE_URL}/api/admin`;
 
 const getHeaders = () => ({
     'Content-Type': 'application/json',
@@ -12,7 +12,7 @@ const getHeaders = () => ({
 
 export const getAdminStats = async (): Promise<AdminStats | null> => {
     try {
-        const res = await fetch(`${API_URL}/stats`, { headers: getHeaders() });
+        const res = await fetch(`${getApiUrl()}/stats`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch stats');
         return await res.json();
     } catch (e) {
@@ -23,7 +23,7 @@ export const getAdminStats = async (): Promise<AdminStats | null> => {
 
 export const getAllUsers = async (): Promise<User[]> => {
     try {
-        const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
+        const res = await fetch(`${getApiUrl()}/users`, { headers: getHeaders() });
         if (!res.ok) throw new Error('Failed to fetch users');
         return await res.json();
     } catch (e) {
@@ -34,7 +34,7 @@ export const getAllUsers = async (): Promise<User[]> => {
 
 export const verifyDriver = async (userId: string, isVerified: boolean): Promise<boolean> => {
     try {
-        const res = await fetch(`${API_URL}/verify-driver`, {
+        const res = await fetch(`${getApiUrl()}/verify-driver`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ userId, isVerified })
@@ -48,7 +48,7 @@ export const verifyDriver = async (userId: string, isVerified: boolean): Promise
 
 export const toggleUserBan = async (userId: string, isBanned: boolean): Promise<boolean> => {
     try {
-        const res = await fetch(`${API_URL}/toggle-ban`, {
+        const res = await fetch(`${getApiUrl()}/toggle-ban`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ userId, isBanned })
@@ -100,7 +100,7 @@ export interface PricingConfig {
 
 export const getPricingConfig = async (): Promise<PricingConfig> => {
     try {
-        const res = await fetch(`${API_URL}/pricing`, { headers: getHeaders() });
+        const res = await fetch(`${getApiUrl()}/pricing`, { headers: getHeaders() });
         if (!res.ok) throw new Error("Failed");
         return await res.json();
     } catch (e) {
@@ -110,7 +110,7 @@ export const getPricingConfig = async (): Promise<PricingConfig> => {
 
 export const updatePricingConfig = async (config: PricingConfig): Promise<boolean> => {
     try {
-        const res = await fetch(`${API_URL}/pricing`, {
+        const res = await fetch(`${getApiUrl()}/pricing`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(config)
@@ -121,7 +121,7 @@ export const updatePricingConfig = async (config: PricingConfig): Promise<boolea
 
 export const searchTicketHistory = async (ticketId: string): Promise<any> => {
     try {
-        const res = await fetch(`${API_URL}/ticket/${ticketId}`, { headers: getHeaders() });
+        const res = await fetch(`${getApiUrl()}/ticket/${ticketId}`, { headers: getHeaders() });
         if (!res.ok) throw new Error("Ticket not found");
         return await res.json();
     } catch (e) {

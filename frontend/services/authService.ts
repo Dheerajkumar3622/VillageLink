@@ -2,7 +2,7 @@
 import { User, UserRole, AuthResponse, VehicleType } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 
-const API_URL = `${API_BASE_URL}/api/auth`;
+const getApiUrl = () => `${API_BASE_URL}/api/auth`;
 const TOKEN_KEY = 'villagelink_token';
 const USER_KEY = 'villagelink_user';
 
@@ -36,7 +36,7 @@ function textHasJsonKeys(data: Record<string, unknown>): boolean {
 
 export const registerUser = async (name: string, role: UserRole, password: string, email: string, phone: string, capacity?: number, vehicleType?: VehicleType, address?: string, pincode?: string): Promise<AuthResponse> => {
   try {
-    const endpoint = role === 'PASSENGER' ? `${API_URL}/register/user` : `${API_URL}/register/provider`;
+    const endpoint = role === 'PASSENGER' ? `${getApiUrl()}/register/user` : `${getApiUrl()}/register/provider`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,7 +48,7 @@ export const registerUser = async (name: string, role: UserRole, password: strin
     if (res.ok && data.success) {
       if (data.token) localStorage.setItem(TOKEN_KEY, data.token as string);
       if (data.user) localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data as AuthResponse;
+      return data as unknown as AuthResponse;
     } else {
       throw new Error(authErrorMessage(res, data, 'Registration failed'));
     }
@@ -62,7 +62,7 @@ export const loginUser = async (loginId: string, password: string, expectedPanel
   const cleanPassword = password.trim();
 
   try {
-    const res = await fetch(`${API_URL}/login`, {
+    const res = await fetch(`${getApiUrl()}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ loginId: cleanLoginId, password: cleanPassword, expectedPanelType })
@@ -73,7 +73,7 @@ export const loginUser = async (loginId: string, password: string, expectedPanel
     if (res.ok && data.success) {
       localStorage.setItem(TOKEN_KEY, data.token as string);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data as AuthResponse;
+      return data as unknown as AuthResponse;
     } else {
       return {
         success: false,
@@ -87,7 +87,7 @@ export const loginUser = async (loginId: string, password: string, expectedPanel
 
 export const loginViaFirebase = async (idToken: string): Promise<AuthResponse> => {
   try {
-    const res = await fetch(`${API_URL}/login-firebase`, {
+    const res = await fetch(`${getApiUrl()}/login-firebase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken })
@@ -98,7 +98,7 @@ export const loginViaFirebase = async (idToken: string): Promise<AuthResponse> =
     if (res.ok && data.success) {
       localStorage.setItem(TOKEN_KEY, data.token as string);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data as AuthResponse;
+      return data as unknown as AuthResponse;
     } else {
       return { success: false, message: authErrorMessage(res, data, 'Firebase Login Failed') };
     }
@@ -109,7 +109,7 @@ export const loginViaFirebase = async (idToken: string): Promise<AuthResponse> =
 
 export const registerViaFirebase = async (idToken: string, name: string, role: UserRole, email?: string, vehicleCapacity?: number, vehicleType?: VehicleType, address?: string, pincode?: string): Promise<AuthResponse> => {
   try {
-    const res = await fetch(`${API_URL}/register-firebase`, {
+    const res = await fetch(`${getApiUrl()}/register-firebase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken, name, role, email, vehicleCapacity, vehicleType, address, pincode })
@@ -120,7 +120,7 @@ export const registerViaFirebase = async (idToken: string, name: string, role: U
     if (res.ok && data.success) {
       localStorage.setItem(TOKEN_KEY, data.token as string);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      return data as AuthResponse;
+      return data as unknown as AuthResponse;
     } else {
       return { success: false, message: authErrorMessage(res, data, 'Firebase Registration Failed') };
     }
@@ -133,7 +133,7 @@ export const logoutUser = async () => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     try {
-      await fetch(`${API_URL}/logout`, { method: 'POST', headers: { 'Authorization': token } });
+      await fetch(`${getApiUrl()}/logout`, { method: 'POST', headers: { 'Authorization': token } });
     } catch (e) { }
   }
   localStorage.removeItem(TOKEN_KEY);
@@ -142,7 +142,7 @@ export const logoutUser = async () => {
 
 export const requestPasswordReset = async (identifier: string) => {
   try {
-    const res = await fetch(`${API_URL}/forgot-password`, {
+    const res = await fetch(`${getApiUrl()}/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier })
@@ -155,7 +155,7 @@ export const requestPasswordReset = async (identifier: string) => {
 
 export const resetPassword = async (identifier: string, token: string, newPassword: string) => {
   try {
-    const res = await fetch(`${API_URL}/reset-password`, {
+    const res = await fetch(`${getApiUrl()}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, token, newPassword })
@@ -168,7 +168,7 @@ export const resetPassword = async (identifier: string, token: string, newPasswo
 
 export const resetPasswordViaFirebase = async (idToken: string, newPassword: string) => {
   try {
-    const res = await fetch(`${API_URL}/reset-password-firebase`, {
+    const res = await fetch(`${getApiUrl()}/reset-password-firebase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idToken, newPassword })

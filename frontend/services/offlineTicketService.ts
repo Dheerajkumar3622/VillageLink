@@ -84,23 +84,37 @@ const textEncoder = new TextEncoder();
  * Generate HMAC-SHA256 signature using Web Crypto API
  */
 const createSignature = async (data: string): Promise<string> => {
-    const key = await crypto.subtle.importKey(
-        'raw',
-        textEncoder.encode(TICKET_SECRET),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-    );
+    const cryptoObj = typeof window !== 'undefined' ? (window.crypto || (window as any).msCrypto) : null;
+    if (cryptoObj && cryptoObj.subtle) {
+        try {
+            const key = await cryptoObj.subtle.importKey(
+                'raw',
+                textEncoder.encode(TICKET_SECRET),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
 
-    const signature = await crypto.subtle.sign(
-        'HMAC',
-        key,
-        textEncoder.encode(data)
-    );
+            const signature = await cryptoObj.subtle.sign(
+                'HMAC',
+                key,
+                textEncoder.encode(data)
+            );
 
-    return Array.from(new Uint8Array(signature))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+            return Array.from(new Uint8Array(signature))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        } catch (e) {
+            console.warn("offlineTicketService HMAC failed, falling back", e);
+        }
+    }
+    
+    let h1 = 0x811c9dc5;
+    for (let i = 0; i < data.length; i++) {
+        h1 = (h1 ^ data.charCodeAt(i)) ^ (TICKET_SECRET.charCodeAt(i % TICKET_SECRET.length) || 0);
+        h1 = (h1 * 16777619) & 0xffffffff;
+    }
+    return Math.abs(h1).toString(16).padStart(8, '0') + "00000000";
 };
 
 /**

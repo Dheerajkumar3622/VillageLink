@@ -17,7 +17,7 @@ import { ProfilePill } from './ProfilePill';
 import { StatRing } from './StatRing';
 import V5BottomNav from './V5BottomNav';
 // Extended TabType for User App
-export type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile' | 'chat' | 'scan';
+export type UserTabType = 'home' | 'rides' | 'haat' | 'food' | 'cargo' | 'reels' | 'profile' | 'chat' | 'scan' | 'vnis';
 
 import { Moon, Sun } from 'lucide-react';
 
@@ -31,6 +31,7 @@ const UserProfile = React.lazy(() => import('./UserProfile'));
 const ScratchCard = React.lazy(() => import('./ScratchCard'));
 const FoodLinkHome = React.lazy(() => import('./FoodLinkHome'));
 const LogisticsApp = React.lazy(() => import('./LogisticsApp'));
+const VNISCorridorDashboard = React.lazy(() => import('./VNISCorridorDashboard').then(m => ({ default: m.VNISCorridorDashboard })));
 
 interface UserAppProps {
     user: UserType | any;
@@ -51,6 +52,35 @@ const preloadLazyComponent = (importFn: () => Promise<any>) => {
 
 const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode, toggleTheme, toggleLang }) => {
     const { t } = useTranslation();
+    const [isDevMode, setIsDevMode] = useState<boolean>(() => localStorage.getItem('vl_dev_mode') === 'true');
+    const [devModeToast, setDevModeToast] = useState<string | null>(null);
+    const logoTapCountRef = React.useRef(0);
+    const logoTapTimerRef = React.useRef<any>(null);
+
+    const toggleDevMode = () => {
+        const nextState = !isDevMode;
+        setIsDevMode(nextState);
+        localStorage.setItem('vl_dev_mode', String(nextState));
+        if (!nextState && (activeTab === 'haat' || activeTab === 'food')) {
+            setActiveTab('rides');
+        }
+        setDevModeToast(nextState ? '🛠️ Developer Mode Enabled: Mandi & Mess panels visible' : '🔒 Beta Mode: Only Ride panel visible');
+        setTimeout(() => setDevModeToast(null), 3500);
+    };
+
+    const handleLogoClick = () => {
+        logoTapCountRef.current += 1;
+        if (logoTapTimerRef.current) clearTimeout(logoTapTimerRef.current);
+        if (logoTapCountRef.current >= 5) {
+            logoTapCountRef.current = 0;
+            toggleDevMode();
+        } else {
+            logoTapTimerRef.current = setTimeout(() => {
+                logoTapCountRef.current = 0;
+            }, 2000);
+        }
+    };
+
     const [activeTab, setActiveTab] = useState<UserTabType>('rides');
     
     // Swipe gesture states (Touch tracking)
@@ -293,15 +323,16 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
 
     // Swipe gesture touch event handlers
     const handleTouchStart = (e: React.TouchEvent) => {
-        if (!['rides', 'haat', 'food'].includes(activeTab)) return;
+        const allowedTabs: UserTabType[] = isDevMode ? ['rides', 'haat', 'food'] : ['rides'];
+        if (!allowedTabs.includes(activeTab)) return;
         if (activeTab === 'rides' && passengerViewMode !== 'DASHBOARD') return;
 
         // Disable swipe transitions entirely if any modal or overlay is currently active/open in the DOM
         if (
-            document.querySelector('.fixed.inset-0.z-\\[100\\]') ||
-            document.querySelector('.fixed.inset-0.z-\\[200\\]') ||
-            document.querySelector('.fixed.inset-0.z-\\[300\\]') ||
-            document.querySelector('.fixed.inset-0.z-\\[500\\]')
+            document.querySelector('.fixed.inset-0') ||
+            document.querySelector('[role="dialog"]') ||
+            document.querySelector('.z-\\[9999\\]') ||
+            document.querySelector('.z-\\[10000\\]')
         ) {
             return;
         }
@@ -371,7 +402,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
             const diffX = touchMoveX - touchStartX;
             const swipeThreshold = window.innerWidth * 0.25;
 
-            const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+            const swipeableTabs: UserTabType[] = isDevMode ? ['rides', 'haat', 'food'] : ['rides'];
             const currentIdx = swipeableTabs.indexOf(activeTab);
 
             if (currentIdx !== -1) {
@@ -391,7 +422,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     };
 
     const getSwipeStyle = () => {
-        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const swipeableTabs: UserTabType[] = isDevMode ? ['rides', 'haat', 'food'] : ['rides'];
         const currentIdx = swipeableTabs.indexOf(activeTab);
         if (currentIdx === -1) return {};
 
@@ -412,7 +443,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     };
 
     const getSwipeProgress = () => {
-        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const swipeableTabs: UserTabType[] = isDevMode ? ['rides', 'haat', 'food'] : ['rides'];
         const currentIdx = swipeableTabs.indexOf(activeTab);
         if (currentIdx === -1) return 0;
 
@@ -428,7 +459,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     };
 
     const getMeshColors = () => {
-        const swipeableTabs: UserTabType[] = ['rides', 'haat', 'food'];
+        const swipeableTabs: UserTabType[] = isDevMode ? ['rides', 'haat', 'food'] : ['rides'];
         const currentIdx = swipeableTabs.indexOf(activeTab);
         if (currentIdx === -1) {
             return {
@@ -526,7 +557,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
     }, [searchFocused, activeTab]);
 
     const renderHomeContent = () => (
-        <div className="v5-home-content animate-fade-in px-5 bg-transparent min-h-screen" style={{ color: '#1A1035' }}>
+        <div className="v5-home-content px-5 bg-transparent min-h-screen" style={{ color: '#1A1035' }}>
 
             {/* Quick Actions Row (Empty) */}
 
@@ -541,6 +572,13 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                 >
                     <Bike size={12} strokeWidth={3} />
                     Feeder Mode
+                </button>
+                <button 
+                    onClick={() => setActiveTab(activeTab === 'vnis' ? 'rides' : 'vnis')}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-[9px] font-[900] uppercase tracking-wider transition-all shadow-sm ${activeTab === 'vnis' ? 'bg-[#f59e0b] text-black border-[#f59e0b]' : 'bg-amber-500/10 text-amber-600 border-amber-300'}`}
+                >
+                    <Sparkles size={12} strokeWidth={3} />
+                    Gaaw ka Mode Engine
                 </button>
                 <button 
                     onClick={() => setDidiMode(!didiMode)}
@@ -590,7 +628,7 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                             <ArrowLeft size={20} className="text-slate-900 dark:text-white" />
                         </button>
                     ) : (
-                        <div className="v5-logo-holographic">
+                        <div className="v5-logo-holographic cursor-pointer active:scale-95 transition-transform" onClick={handleLogoClick} title="Tap 5 times for Developer Mode">
                             <span className="v5-logo-sparkle"></span>
                             <span className="v5-logo-sparkle"></span>
                             <span className="v5-logo-sparkle"></span>
@@ -644,8 +682,6 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                     )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <LanguageSelector />
-                    
                     <div className="v5-living-header flex items-center gap-2">
                         {/* Breathing Avatar */}
                     <div className="v5-avatar-ecosystem" onClick={() => {
@@ -749,31 +785,38 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                             onTouchEnd={handleTouchEnd}
                         >
                             <div 
-                                className="v5-swipe-container animate-fade-in"
+                                className="v5-swipe-container"
                                 style={getSwipeStyle()}
                             >
                                 <div className="v5-swipe-slide" data-tab="rides">
                                     <PassengerView user={user!} lang={lang} isScrolled={isScrolled} onLogout={onLogout} activeTourismTracker={activeTourismTracker} setActiveTourismTracker={setActiveTourismTracker} />
                                 </div>
-                                <div className="v5-swipe-slide" data-tab="haat">
-                                    <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />
-                                </div>
-                                <div className="v5-swipe-slide" data-tab="food">
-                                    <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />
-                                </div>
+                                {isDevMode && (
+                                    <>
+                                        <div className="v5-swipe-slide" data-tab="haat">
+                                            <GramMandiHome user={user!} onBack={() => setActiveTab('rides')} />
+                                        </div>
+                                        <div className="v5-swipe-slide" data-tab="food">
+                                            <FoodLinkHome user={user!} onBack={() => setActiveTab('rides')} />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     ) : null}
 
                     {/* Other Tabs (rendered normally) */}
-                    <div className={activeTab === 'reels' ? 'block animate-fade-in' : 'hidden'}>
+                    <div className={activeTab === 'reels' ? 'block' : 'hidden'}>
                         <ReelsSection user={user!} />
                     </div>
-                    <div className={activeTab === 'cargo' ? 'block animate-fade-in' : 'hidden'}>
+                    <div className={activeTab === 'cargo' ? 'block' : 'hidden'}>
                         <LogisticsApp />
                     </div>
-                    <div className={activeTab === 'profile' ? 'block animate-fade-in' : 'hidden'}>
-                        <UserProfile user={user!} onBack={() => setActiveTab('rides')} onLogout={onLogout} />
+                    <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
+                        <UserProfile user={user!} onBack={() => setActiveTab('rides')} onLogout={onLogout} isDevMode={isDevMode} onToggleDevMode={toggleDevMode} />
+                    </div>
+                    <div className={activeTab === 'vnis' ? 'block' : 'hidden'}>
+                        <VNISCorridorDashboard />
                     </div>
                 </React.Suspense>
             </main>
@@ -790,7 +833,15 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                 }}
                 progress={getSwipeProgress()}
                 isSwiping={isSwiping && swipeDirection === 'horizontal'}
+                isDevMode={isDevMode}
             />
+
+            {/* Dev Mode Floating Toast */}
+            {devModeToast && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900/90 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-md border border-amber-500/40 animate-fade-in flex items-center gap-2">
+                    <span>{devModeToast}</span>
+                </div>
+            )}
 
             {/* Double Tap to Exit Toast */}
             {showExitToast && (
@@ -909,15 +960,10 @@ const UserApp: React.FC<UserAppProps> = ({ user, onLogout, lang = 'EN', darkMode
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-800 dark:text-white">Language</p>
-                                                <p className="text-[10px] text-slate-500">{lang === 'EN' ? 'English' : 'हिंदी'}</p>
+                                                <p className="text-[10px] text-slate-500">Select app language</p>
                                             </div>
                                         </div>
-                                        <button 
-                                            onClick={toggleLang}
-                                            className="px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 shadow border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200"
-                                        >
-                                            Change
-                                        </button>
+                                        <LanguageSelector />
                                     </div>
                                     
                                     <button onClick={handleChangePassword} className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors">

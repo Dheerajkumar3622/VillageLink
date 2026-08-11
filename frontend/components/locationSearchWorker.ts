@@ -329,9 +329,10 @@ self.onmessage = async (e) => {
         }
 
         const intermediates: string[] = [];
+        let lastAdded: string | null = null;
         for (const pt of checkPoints) {
             let nearestName = null;
-            let minDistance = 99999.0; // Unlimited threshold: always consider nearest village for each node/junction
+            let minDistance = 99999.0;
 
             for (let i = 0; i < globalVillageCache.length; i++) {
                 const v = globalVillageCache[i];
@@ -345,13 +346,13 @@ self.onmessage = async (e) => {
                     }
                 }
             }
-            if (nearestName) {
+            if (nearestName && nearestName !== lastAdded) {
                 intermediates.push(nearestName);
+                lastAdded = nearestName;
             }
         }
 
-        const uniqueIntermediates = Array.from(new Set(intermediates));
-        self.postMessage({ type: 'ROUTE_LANDMARKS_RESULT', payload: uniqueIntermediates });
+        self.postMessage({ type: 'ROUTE_LANDMARKS_RESULT', payload: intermediates });
     }
 };
 

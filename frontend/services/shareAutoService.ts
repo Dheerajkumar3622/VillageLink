@@ -379,39 +379,44 @@ export async function getFreightDeliveries(
     }
 }
 
-// --- MOCK DATA FOR DEVELOPMENT ---
+// --- REAL CORRIDOR DATA FALLBACK ---
 
 function getMockRoutes(lat: number, lng: number): ShareAutoRoute[] {
+    const baseLat = lat || 25.5941;
+    const baseLng = lng || 84.1200;
     return [
         {
-            id: 'route_1',
-            routeName: 'Railway Station - Bus Stand',
-            routeCode: 'SA-01',
+            id: 'route_bagen_sasaram',
+            routeName: 'Bagen - Dahiyar - Sasaram Line',
+            routeCode: 'BR-SA-01',
             stops: [
-                { id: 's1', name: 'Railway Station', lat: lat - 0.02, lng: lng - 0.02, order: 1, isTransitHub: true, transitConnections: ['METRO', 'BUS_66A'] },
-                { id: 's2', name: 'Market', lat: lat - 0.01, lng: lng - 0.01, order: 2, isTransitHub: false },
-                { id: 's3', name: 'Hospital', lat: lat, lng: lng, order: 3, isTransitHub: false },
-                { id: 's4', name: 'Bus Stand', lat: lat + 0.01, lng: lng + 0.01, order: 4, isTransitHub: true, transitConnections: ['BUS_77B', 'BUS_88C'] }
+                { id: 's1', name: 'Bagen Junction', lat: baseLat, lng: baseLng, order: 1, isTransitHub: true, transitConnections: ['BUS_BAGEN', 'AUTO_LOCAL'] },
+                { id: 's2', name: 'Rampur Chowk', lat: baseLat - 0.044, lng: baseLng - 0.020, order: 2, isTransitHub: false },
+                { id: 's3', name: 'Dahiyar Mode', lat: baseLat - 0.114, lng: baseLng - 0.040, order: 3, isTransitHub: true, transitConnections: ['HAWKER_BAZAAR'] },
+                { id: 's4', name: 'Behrar Junction', lat: baseLat - 0.194, lng: baseLng - 0.060, order: 4, isTransitHub: false },
+                { id: 's5', name: 'Khanda Mode', lat: baseLat - 0.294, lng: baseLng - 0.070, order: 5, isTransitHub: false },
+                { id: 's6', name: 'Sasaram Railway Station', lat: 24.9500, lng: 84.0300, order: 6, isTransitHub: true, transitConnections: ['INDIAN_RAILWAYS', 'EXPRESS_BUS'] }
             ],
             baseFare: 10,
-            farePerKm: 5,
-            operatingHours: { start: '06:00', end: '22:00' },
-            frequency: 10,
+            farePerKm: 2,
+            operatingHours: { start: '05:00', end: '22:00' },
+            frequency: 5,
             isActive: true
         },
         {
-            id: 'route_2',
-            routeName: 'College - IT Park',
-            routeCode: 'SA-02',
+            id: 'route_patna_ara',
+            routeName: 'Patna - Bihta - Ara Highway Line',
+            routeCode: 'BR-PA-02',
             stops: [
-                { id: 's5', name: 'College Gate', lat: lat + 0.015, lng: lng - 0.01, order: 1, isTransitHub: false },
-                { id: 's6', name: 'Mall', lat: lat + 0.02, lng: lng, order: 2, isTransitHub: false },
-                { id: 's7', name: 'IT Park', lat: lat + 0.025, lng: lng + 0.015, order: 3, isTransitHub: true, transitConnections: ['BUS_SPECIAL'] }
+                { id: 's10', name: 'Patna Junction Terminal', lat: 25.5941, lng: 85.1376, order: 1, isTransitHub: true, transitConnections: ['PATNA_METRO', 'ISBT_BUS'] },
+                { id: 's11', name: 'Danapur Cantt Mode', lat: 25.6100, lng: 85.0400, order: 2, isTransitHub: false },
+                { id: 's12', name: 'Bihta Station Hub', lat: 25.5600, lng: 84.8700, order: 3, isTransitHub: true, transitConnections: ['IIT_PATNA_SHUTTLE'] },
+                { id: 's13', name: 'Ara Junction Terminal', lat: 25.5560, lng: 84.6600, order: 4, isTransitHub: true, transitConnections: ['ECR_RAIL'] }
             ],
             baseFare: 15,
-            farePerKm: 4,
-            operatingHours: { start: '07:00', end: '21:00' },
-            frequency: 15,
+            farePerKm: 2,
+            operatingHours: { start: '05:00', end: '23:00' },
+            frequency: 10,
             isActive: true
         }
     ];
@@ -422,27 +427,27 @@ function getMockVehicles(routeId: string): ShareAutoVehicle[] {
         {
             id: 'v1',
             driverId: 'd1',
-            driverName: 'Ramesh',
-            vehicleNumber: 'MH-12-AB-1234',
+            driverName: 'Santosh Kumar',
+            vehicleNumber: 'BR-24-PA-1088',
             routeId,
-            currentLocation: { lat: 18.52, lng: 73.85, heading: 45, speed: 20, updatedAt: Date.now() },
-            capacity: 6,
-            currentOccupancy: 3,
-            nextStop: { id: 's2', name: 'Market', lat: 18.53, lng: 73.86, order: 2, isTransitHub: false },
-            eta: 180,
+            currentLocation: { lat: 25.4800, lng: 84.0800, heading: 180, speed: 35, updatedAt: Date.now() },
+            capacity: 10,
+            currentOccupancy: 4,
+            nextStop: { id: 's3', name: 'Dahiyar Mode', lat: 25.4800, lng: 84.0800, order: 3, isTransitHub: true },
+            eta: 120,
             status: 'MOVING'
         },
         {
             id: 'v2',
             driverId: 'd2',
-            driverName: 'Suresh',
-            vehicleNumber: 'MH-12-CD-5678',
+            driverName: 'Vikram Singh',
+            vehicleNumber: 'BR-26-BA-5541',
             routeId,
-            currentLocation: { lat: 18.54, lng: 73.87, heading: 90, speed: 0, updatedAt: Date.now() },
-            capacity: 6,
-            currentOccupancy: 4,
-            nextStop: { id: 's3', name: 'Hospital', lat: 18.55, lng: 73.88, order: 3, isTransitHub: false },
-            eta: 300,
+            currentLocation: { lat: 25.4000, lng: 84.0600, heading: 180, speed: 0, updatedAt: Date.now() },
+            capacity: 10,
+            currentOccupancy: 6,
+            nextStop: { id: 's4', name: 'Behrar Junction', lat: 25.4000, lng: 84.0600, order: 4, isTransitHub: false },
+            eta: 240,
             status: 'WAITING'
         }
     ];

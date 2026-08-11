@@ -1,0 +1,22 @@
+groups:
+  - name: villagelink-alerting-rules
+    rules:
+      - alert: APIHighLatency
+        expr: http_request_duration_seconds > 2
+        for: 1m
+        labels:
+          severity: warning
+          service: backend-api
+        annotations:
+          summary: "High API response duration detected"
+          description: "HTTP endpoint latency has exceeded 2000ms."
+
+      - alert: DatabaseConnectionFailure
+        expr: mongodb_connected_status == 0
+        for: 0s
+        labels:
+          severity: critical
+          service: database-cluster
+        annotations:
+          summary: "Database instance disconnected"
+          description: "Node API has lost connectivity to MongoDB Atlas cluster."

@@ -1,5 +1,5 @@
 
-import { initializeApp } from "firebase/app";
+import { initializeApp, setLogLevel } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 // VillageLink Firebase Configuration
@@ -12,6 +12,8 @@ const firebaseConfig = {
     appId: "1:428748007277:web:76f0eec16523044b575c64",
     measurementId: "G-TWQ8ELYRN1"
 };
+
+try { setLogLevel('error'); } catch (e) {}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

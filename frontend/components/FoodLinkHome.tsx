@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { io } from 'socket.io-client';
 import { User, FoodVendor, FoodOrder, FoodItem, Restaurant, BudgetTier, RestaurantCategory } from '@villagelink/shared';
 import { Button } from './Button';
 import { API_BASE_URL } from '../config';
@@ -98,6 +99,17 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
         fetchSmartFeatures();
         fetchWalletData();
     }, []);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        const socket = io(API_BASE_URL, { transports: ['websocket'] });
+        socket.emit('join_user_room', user.id);
+        socket.on('food_order_status_update', (data: any) => {
+            console.log('🍲 Food Order Status Updated:', data);
+            fetchData();
+        });
+        return () => { socket.disconnect(); };
+    }, [user?.id]);
 
     useEffect(() => {
         const handleBack = () => {

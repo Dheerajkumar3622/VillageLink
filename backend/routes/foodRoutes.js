@@ -6,6 +6,7 @@ import * as ML from '../services/mlService.js';
 import crypto from 'crypto';
 
 import { getRecommendations } from '../services/foodRecommendationService.js';
+import cacheService from '../services/cacheService.js';
 
 const router = express.Router();
 
@@ -25,13 +26,16 @@ router.get('/recommendations', Auth.authenticate, async (req, res) => {
 router.get('/mess', async (req, res) => {
     try {
         const { pincode } = req.query;
-        const query = { category: 'MESS' };
+        const cacheKey = pincode ? `food:mess:${pincode}` : 'food:mess:all';
 
-        if (pincode) {
-            query.pincode = pincode;
-        }
+        const messes = await cacheService.cacheWrapper(cacheKey, async () => {
+            const query = { category: 'MESS' };
+            if (pincode) {
+                query.pincode = pincode;
+            }
+            return await Shop.find(query).lean();
+        }, cacheService.CACHE_TTL.SEARCH_RESULTS || 600);
 
-        const messes = await Shop.find(query);
         res.json(messes);
     } catch (e) {
         res.status(500).json({ error: e.message });
@@ -333,6 +337,14 @@ router.post('/stalls/order', Auth.authenticate, async (req, res) => {
         });
 
         await order.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`mess_${vendorId}`).emit('new_food_order', {
+                order,
+                message: `New food order #${order.token} received! Total: ₹${totalAmount}`
+            });
+        }
 
         res.json({
             success: true,

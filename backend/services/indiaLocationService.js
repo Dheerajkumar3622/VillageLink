@@ -216,6 +216,16 @@ export const searchPOI = async (query, poiType = 'any') => {
     return await fetchWithCache(`/poi/search?${params}`, cacheKey) || [];
 };
 
+const FALLBACK_NEARBY_LOCATIONS = [
+    { id: 'loc_patna', name: 'Patna Central Hub', nameHindi: 'पटना सेंट्रल हब', type: 'CITY', stateCode: 'BR', pincode: '800001', coordinates: { lat: 25.6093, lng: 85.1376 } },
+    { id: 'loc_arrah', name: 'Arrah Junction', nameHindi: 'आरा जंक्शन', type: 'CITY', stateCode: 'BR', pincode: '802301', coordinates: { lat: 25.5512, lng: 84.6713 } },
+    { id: 'loc_bihta', name: 'Bihta Logistics Park', nameHindi: 'बिहटा लॉजिस्टिक्स पार्क', type: 'TOWN', stateCode: 'BR', pincode: '801103', coordinates: { lat: 25.5600, lng: 84.8700 } },
+    { id: 'loc_maner', name: 'Maner Community Hub', nameHindi: 'मनेर कम्युनिटी हब', type: 'TOWN', stateCode: 'BR', pincode: '801108', coordinates: { lat: 25.6500, lng: 84.8800 } },
+    { id: 'loc_danapur', name: 'Danapur Cantt', nameHindi: 'दानापुर कैंट', type: 'TOWN', stateCode: 'BR', pincode: '801503', coordinates: { lat: 25.6200, lng: 85.0400 } },
+];
+
+export const getFallbackNearbyLocations = () => FALLBACK_NEARBY_LOCATIONS;
+
 /**
  * Get nearby locations based on coordinates
  * @param {number} lat - Latitude
@@ -223,14 +233,25 @@ export const searchPOI = async (query, poiType = 'any') => {
  * @param {number} radiusKm - Search radius in kilometers
  */
 export const getNearbyLocations = async (lat, lng, radiusKm = 10) => {
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+
+    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+        return FALLBACK_NEARBY_LOCATIONS;
+    }
+
     const params = new URLSearchParams({
-        lat: String(lat),
-        lng: String(lng),
+        lat: String(parsedLat),
+        lng: String(parsedLng),
         radius: String(radiusKm * 1000) // Convert to meters
     });
 
-    const cacheKey = `nearby_${lat.toFixed(3)}_${lng.toFixed(3)}_${radiusKm}`;
-    return await fetchWithCache(`/nearby?${params}`, cacheKey) || [];
+    const cacheKey = `nearby_${parsedLat.toFixed(3)}_${parsedLng.toFixed(3)}_${radiusKm}`;
+    const result = await fetchWithCache(`/nearby?${params}`, cacheKey);
+    if (result && Array.isArray(result) && result.length > 0) {
+        return result;
+    }
+    return FALLBACK_NEARBY_LOCATIONS;
 };
 
 /**

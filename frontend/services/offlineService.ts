@@ -35,29 +35,44 @@ export const syncOfflineActions = async (): Promise<number> => {
 
   console.log(`🔄 Syncing ${queue.length} offline actions...`);
   let syncedCount = 0;
+  const failedActions: OfflineAction[] = [];
 
   for (const action of queue) {
     try {
+      let success = true;
       switch (action.type) {
         case 'BOOK_TICKET':
-          saveTicket({ ...action.payload, isOfflineSync: true });
-          syncedCount++;
+          await saveTicket({ ...action.payload, isOfflineSync: true });
           break;
         case 'BOOK_RENTAL':
           await bookRental(action.payload);
-          syncedCount++;
           break;
         case 'SEND_PARCEL':
           await bookParcel(action.payload);
-          syncedCount++;
           break;
+        default:
+          success = false;
+          break;
+      }
+      if (success) {
+        syncedCount++;
+      } else {
+        failedActions.push(action);
       }
     } catch (e) {
       console.error("Failed to sync action:", action, e);
+      failedActions.push(action);
     }
   }
 
-  clearQueue();
+  if (failedActions.length > 0) {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(failedActions));
+    console.log(`⚠️ Sync partial: ${syncedCount} actions synced successfully. ${failedActions.length} actions retained in queue.`);
+  } else {
+    clearQueue();
+    console.log(`✅ Sync complete: All ${syncedCount} actions synced successfully.`);
+  }
+
   return syncedCount;
 };
 

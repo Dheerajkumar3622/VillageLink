@@ -21,7 +21,7 @@ const router = express.Router();
 let fleetVehicles = [
     {
         id: 'v1',
-        registrationNumber: 'KA-01-AB-1234',
+        registrationNumber: 'BR-24-PA-1088',
         type: 'BUS',
         capacity: 40,
         permitType: 'STAGE_CARRIAGE',
@@ -40,7 +40,7 @@ let fleetVehicles = [
     },
     {
         id: 'v2',
-        registrationNumber: 'KA-01-CD-5678',
+        registrationNumber: 'BR-26-BA-5541',
         type: 'MINI_BUS',
         capacity: 20,
         permitType: 'STAGE_CARRIAGE',

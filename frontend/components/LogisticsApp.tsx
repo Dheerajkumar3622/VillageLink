@@ -9,7 +9,7 @@ import { getAuthToken, loginUser, registerUser, logoutUser } from '../services/a
 import { Button } from './Button';
 import {
     Loader2, Truck, Package, DollarSign, MapPin, Clock, Check, Navigation,
-    Phone, Lock, User, LogOut, ChevronRight, Camera, AlertCircle, BarChart3
+    Phone, Lock, User, LogOut, ChevronRight, Camera, AlertCircle, BarChart3, ArrowLeft
 } from 'lucide-react';
 
 type ViewState = 'AUTH' | 'DASHBOARD' | 'ACTIVE_TRIP' | 'TRIP_HISTORY';

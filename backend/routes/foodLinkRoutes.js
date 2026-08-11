@@ -178,9 +178,33 @@ router.post('/highway/preorder', Auth.authenticate, async (req, res) => {
 // 1. Menu Voting
 router.get('/mess/vote/:messId', Auth.authenticate, async (req, res) => {
     try {
-        // Get tomorrow's active vote
-        const vote = await MenuVote.findOne({ messId: req.params.messId, status: 'Active' });
-        res.json(vote || { active: false });
+        // Find tomorrow's active voting session (active till end of today)
+        let vote = await MenuVote.findOne({ messId: req.params.messId, votingEndsAt: { $gt: new Date() } });
+        if (!vote) {
+            // Auto-seed a voting session for tomorrow's dinner
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            
+            const votingEndsAt = new Date();
+            votingEndsAt.setHours(23, 59, 59, 999); // Active till end of today
+
+            vote = new MenuVote({
+                id: `vote_${Date.now()}`,
+                messId: req.params.messId,
+                date: tomorrowStr,
+                mealType: 'DINNER',
+                options: [
+                    { dishId: 'd1', dishName: 'Aloo Gobi & Dal', votes: 45, voters: [] },
+                    { dishId: 'd2', dishName: 'Mix Veg & Kadhi', votes: 32, voters: [] },
+                    { dishId: 'd3', dishName: 'Egg Curry & Rice', votes: 78, voters: [] }
+                ],
+                votingEndsAt: votingEndsAt,
+                totalVotes: 155
+            });
+            await vote.save();
+        }
+        res.json(vote);
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -190,45 +214,105 @@ router.post('/mess/vote', Auth.authenticate, async (req, res) => {
         const vote = await MenuVote.findOne({ id: voteId });
         if (!vote) return res.status(404).json({ error: "Vote session not found" });
 
+        const userId = req.user.id;
+        // Check if user has already voted
+        const alreadyVoted = vote.options.some(o => o.voters.includes(userId));
+        if (alreadyVoted) {
+            return res.status(400).json({ error: "User has already voted in this session" });
+        }
+
         // Find option and increment
         const option = vote.options.find(o => o.dishId === optionId);
         if (option) {
             option.votes += 1;
+            option.voters.push(userId);
             vote.totalVotes += 1;
             await vote.save();
+            res.json({ success: true, vote });
+        } else {
+            res.status(400).json({ error: "Invalid dish option" });
         }
-        res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 2. Prep Sheet
 router.get('/mess/prepsheet', Auth.authenticate, async (req, res) => {
     try {
-        // Find user's mess
+        // Find user's mess shop
         const shop = await Shop.findOne({ ownerId: req.user.id });
-        // Mock generation based on "Eat" status
-        const prepSheet = new PrepSheet({
-            id: generateId('PREP'),
-            messId: shop?.id || 'MESS_001',
-            date: new Date().toISOString().split('T')[0],
-            confirmedHeadcount: 340,
-            items: []
-        });
-        res.json(prepSheet);
+        const messId = shop?.id || 'mess_1';
+        const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+
+        // Retrieve EatSkipStatus aggregates to determine confirmed headcount
+        const statusRecord = await EatSkipStatus.findOne({ messId, date: dateStr, mealType: 'DINNER' });
+        
+        let eatingCount = 0;
+        let skippingCount = 0;
+        if (statusRecord) {
+            eatingCount = statusRecord.statuses.filter(s => s.eating).length;
+            skippingCount = statusRecord.statuses.filter(s => !s.eating).length;
+        }
+
+        // Base headcount is 300
+        const confirmedHeadcount = Math.max(50, 300 + eatingCount - skippingCount);
+
+        // Dynamically compute raw materials based on confirmed headcount
+        const items = [
+            {
+                dishName: 'Egg Curry',
+                portionSize: 2,
+                totalToPrep: confirmedHeadcount * 2,
+                rawMaterials: [
+                    { name: 'Eggs', quantity: Math.round(confirmedHeadcount * 2 * 1.05), unit: 'Pieces' },
+                    { name: 'Onion', quantity: Math.round(confirmedHeadcount * 0.05 * 100) / 100, unit: 'KG' }
+                ]
+            },
+            {
+                dishName: 'Steam Rice',
+                portionSize: 0.2,
+                totalToPrep: Math.round(confirmedHeadcount * 0.2 * 100) / 100,
+                rawMaterials: [
+                    { name: 'Basmati Rice', quantity: Math.round(confirmedHeadcount * 0.2 * 1.05 * 100) / 100, unit: 'KG' }
+                ]
+            }
+        ];
+
+        let prepSheet = await PrepSheet.findOne({ messId, date: dateStr });
+        if (!prepSheet) {
+            prepSheet = new PrepSheet({
+                id: generateId('PREP'),
+                messId,
+                date: dateStr,
+                mealType: 'DINNER',
+                confirmedHeadcount,
+                items
+            });
+            await prepSheet.save();
+        } else {
+            // Update sheet dynamically if it is not approved yet
+            if (!prepSheet.approvedBy) {
+                prepSheet.confirmedHeadcount = confirmedHeadcount;
+                prepSheet.items = items;
+                await prepSheet.save();
+            }
+        }
+
+        res.json({ success: true, sheet: prepSheet });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 3. Waste Logging
 router.post('/mess/waste', Auth.authenticate, async (req, res) => {
     try {
+        const shop = await Shop.findOne({ ownerId: req.user.id });
         const entry = new WasteEntry({
             id: generateId('WASTE'),
-            messId: 'MESS_001', // Should fetch from user
+            messId: shop?.id || 'mess_1',
             date: new Date().toISOString(),
             ...req.body
         });
         await entry.save();
-        res.json({ success: true });
+        res.json({ success: true, entry });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

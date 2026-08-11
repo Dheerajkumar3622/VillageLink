@@ -8,6 +8,8 @@ import Redis from 'ioredis';
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 let redis;
+let redisAvailable = false;
+let lastRedisErrorTime = 0;
 
 try {
     redis = new Redis(REDIS_URL, {
@@ -16,12 +18,30 @@ try {
         lazyConnect: true
     });
 
-    redis.on('connect', () => console.log('✅ Redis Connected'));
-    redis.on('error', (err) => console.error('❌ Redis Error:', err.message));
+    redis.on('connect', () => {
+        console.log('✅ Redis Connected');
+        redisAvailable = true;
+    });
+    redis.on('error', (err) => {
+        console.error('❌ Redis Error:', err.message);
+        redisAvailable = false;
+        lastRedisErrorTime = Date.now();
+    });
 } catch (e) {
     console.warn('⚠️ Redis not available, using in-memory fallback');
     redis = null;
+    redisAvailable = false;
 }
+
+const checkRedisAvailability = () => {
+    if (!redis) return false;
+    if (!redisAvailable) {
+        if (Date.now() - lastRedisErrorTime > 30000) {
+            redisAvailable = true;
+        }
+    }
+    return redisAvailable;
+};
 
 // In-memory fallback cache
 const memoryCache = new Map();
@@ -45,9 +65,15 @@ export const CACHE_TTL = {
  * Get value from cache
  */
 export const get = async (key) => {
-    if (redis) {
-        const value = await redis.get(key);
-        return value ? JSON.parse(value) : null;
+    if (checkRedisAvailability()) {
+        try {
+            const value = await redis.get(key);
+            return value ? JSON.parse(value) : null;
+        } catch (e) {
+            console.warn(`⚠️ Redis GET error for key ${key}:`, e.message);
+            redisAvailable = false;
+            lastRedisErrorTime = Date.now();
+        }
     }
     return memoryCache.get(key) || null;
 };
@@ -58,24 +84,36 @@ export const get = async (key) => {
 export const set = async (key, value, ttl = 300) => {
     const serialized = JSON.stringify(value);
 
-    if (redis) {
-        await redis.setex(key, ttl, serialized);
-    } else {
-        memoryCache.set(key, value);
-        // Memory cleanup after TTL
-        setTimeout(() => memoryCache.delete(key), ttl * 1000);
+    if (checkRedisAvailability()) {
+        try {
+            await redis.setex(key, ttl, serialized);
+            return;
+        } catch (e) {
+            console.warn(`⚠️ Redis SET error for key ${key}:`, e.message);
+            redisAvailable = false;
+            lastRedisErrorTime = Date.now();
+        }
     }
+    memoryCache.set(key, value);
+    // Memory cleanup after TTL
+    setTimeout(() => memoryCache.delete(key), ttl * 1000);
 };
 
 /**
  * Delete key from cache
  */
 export const del = async (key) => {
-    if (redis) {
-        await redis.del(key);
-    } else {
-        memoryCache.delete(key);
+    if (checkRedisAvailability()) {
+        try {
+            await redis.del(key);
+            return;
+        } catch (e) {
+            console.warn(`⚠️ Redis DEL error for key ${key}:`, e.message);
+            redisAvailable = false;
+            lastRedisErrorTime = Date.now();
+        }
     }
+    memoryCache.delete(key);
 };
 
 /**

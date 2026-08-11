@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: villagelink-backend-deployment
+  labels:
+    app: villagelink-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: villagelink-api
+  template:
+    metadata:
+      labels:
+        app: villagelink-api
+    spec:
+      containers:
+      - name: backend-container
+        image: villagelink-backend:latest
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: villagelink-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: villagelink-backend-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

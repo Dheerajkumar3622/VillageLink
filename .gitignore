@@ -48,3 +48,7 @@ test-razorpay.js
 # Android APK and Keystore
 *.apk
 *.keystore
+
+# Large Data Cache Files (>100MB)
+frontend/public/data/
+*.geo.json

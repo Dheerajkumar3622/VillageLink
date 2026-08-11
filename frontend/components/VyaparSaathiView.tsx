@@ -5,7 +5,8 @@ import { Button } from './Button';
 import {
     getVendorKhata, recordKhataEntry,
     getOpenBulkOrders,
-    submitHygieneSelfAudit
+    submitHygieneSelfAudit,
+    getCreditScore
 } from '../services/vyaparSaathiService';
 import {
     Mic, Camera, ShoppingBag, TrendingUp,
@@ -38,17 +39,12 @@ export const VyaparSaathiView: React.FC<VyaparSaathiViewProps> = ({ user, onBack
     const loadDashboardData = async () => {
         setIsLoading(true);
         try {
-            // Parallel fetch simulation
             const khataRes = await getVendorKhata();
-            // For demo, we use mock credit score if API fails or returns nothing
-            // Mock Credit Score removed. Replaced with placeholder or fetch.
-            // const score = getMockCreditScore(); 
-            const score: CreditScore = { vendorId: user.id, score: 700, tier: 'GOOD', factors: [], metrics: {} as any, loanEligibility: {} as any }; // Placeholder
-
-            const ordersRes = await getOpenBulkOrders(0, 0); // Mock lat/lng
+            const scoreRes = await getCreditScore();
+            const ordersRes = await getOpenBulkOrders(0, 0);
 
             if (khataRes.success) setKhata(khataRes.khata || null);
-            setCreditScore(score);
+            if (scoreRes.success) setCreditScore(scoreRes.score || null);
             if (ordersRes.success) setNearbyOrders(ordersRes.orders || []);
         } catch (err) {
             console.error(err);

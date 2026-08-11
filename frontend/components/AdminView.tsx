@@ -8,6 +8,13 @@ import { API_BASE_URL } from '../config';
 import { LocationSelector } from './LocationSelector';
 import { Button } from './Button';
 import AutoClicker from './AutoClicker';
+import { DroneFleetStatus } from './aero/DroneFleetStatus';
+import { ChargingDockPanel } from './aero/ChargingDockPanel';
+import { ControlCenterMap } from './aero/ControlCenterMap';
+import { LiveSimulationTwin } from './digitalTwin/LiveSimulationTwin';
+import { MemoryGraphVisual } from './digitalTwin/MemoryGraphVisual';
+import { CityOperatingSystem } from './digitalTwin/CityOperatingSystem';
+import { SwarmNegotiationHUD } from './hud/SwarmNegotiationHUD';
 
 interface AdminViewProps {
     user: User;
@@ -17,7 +24,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [routes, setRoutes] = useState<RouteDefinition[]>([]);
-    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'TICKETS' | 'PRICING' | 'ERRORS'>('DASHBOARD');
+    const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'APPROVALS' | 'USERS' | 'ROUTES' | 'TICKETS' | 'PRICING' | 'ERRORS' | 'DRONES' | 'SIMULATION'>('DASHBOARD');
     const [search, setSearch] = useState('');
 
     // Route Create State
@@ -236,6 +243,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                     <button onClick={() => setActiveTab('ERRORS')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'ERRORS' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
                         <Bug size={18} /> <span className="font-bold text-sm">Errors</span>
                         {errorAnalytics?.summary?.total > 0 && <span className="bg-luxe-gold text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-auto">{errorAnalytics.summary.total}</span>}
+                    </button>
+                    <button onClick={() => setActiveTab('DRONES')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'DRONES' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                        <Car size={18} /> <span className="font-bold text-sm">Drone Fleet</span>
+                    </button>
+                    <button onClick={() => setActiveTab('SIMULATION')} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'SIMULATION' ? 'bg-luxe-sienna text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400'}`}>
+                        <Activity size={18} /> <span className="font-bold text-sm">Digital Twin</span>
                     </button>
 
                     <div className="mt-auto pt-4">
@@ -683,6 +696,35 @@ export const AdminView: React.FC<AdminViewProps> = ({ user }) => {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'DRONES' && (
+                        <div className="p-6 space-y-6 max-h-[85vh] overflow-y-auto w-full text-white">
+                            <ControlCenterMap />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                                <div className="lg:col-span-2">
+                                    <DroneFleetStatus />
+                                </div>
+                                <div className="lg:col-span-1">
+                                    <SwarmNegotiationHUD />
+                                </div>
+                            </div>
+                            <div className="mt-6">
+                                <ChargingDockPanel />
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'SIMULATION' && (
+                        <div className="p-6 space-y-6 max-h-[85vh] overflow-y-auto w-full text-white">
+                            <LiveSimulationTwin />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                                <div className="lg:col-span-2">
+                                    <CityOperatingSystem />
+                                </div>
+                                <div className="lg:col-span-1">
+                                    <MemoryGraphVisual />
+                                </div>
                             </div>
                         </div>
                     )}

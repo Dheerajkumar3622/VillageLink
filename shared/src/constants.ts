@@ -1,5 +1,4 @@
-import { Stop, NetworkNode, LocationData, RentalVehicle, MediaItem } from '@villagelink/shared';
-import { API_BASE_URL } from './config';
+import { Stop, NetworkNode, LocationData, RentalVehicle, MediaItem } from './types';
 
 export const GOOGLE_API_KEY = "";
 export const ROHTAS_MAP_URL = "";

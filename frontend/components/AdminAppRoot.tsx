@@ -45,7 +45,7 @@ const AdminAppRoot: React.FC = () => {
                     <p className="text-sm text-slate-400 font-medium">Please login with an Admin account</p>
                 </div>
                 <div className="w-full max-w-md bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-700 relative z-10">
-                    <AuthView onSuccess={handleLoginSuccess} lang={'EN'} />
+                    <AuthView onSuccess={handleLoginSuccess} lang={'EN'} initialRole="ADMIN" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-luxe-sienna/10 to-transparent pointer-events-none z-0"></div>
             </div>

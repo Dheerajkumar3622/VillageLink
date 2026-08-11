@@ -215,6 +215,9 @@ async function flushQueue(): Promise<void> {
     const batch = [...errorQueue];
     errorQueue = [];
 
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
+
     try {
         const token = getAuthToken();
         await fetch(`${API_BASE_URL}/api/errors/report`, {
@@ -223,17 +226,27 @@ async function flushQueue(): Promise<void> {
                 'Content-Type': 'application/json',
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             },
-            body: JSON.stringify({ errors: batch })
+            body: JSON.stringify({ errors: batch }),
+            signal: controller?.signal
         });
+        if (timeoutId) clearTimeout(timeoutId);
+        try { localStorage.removeItem('errorQueue'); } catch (e) { }
     } catch (err) {
-        // Re-queue on failure
-        errorQueue = [...batch, ...errorQueue].slice(0, CONFIG.MAX_QUEUE_SIZE);
+        if (timeoutId) clearTimeout(timeoutId);
+        // Increment retry count and discard stale/over-retried errors
+        const now = Date.now();
+        const validBatch = batch
+            .map(e => ({ ...e, retryCount: ((e as any).retryCount || 0) + 1 }))
+            .filter(e => e.retryCount <= 2 && (now - e.timestamp) < 3600000);
 
-        // Store in localStorage for later sync
-        try {
-            const stored = JSON.parse(localStorage.getItem('errorQueue') || '[]');
-            localStorage.setItem('errorQueue', JSON.stringify([...stored, ...batch].slice(-50)));
-        } catch (e) { }
+        if (validBatch.length > 0) {
+            errorQueue = [...validBatch, ...errorQueue].slice(0, CONFIG.MAX_QUEUE_SIZE);
+            try {
+                localStorage.setItem('errorQueue', JSON.stringify(validBatch));
+            } catch (e) { }
+        } else {
+            try { localStorage.removeItem('errorQueue'); } catch (e) { }
+        }
     }
 }
 
@@ -517,15 +530,21 @@ export function initErrorReporting(): void {
         flushQueue();
     });
 
-    // Sync any stored errors from previous sessions
+    // Sync any valid stored errors from previous sessions (auto-purge stale ones)
     try {
         const stored = JSON.parse(localStorage.getItem('errorQueue') || '[]');
-        if (stored.length > 0) {
-            errorQueue = [...errorQueue, ...stored];
+        const now = Date.now();
+        const freshStored = stored.filter((e: any) => e && (now - (e.timestamp || 0)) < 3600000 && ((e as any).retryCount || 0) <= 2);
+        if (freshStored.length > 0) {
+            errorQueue = [...errorQueue, ...freshStored];
             localStorage.removeItem('errorQueue');
             flushQueue();
+        } else {
+            localStorage.removeItem('errorQueue');
         }
-    } catch (e) { }
+    } catch (e) {
+        try { localStorage.removeItem('errorQueue'); } catch (err) { }
+    }
 
     isInitialized = true;
     console.log('[ErrorReporting] Initialized');

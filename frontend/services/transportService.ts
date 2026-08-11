@@ -226,6 +226,33 @@ export const getStoredTickets = (): Ticket[] => {
     return localTickets;
 };
 
+export const syncTicketsFromServer = async (userId: string): Promise<Ticket[]> => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/ticket/my-tickets?limit=50`, {
+            headers: getHeaders()
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const serverTickets = [...(data.active || []), ...(data.past || [])];
+            
+            const localMap = new Map<string, Ticket>();
+            getStoredTickets().forEach(t => localMap.set(t.id, t));
+            
+            serverTickets.forEach((st: any) => {
+                localMap.set(st.id, st);
+            });
+            
+            localTickets = Array.from(localMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            persistTicketsToStorage();
+            window.dispatchEvent(new Event('tickets_changed'));
+            return localTickets;
+        }
+    } catch (e) {
+        console.error("Failed to sync tickets from server:", e);
+    }
+    return getStoredTickets();
+};
+
 export const getActiveBuses = (): BusState[] => {
     return activeBuses;
 };
@@ -754,3 +781,100 @@ export const checkKinematicLock = (ticket: Ticket, driverSpeed: number, passenge
 
     return TicketStatus.PROVISIONAL;
 };
+
+/**
+ * Universal Dynamic Google Polyline + OSM 4.75 Lakh Node Intersection Service
+ */
+export const fetchLiveCorridorNodes = async (polylinePoints: Array<{ lat: number; lng: number }>, bufferKm = 0.8) => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/vnis/corridor/snap-polyline`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ polylinePoints, bufferKm, speedKmH: 40, minNodeSpacingMeters: 150 })
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            return json.data;
+        }
+        return null;
+    } catch (e) {
+        console.warn('Live Corridor Node fetch error:', e);
+        return null;
+    }
+};
+
+/**
+ * Phase 1: GPS Probe Telemetry Batch Sender
+ */
+export const sendTrajectoryProbeBatch = async (driverId: string, tripId: string, probePoints: Array<{ lat: number; lng: number; speed?: number; heading?: number; timestamp?: number }>) => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/vnis/telemetry/probe-batch`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ driverId, tripId, probePoints })
+        });
+        return res.ok;
+    } catch (e) {
+        return false;
+    }
+};
+
+/**
+ * Phase 2: DBSCAN Auto-Discovered Clusters Fetcher
+ */
+export const fetchAutoDiscoveredClusters = async (minSpeed = 15, eps = 35, minPts = 3) => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/vnis/telemetry/auto-clusters?minSpeed=${minSpeed}&eps=${eps}&minPts=${minPts}`, {
+            headers: getHeaders()
+        });
+        const json = await res.json();
+        if (json.success && json.clusters) {
+            return json.clusters;
+        }
+        return [];
+    } catch (e) {
+        return [];
+    }
+};
+
+/**
+ * Phase 3: HMM Map Match Trajectory Snapper
+ */
+export const snapHMMTrajectory = async (rawTrajectoryPoints: Array<{ lat: number; lng: number }>, centerlinePolyline: Array<{ lat: number; lng: number }>) => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/vnis/telemetry/hmm-snap`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ rawTrajectoryPoints, centerlinePolyline })
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            return json.data;
+        }
+        return rawTrajectoryPoints;
+    } catch (e) {
+        return rawTrajectoryPoints;
+    }
+};
+
+/**
+ * Feeder T-Junction & Y-Junction Village Allocation Fetcher
+ */
+export const fetchJunctionVillageAllocation = async (polyline: Array<{ lat: number; lng: number }>, maxFeederRadiusKm: number = 3.0) => {
+    try {
+        const res = await fetch(`${SERVER_URL}/api/vnis/corridor/allocate-junctions`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ polyline, maxFeederRadiusKm })
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+            return json.data;
+        }
+        return null;
+    } catch (e) {
+        console.error('Junction Allocation Fetch Err:', e);
+        return null;
+    }
+};
+

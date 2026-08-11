@@ -21,6 +21,7 @@ const LuxeOSView = lazy(() => import('./LuxeOSView').then(m => ({ default: m.Lux
 const VillageManagerView = lazy(() => import('./VillageManagerView'));
 const KisanApp = lazy(() => import('./KisanApp'));
 const UserProfile = lazy(() => import('./UserProfile').then(m => ({ default: m.UserProfile })));
+const SmartStopPanel = lazy(() => import('./SmartStopPanel').then(m => ({ default: m.SmartStopPanel })));
 
 // Provider Apps - Separate entry points
 const DriverApp = lazy(() => import('./DriverApp').then(m => ({ default: m.DriverApp })));
@@ -36,9 +37,10 @@ const UserApp = lazy(() => import('./UserApp'));
 const ProviderApp = lazy(() => import('./ProviderApp'));
 
 // Check if accessing a dedicated provider app URL
-type AppMode = 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USS_USER' | 'USS_PROVIDER' | 'VILLAGE_MANAGER' | 'USER';
+type AppMode = 'KISAN' | 'DRIVER' | 'VYAPARI' | 'MESS' | 'STORAGE' | 'LOGISTICS' | 'CARGO' | 'USS_USER' | 'USS_PROVIDER' | 'VILLAGE_MANAGER' | 'USER' | 'KIOSK';
 const getAppMode = (): AppMode => {
   const path = window.location.pathname.toLowerCase();
+  if (path.startsWith('/kiosk') || path.startsWith('/stop-kiosk')) return 'KIOSK';
   // USS v3.0 unified app routes
   if (path.startsWith('/app') || path.startsWith('/consumer')) return 'USS_USER';
   if (path.startsWith('/provider') || path.startsWith('/partner')) return 'USS_PROVIDER';
@@ -215,6 +217,16 @@ const App: React.FC = () => {
       <Suspense fallback={<ViewSkeleton />}>
         <CargoShipmentView user={user || mockUser} />
       </Suspense>
+    );
+  }
+
+  if (appMode === 'KIOSK') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <Suspense fallback={<ViewSkeleton />}>
+          <SmartStopPanel stopId="STOP_MAIN" />
+        </Suspense>
+      </div>
     );
   }
 

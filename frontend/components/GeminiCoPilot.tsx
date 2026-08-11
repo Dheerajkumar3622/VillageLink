@@ -85,9 +85,7 @@ export const GeminiCoPilot: React.FC<GeminiCoPilotProps> = ({ onBookingExtracted
             
             if (data.extracted && data.extracted.source && data.extracted.destination) {
                 onBookingExtracted(data.extracted);
-                if (data.tts) {
-                    playTTS(data.tts);
-                }
+                playTTS(data.tts, data.ttsText);
             }
         } catch (error) {
             console.error('Error processing audio:', error);
@@ -120,9 +118,7 @@ export const GeminiCoPilot: React.FC<GeminiCoPilotProps> = ({ onBookingExtracted
                 onBookingExtracted(data.extracted);
                 setShowTextInput(false);
                 setTextQuery('');
-                if (data.tts) {
-                    playTTS(data.tts);
-                }
+                playTTS(data.tts, data.ttsText);
             } else {
                 setTranscript('Could not detect stops. Try saying: "Basantpur se Sasaram ek ticket"');
             }
@@ -133,18 +129,25 @@ export const GeminiCoPilot: React.FC<GeminiCoPilotProps> = ({ onBookingExtracted
         }
     };
 
-    const playTTS = (base64Audio: string) => {
+    const playTTS = (base64Audio?: string, text?: string) => {
         try {
-            setTtsResponse(base64Audio);
-            const snd = new Audio("data:audio/mp3;base64," + base64Audio);
-            snd.play();
+            if (base64Audio) {
+                setTtsResponse(base64Audio);
+                const snd = new Audio("data:audio/mp3;base64," + base64Audio);
+                snd.play();
+            } else if (text && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'hi-IN';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
         } catch (e) {
             console.warn('TTS playback failed:', e);
         }
     };
 
     return (
-        <div className="gemini-copilot-container w-full relative z-[100] mt-3">
+        <div className="gemini-copilot-container w-full relative mt-3">
             <div className="liquid-glass-card p-4 rounded-2xl border border-white/10 flex flex-col items-center gap-3 backdrop-blur-2xl bg-black/40">
                 <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">

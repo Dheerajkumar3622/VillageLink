@@ -30,6 +30,24 @@ export class RoutingService {
     this.activeEngine = engine;
   }
 
+  /**
+   * VNIS Layer 2 Corridor Snapping: Intersects route polyline with 4,75,014 Village Nodes
+   */
+  public async getVNISCorridorSequence(polylinePoints: Array<{ lat: number; lng: number }>, bufferKm = 0.8) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vnis/corridor/snap-polyline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ polylinePoints, bufferKm })
+      });
+      const data = await res.json();
+      return data.success ? data.data : null;
+    } catch (e) {
+      console.warn('[RoutingService] VNIS Corridor Snapping Error:', e);
+      return null;
+    }
+  }
+
   private calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371e3; // metres
     const phi1 = lat1 * Math.PI/180;

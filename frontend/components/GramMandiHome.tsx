@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '@villagelink/shared';
 import { API_BASE_URL } from '../config';
 import { getAuthToken } from '../services/authService';
@@ -1163,8 +1164,13 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
             </div>
 
             {/* Address Verification Prompt Modal */}
-            {showAddressPrompt && (
-                <div className="fixed inset-0 z-[140] flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
+            {showAddressPrompt && createPortal(
+                <div 
+                    className="fixed inset-0 z-[140] flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                >
                     <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-slide-up">
                         <div className="flex justify-between items-start mb-4">
                             <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2">
@@ -1199,7 +1205,8 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Generated Invoice & QR Success Overlay */}
@@ -1645,8 +1652,13 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
             `}</style>
 
             {/* Order Details Drawer/Modal */}
-            {selectedOrderDetail && (
-                <div className="fixed inset-0 z-[150] bg-slate-900/65 backdrop-blur-sm flex items-end justify-center p-4 animate-fade-in">
+            {selectedOrderDetail && createPortal(
+                <div 
+                    className="fixed inset-0 z-[150] bg-slate-900/65 backdrop-blur-sm flex items-end justify-center p-4"
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                >
                     <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[32px] p-6 shadow-2xl border border-slate-100 dark:border-slate-800/80 animate-slide-up max-h-[90vh] flex flex-col overflow-hidden">
                         {/* Header */}
                         <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -1892,12 +1904,18 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Dispute Claim Modal */}
-            {showDisputeModal && selectedOrderDetail && (
-                <div className="fixed inset-0 z-[160] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+            {showDisputeModal && selectedOrderDetail && createPortal(
+                <div 
+                    className="fixed inset-0 z-[160] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                >
                     <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[32px] p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-slide-up">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-black text-slate-855 dark:text-white">Produce Quality Claim</h3>
@@ -1939,13 +1957,19 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             <ShieldCheck size={16} /> Submit Instant Refund Claim
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Support Chat Drawer/Modal */}
-            {showSupportChat && selectedOrderDetail && (
-                <div className="fixed inset-0 z-[170] bg-slate-900/60 backdrop-blur-sm flex justify-end p-4 animate-fade-in">
-                    <div className="bg-white dark:bg-slate-950 w-full max-w-md h-full flex flex-col shadow-2xl rounded-3xl animate-slide-left overflow-hidden">
+            {showSupportChat && selectedOrderDetail && createPortal(
+                <div 
+                    className="fixed inset-0 z-[170] bg-slate-900/60 backdrop-blur-sm flex justify-end p-4"
+                    onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                >
+                    <div className="bg-white dark:bg-slate-955 w-full max-w-md h-full flex flex-col shadow-2xl rounded-3xl animate-slide-left overflow-hidden">
                         {/* Header */}
                         <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/40">
                             <div className="flex items-center gap-2.5">
@@ -2011,7 +2035,8 @@ export const GramMandiHome: React.FC<GramMandiHomeProps> = ({ user, onBack }) =>
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

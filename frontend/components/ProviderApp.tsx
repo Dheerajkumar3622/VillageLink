@@ -383,7 +383,7 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                     </p>
                     
                     <Button
-                        variant="glow"
+                        variant="primary"
                         onClick={onLogout}
                         className="w-full py-3 rounded-2xl font-bold bg-rose-600 hover:bg-rose-500 border-none text-white"
                     >
@@ -442,14 +442,11 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <LanguageSelector />
                     <ProfilePill
                         name={user?.name || 'Provider'}
                         balance={user?.walletBalance || 0}
                         onClick={() => {
-                            if (activeRole === 'DRIVER') {
-                                setShowDriverProfile(true);
-                            }
+                            setShowDriverProfile(true);
                         }}
                     />
                     <button className="relative w-10 h-10 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl flex items-center justify-center hover:border-[var(--border-glow)] transition-colors" title="Notifications">
@@ -463,26 +460,12 @@ const ProviderApp: React.FC<ProviderAppProps> = ({ user, onLogout }) => {
                 </div>
             </header>
 
-            {/* Stats Bar */}
-            <div className="grid grid-cols-3 gap-3 px-5 my-4">
-                {[
-                    { label: 'Today', value: `₹${earnings.today}`, icon: <Wallet size={12} />, color: 'var(--accent-primary)' },
-                    { label: 'Weekly', value: `₹${earnings.week}`, icon: <Sparkles size={12} />, color: 'var(--accent-secondary)' },
-                    { label: 'Pending', value: pendingOrders, icon: <Package size={12} />, color: 'var(--accent-warm)' }
-                ].map((stat, i) => (
-                    <div key={i} className="v5-card p-3 flex flex-col items-center justify-center bg-white/5">
-                        <ColorStat value={stat.value} color={stat.color} />
-                        <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider mt-0.5 font-bold">{stat.label}</span>
-                    </div>
-                ))}
-            </div>
-
             {/* Main Content */}
-            {showDriverProfile && activeRole === 'DRIVER' && user && (
+            {showDriverProfile && user && (
                 <DriverProfileModal user={user} onClose={() => setShowDriverProfile(false)} />
             )}
             
-            <main className="v5-scroll-view flex-1 pb-24 relative z-10 px-5">
+            <main className="v5-scroll-view flex-1 pb-24 relative z-10 px-2.5 sm:px-5 flex flex-col w-full max-w-full overflow-x-hidden">
                 {renderContent()}
             </main>
 
@@ -608,7 +591,7 @@ const SettingsView: React.FC<{ user: User; onLogout: () => void }> = ({ user, on
     </div>
 );
 
-// Provider Nav Item Component
+// Provider Nav Item Component - High Contrast Whisk 3.0
 const ProviderNavItem: React.FC<{
     icon: React.ReactNode;
     label: string;
@@ -617,18 +600,18 @@ const ProviderNavItem: React.FC<{
     badge?: number;
 }> = ({ icon, label, active, onClick, badge }) => (
     <button
-        className={`v5-nav-item ${active ? 'active' : ''}`}
+        className={`v5-nav-item transition-all ${active ? 'active scale-105' : 'opacity-70 hover:opacity-100'}`}
         onClick={onClick}
     >
         <div className="relative">
-            <span className={`text-xl ${active ? 'opacity-100' : 'opacity-40'}`}>{icon}</span>
+            <span className={`text-xl transition-all ${active ? 'text-[#FFCE1B] drop-shadow-[0_0_10px_rgba(255,206,27,0.5)]' : 'text-slate-300'}`}>{icon}</span>
             {badge && badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--accent-hot)] rounded-full text-[8px] font-bold flex items-center justify-center text-white">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[9px] font-black flex items-center justify-center text-white shadow-md">
                     {badge > 9 ? '9+' : badge}
                 </span>
             )}
         </div>
-        <span className={`text-[10px] font-semibold mt-1 ${active ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'}`}>
+        <span className={`text-[11px] font-black mt-1 tracking-wider uppercase transition-colors ${active ? 'text-[#FFCE1B]' : 'text-slate-300'}`}>
             {label}
         </span>
     </button>
