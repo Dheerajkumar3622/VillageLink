@@ -6,6 +6,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
+import { PRODUCTION_BACKEND_URL, getBackendUrl } from '../config/domainConfig.js';
 import express from 'express';
 import http from 'http';
 import path from 'path';
@@ -286,8 +287,8 @@ app.get('/api/health', async (req, res) => {
 
 function startKeepAlive() {
     // Priority: Environment Variable -> Production Fallback -> Localhost
-    const PRODUCTION_URL = 'https://villagelink-jh20.onrender.com';
-    const serverUrl = process.env.RENDER_EXTERNAL_URL || PRODUCTION_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const PRODUCTION_URL = PRODUCTION_BACKEND_URL;
+    const serverUrl = getBackendUrl() || `http://localhost:${process.env.PORT || 3001}`;
     
     console.log(`⏰ Keep-Alive Service started (interval: ${KEEP_ALIVE_INTERVAL / 60000} min)`);
     console.log(`📡 Target URL: ${serverUrl}`);

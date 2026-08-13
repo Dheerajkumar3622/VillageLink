@@ -112,7 +112,7 @@ Everyone
 
 ## Privacy Policy URL
 
-<https://villagelink-jh20.onrender.com/privacy-policy.html>
+<https://backendlink-0xjs.onrender.com/privacy-policy.html>
 
 ---
 

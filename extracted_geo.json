@@ -23,8 +23,8 @@
          ======================================== -->
 
   <!-- Preconnect to backend API for faster first request -->
-  <link rel="preconnect" href="https://village-back-beta.onrender.com" crossorigin>
-  <link rel="dns-prefetch" href="https://village-back-beta.onrender.com">
+  <link rel="preconnect" href="https://backendlink-0xjs.onrender.com" crossorigin>
+  <link rel="dns-prefetch" href="https://backendlink-0xjs.onrender.com">
 
   <!-- Critical CSS - Inlined for instant first paint -->
   <!-- CSS handled by Vite auto-injection -->

@@ -1,24 +1,31 @@
 
-// --- APP CONFIGURATION ---
+// --- UNIVERSAL APP BACKEND CONFIGURATION ---
 
-// Production backend URL
-const PRODUCTION_BACKEND = 'https://backendlink-0xjs.onrender.com';
+// Fixed Single Source of Truth Production Backend Domain
+export const PRODUCTION_BACKEND_URL = 'https://backendlink-0xjs.onrender.com';
 
-const getBaseUrl = () => {
-    // If local dev server (localhost, 127.0.0.1, or local LAN IP) or flag set, use local backend
+/**
+ * Universal function to get the current active Backend Domain / Base URL.
+ * Automatically respects VITE_API_URL environment variable, local dev server detection, or production default.
+ */
+export const getBackendUrl = (): string => {
+    if (import.meta.env?.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
+    }
     if (typeof window !== 'undefined') {
         const host = window.location.hostname;
         if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.')) {
             return `http://${host}:3001`;
         }
     }
-    if (import.meta.env.VITE_USE_LOCAL_BACKEND === 'true' && import.meta.env.VITE_API_URL) {
+    if (import.meta.env?.VITE_USE_LOCAL_BACKEND === 'true' && import.meta.env?.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
 
-    // Fixed Permanent Production Backend
-    return PRODUCTION_BACKEND;
+    return PRODUCTION_BACKEND_URL;
 };
 
-export const API_BASE_URL = getBaseUrl();
- 
+export const getBaseUrl = getBackendUrl;
+export const API_BASE_URL = getBackendUrl();
+export default getBackendUrl;
+

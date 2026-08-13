@@ -45,13 +45,13 @@ export default defineConfig(({ mode }) => {
     },
     proxy: {
       '/socket.io': {
-        target: 'https://backendlink-0xjs.onrender.com',
+        target: env.VITE_API_URL || 'https://backendlink-0xjs.onrender.com',
         ws: true,
         changeOrigin: true,
         secure: true,
       },
       '/api': {
-        target: 'https://backendlink-0xjs.onrender.com',
+        target: env.VITE_API_URL || 'https://backendlink-0xjs.onrender.com',
         changeOrigin: true,
         secure: true,
       }

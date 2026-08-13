@@ -795,10 +795,9 @@ export const fetchLiveCorridorNodes = async (polylinePoints: Array<{ lat: number
             body: JSON.stringify({ polyline: polylinePoints, maxFeederRadiusKm: bufferKm })
         }).catch(() => null);
 
-        // Fallback to local server if Render production backend is sleeping or 404
+        // Fallback endpoint request using API_BASE_URL if Render primary endpoint returns non-200
         if (!res || !res.ok) {
-            const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-            apiUrl = `http://${host}:3001/api/vnis/geograph/fuse-route`;
+            apiUrl = `${API_BASE_URL}/api/vnis/geograph/fuse-route`;
             res = await fetch(apiUrl, {
                 method: 'POST',
                 headers: getHeaders(),
@@ -836,9 +835,8 @@ export const fetchLiveCorridorNodes = async (polylinePoints: Array<{ lat: number
             }
         }
 
-        // Fallback to local snap-polyline endpoint if fuse-route fails
-        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
-        const res2 = await fetch(`http://${host}:3001/api/vnis/corridor/snap-polyline`, {
+        // Fallback snap-polyline endpoint using API_BASE_URL if fuse-route fails
+        const res2 = await fetch(`${API_BASE_URL}/api/vnis/corridor/snap-polyline`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ polylinePoints, bufferKm, speedKmH: 40, minNodeSpacingMeters: 150 })

@@ -6,6 +6,7 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
+import { PRODUCTION_BACKEND_URL, getBackendUrl, getAllowedOrigins } from './config/domainConfig.js';
 import express from 'express';
 import http from 'http';
 import path from 'path';
@@ -219,7 +220,6 @@ const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDevice
 import { RT_EVENT, toRoom, normalizeRealtimePayload } from './services/realtimeContract.js';
 import { traceMiddleware } from './services/apiEnvelope.js';
 import { registerTransportV1Routes } from './routes/transportV1Routes.js';
-import vnisRoutes from './routes/vnisRoutes.js';
 
 const app = express();
 app.use('/api/vnis', vnisRoutes);
@@ -311,14 +311,7 @@ app.use('/api/', limiter);
 app.use(mongoSanitize());
 
 // 1000x Optimized CORS with Preflight Caching (maxAge: 86400)
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:8100',
-    'capacitor://localhost',
-    'http://localhost',
-    'https://backendlink-0xjs.onrender.com'
-];
+const allowedOrigins = getAllowedOrigins();
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -606,8 +599,8 @@ function startKeepAlive() {
         return;
     }
 
-    const PRODUCTION_URL = 'https://villagelink-jh20.onrender.com';
-    const serverUrl = process.env.RENDER_EXTERNAL_URL || PRODUCTION_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const PRODUCTION_URL = PRODUCTION_BACKEND_URL;
+    const serverUrl = getBackendUrl() || `http://localhost:${process.env.PORT || 3001}`;
 
     console.log(`⏰ Keep-Alive Service started (interval: ${KEEP_ALIVE_INTERVAL / 60000} min)`);
     console.log(`📡 Target URL: ${serverUrl}`);
