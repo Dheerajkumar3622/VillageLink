@@ -43,6 +43,7 @@
 - 2026-08-11: Hardened Resilient Authentication Engine (Firebase Phone Auth + Backend Dual-Engine Fallback, 300ms Instant OTP UI transition, 100% auto-fill payload, CORS dynamic origin reflection for credentials/LAN IPs, and ENFORCE_ORIGIN_SHIELD environment flag).
 - 2026-08-11: Implemented 100% Highway T-Junction & Y-Junction Feeder Village Allocator in VNIS (`vnisJunctionVillageAllocator.js`), connecting 4,75,014 interior villages to their exact highway boarding chowks ("Gaaw ka Mode") along driving route polylines.
 - 2026-08-13: Deployed latest scale optimizations, VNIS Multi-Criteria Routing Engine, 30-Phase Scientific Research & System Architecture Specifications, and pushed codebase to GitHub repositories (`origin` and `buildorigin`) for live Render deployment.
+- 2026-08-13: Centralized single source of truth Backend Domain configuration (`https://backendlink-0xjs.onrender.com`) across `getBackendUrl()` in `frontend/config.ts` and `backend/config/domainConfig.js`. Cleaned legacy domain references and pushed updates to GitHub repositories (`origin` and `buildorigin`) for live Render auto-deployment.
 
 
 
