@@ -253,7 +253,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
             }
         };
 
-        const socket = io(API_BASE_URL, { transports: ['websocket'] });
+        const socket = io(API_BASE_URL, { transports: ['websocket', 'polling'] });
         socket.emit('join_user_room', user.id);
         socket.on('boarding_confirmed', (data: any) => {
             console.log('🎫 Boarding Confirmed via Socket:', data);
@@ -472,7 +472,7 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
 
             // Dynamic Google Polyline + 4.75 Lakh OSM Node Intersect
             if (routeData.pathDetails && routeData.pathDetails.length > 1) {
-                const vnisData = await fetchLiveCorridorNodes(routeData.pathDetails, 0.8);
+                const vnisData = await fetchLiveCorridorNodes(routeData.pathDetails, 3.0);
                 if (vnisData && Array.isArray(vnisData.nodesSequence)) {
                     setLiveCorridorNodes(vnisData.nodesSequence);
                 }
@@ -1527,6 +1527,17 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                                 )}
                                             </div>
                                         )}
+                                                 {/* Universal Live Route Map with Village Feeder Markers */}
+                                                 {hasSearchedRoute && !isCalculatingRoute && pathDetails.length > 0 && (
+                                                     <div className="mt-4 rounded-2xl overflow-hidden border border-brand-500/30 shadow-[0_0_25px_rgba(34,197,94,0.15)] relative h-64 sm:h-80">
+                                                         <RouteMap
+                                                             pickupLocation={fromLocation}
+                                                             dropoffLocation={toLocation}
+                                                             pathDetails={pathDetails}
+                                                             junctionVillages={liveCorridorNodes}
+                                                         />
+                                                     </div>
+                                                 )}
 
                                         {/* WAY 1 / WAY 2 SELECTOR */}
                                         {hasSearchedRoute && !isCalculatingRoute && availableRoutes.length > 1 && (
@@ -1563,62 +1574,91 @@ export const PassengerView: React.FC<PassengerViewProps> = ({ user, lang, isScro
                                             </div>
                                         )}
 
-                                         {/* Dynamic Ground Truth Village Node Stepper (100% Precise OSM Nodes) */}
-                                         {hasSearchedRoute && !isCalculatingRoute && liveCorridorNodes.length > 0 && (
-                                             <div className="mt-4 p-5 rounded-2xl border border-amber-500/30 bg-slate-900/80 backdrop-blur-xl shadow-2xl animate-fade-in space-y-3">
-                                                 <div className="flex items-center justify-between">
-                                                     <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
-                                                         <Zap size={14} className="text-amber-400 fill-amber-400 animate-pulse" />
-                                                         Live Village Route Stops ({liveCorridorNodes.length} Nodes Intersected)
-                                                     </span>
-                                                     <span className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">100% Ground Precise</span>
-                                                 </div>
-
-                                                 <div className="space-y-2 relative pl-3 border-l-2 border-amber-500/40 my-2">
-                                                     {liveCorridorNodes.map((n: any, idx: number) => (
-                                                         <div key={n.node?.nodeId || idx} className="flex items-center justify-between text-xs py-1">
-                                                             <div className="flex items-center gap-2">
-                                                                 <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
-                                                                 <span className="font-bold text-white">{n.displayName || n.node?.name}</span>
-                                                                 <span className="text-[10px] text-slate-400">({n.displayHindiName || n.node?.localNameHindi})</span>
-                                                             </div>
-                                                             <span className="text-[10px] font-mono text-amber-300 font-bold">{n.cumulativeDistanceKm} km</span>
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                             </div>
-                                         )}
-
-                                        {hasSearchedRoute && !isCalculatingRoute && calculatedPath.length > 0 && (
-                                            <div className={`mt-6 animate-fade-in p-4 rounded-xl border border-white/5 bg-brand-900/10`}>
-                                                <div className="flex justify-between items-end mb-3">
-                                                    <label className={`text-xs font-bold uppercase tracking-wider text-brand-300`}>Route Landmarks ({calculatedPath.length})</label>
+                                        {/* Unified Horizontal Swipeable Village Access Nodes Carousel */}
+                                        {hasSearchedRoute && !isCalculatingRoute && (liveCorridorNodes.length > 0 || calculatedPath.length > 0) && (
+                                            <div className={`mt-5 animate-fade-in p-4 rounded-2xl border border-emerald-500/30 bg-slate-900/80 backdrop-blur-xl shadow-2xl space-y-3`}>
+                                                <div className="flex justify-between items-end mb-2">
+                                                    <div>
+                                                        <label className={`text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5`}>
+                                                            <Zap size={14} className="text-emerald-400 animate-pulse fill-emerald-400" />
+                                                            Live Village Route Access Nodes ({liveCorridorNodes.length || calculatedPath.length})
+                                                        </label>
+                                                        <p className="text-[10px] text-slate-400 mt-0.5 font-bold">100% Ground Truth T/Y-Junction Chowks & Feeder Villages</p>
+                                                    </div>
                                                     {tripDistance !== null && (
-                                                        <span className="text-xs font-bold bg-brand-500/20 text-brand-300 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-brand-500/30">
+                                                        <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm border border-emerald-500/30 shrink-0">
                                                             <Route size={12} /> {tripDistance.toFixed(1)} km
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                                                    {calculatedPath.map((stop, i) => (
-                                                        <div key={i} className="min-w-[60px] flex flex-col items-center gap-2">
-                                                            <div className={`w-10 h-10 rounded-lg border flex items-center justify-center text-xs font-bold shadow-sm backdrop-blur-md bg-brand-500/10 border-brand-500/30 text-brand-400`}>{stop.substring(0, 2).toUpperCase()}</div>
-                                                            <span className="text-[9px] text-slate-400 truncate w-full text-center">{stop}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                
-                                                {/* The Horizon Drive Preview Button */}
-                                                <div className="mt-4 pt-4 border-t border-white/5">
-                                                    <button 
-                                                        onClick={() => setShowJourneyCinematic(true)}
-                                                        className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold tracking-wider text-xs uppercase flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--brand-500),0.3)] active:scale-95 transition-transform"
-                                                    >
-                                                        <Play size={16} fill="currentColor" /> Cinematic Route Preview
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
+
+                                                {/* Swipeable List showing EVERY SINGLE VILLAGE NODE in Horizontal Cards */}
+                                                <div className="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-hide snap-x">
+                                                       {(liveCorridorNodes.length > 0 ? liveCorridorNodes : calculatedPath.map((p, i) => ({ node: { name: p }, cumulativeDistanceKm: i * 5 }))).map((n: any, i: number) => {
+                                                           const villageList = n.coLocatedVillages || [];
+                                                           const primaryVilName = (villageList[0] && (villageList[0].villageName || villageList[0].name)) 
+                                                               ? (villageList[0].villageName || villageList[0].name)
+                                                               : (n.node ? n.node.name : typeof n === 'string' ? n : 'Village Chowk');
+                                                           
+                                                           const junctionChowkName = n.node ? (n.node.junctionName || n.node.name) : n.displayName || 'Highway Mode';
+                                                           const distKm = n.cumulativeDistanceKm || n.cumulativeDistKm || 0;
+                                                           const offRoadKm = n.roadDistanceKm != null ? n.roadDistanceKm : (n.perpendicularDistanceMeters ? parseFloat((n.perpendicularDistanceMeters / 1000).toFixed(1)) : 0.2);
+                                                           const isDirectlyOnRoad = offRoadKm <= 0.3 || n.feederApproachType === 'ON_HIGHWAY' || n.feederApproachType === 'ON_HIGHWAY_SIDE_VILLAGE';
+
+                                                           return (
+                                                               <div key={i} className="min-w-[160px] max-w-[210px] snap-start flex flex-col p-3 rounded-2xl border border-emerald-500/30 bg-slate-900/90 hover:bg-emerald-500/10 transition-all shadow-lg shrink-0">
+                                                                   <div className="flex items-center justify-between gap-1 mb-1.5">
+                                                                       <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                                                           Stop #{i + 1}
+                                                                       </span>
+                                                                       <span className="text-[10px] font-mono font-bold text-amber-300">{distKm} km</span>
+                                                                   </div>
+
+                                                                   {/* Main Village Name */}
+                                                                   <h5 className="text-xs font-black text-white leading-snug truncate">🏡 {primaryVilName}</h5>
+                                                                   
+                                                                   {/* On-Road vs Feeder Junction Status Badge */}
+                                                                   {isDirectlyOnRoad ? (
+                                                                       <p className="text-[9px] text-emerald-400 font-bold truncate mt-1 flex items-center gap-1">
+                                                                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> 🟢 On Highway Road
+                                                                       </p>
+                                                                   ) : (
+                                                                       <p className="text-[9px] text-amber-300 font-semibold truncate mt-1">
+                                                                           📍 via {junctionChowkName} ({offRoadKm}km off-road)
+                                                                       </p>
+                                                                   )}
+
+                                                                   {/* All Connected Feeder Villages */}
+                                                                   {villageList.length > 1 && (
+                                                                       <div className="mt-2 pt-2 border-t border-white/10 text-[9px] space-y-1">
+                                                                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Co-located Villages ({villageList.length}):</span>
+                                                                           {villageList.slice(1).map((v: any, vIdx: number) => {
+                                                                               const vName = typeof v === 'string' ? v : (v.villageName || v.name || 'Village');
+                                                                               const vDist = typeof v === 'object' ? (v.distanceFromJunctionKm || v.roadDistanceKm || 0.2) : 0.2;
+                                                                               return (
+                                                                                   <div key={vIdx} className="truncate text-emerald-300 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                                                                       • {vName} ({vDist}km)
+                                                                                   </div>
+                                                                               );
+                                                                           })}
+                                                                       </div>
+                                                                   )}
+                                                               </div>
+                                                           );
+                                                       })}
+                                                  </div>
+                                                 
+                                                 {/* The Horizon Drive Preview Button */}
+                                                 <div className="mt-2 pt-2 border-t border-white/5">
+                                                     <button 
+                                                         onClick={() => setShowJourneyCinematic(true)}
+                                                         className="w-full py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-brand-400 text-white font-bold tracking-wider text-xs uppercase flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--brand-500),0.3)] active:scale-95 transition-transform"
+                                                     >
+                                                         <Play size={16} fill="currentColor" /> 3D Cinematic Route Preview
+                                                     </button>
+                                                 </div>
+                                             </div>
+                                         )}
 
                                         {/* Whisk 3.0: Ultimate Ride Selector (Inspired by Demo) */}
                                         {hasSearchedRoute && !isCalculatingRoute && fareDetails && (

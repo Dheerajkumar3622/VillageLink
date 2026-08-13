@@ -1,8 +1,9 @@
+// @ts-ignore
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
 
 // The directory where we will store the offline routing graphs
-const OFFLINE_ROUTING_DIR = FileSystem.documentDirectory + 'routing_data/';
+const OFFLINE_ROUTING_DIR = (FileSystem?.documentDirectory || '') + 'routing_data/';
 
 /**
  * Ensures the routing data directory exists.
@@ -32,7 +33,7 @@ export const downloadRoutingGraph = async (areaId: string, backendUrl: string): 
             backendUrl,
              localFilePath,
              {},
-             (downloadProgress) => {
+             (downloadProgress: any) => {
                  const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
                  console.log(`[RoutingCache] Download progress: ${(progress * 100).toFixed(2)}%`);
              }

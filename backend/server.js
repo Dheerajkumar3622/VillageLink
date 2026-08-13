@@ -219,8 +219,10 @@ const { storeErrors, getErrorAnalytics, getRecentErrors, resolveError, getDevice
 import { RT_EVENT, toRoom, normalizeRealtimePayload } from './services/realtimeContract.js';
 import { traceMiddleware } from './services/apiEnvelope.js';
 import { registerTransportV1Routes } from './routes/transportV1Routes.js';
+import vnisRoutes from './routes/vnisRoutes.js';
 
 const app = express();
+app.use('/api/vnis', vnisRoutes);
 
 app.use((req, res, next) => {
     const start = Date.now();

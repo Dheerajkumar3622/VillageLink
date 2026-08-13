@@ -86,8 +86,8 @@ export const VectorRouteMap: React.FC<VectorRouteMapProps> = ({
             if (progress > 1) progress = 1;
 
             const smoothDist = smoothCoordinate(
-                { lat: startPos.lat, lng: startPos.lng },
-                { lat: endPos.lat, lng: endPos.lng },
+                [startPos.lat, startPos.lng],
+                [endPos.lat, endPos.lng],
                 progress
             );
             
@@ -98,8 +98,8 @@ export const VectorRouteMap: React.FC<VectorRouteMapProps> = ({
             const currentHeading = (startPos.heading || 0) + rawHeadingDiff * progress;
 
             setDisplayPos({
-                lat: smoothDist.lat,
-                lng: smoothDist.lng,
+                lat: smoothDist[0],
+                lng: smoothDist[1],
                 heading: currentHeading,
                 speed: endPos.speed,
                 isStationary: endPos.isStationary,

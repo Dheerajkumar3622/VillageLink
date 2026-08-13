@@ -15,7 +15,10 @@
     "dev:frontend": "npm run --workspace=frontend dev",
     "dev:host": "npm run --workspace=frontend dev:host",
     "dev:backend": "npm run --workspace=backend dev",
-    "dev:full": "concurrently -n api,web -c blue,magenta \"npm run dev:backend\" \"wait-on tcp:127.0.0.1:3001 && npm run dev:host\""
+    "dev:full": "concurrently -n api,web -c blue,magenta \"npm run dev:backend\" \"wait-on tcp:127.0.0.1:3001 && npm run dev:host\"",
+    "nvidia:test": "node scripts/nvidia_opencode_helper.js --test",
+    "nvidia:audit": "node scripts/nvidia_code_audit.js",
+    "nvidia:self-heal": "node scripts/self_healing_code.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

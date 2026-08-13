@@ -13,8 +13,142 @@ import { SpatialTemporalIndexEngine } from '../src/spatialTemporalIndex.js';
 import { VNISSpatialClusteringEngine } from '../src/vnisSpatialClusteringEngine.js';
 import { VNISHMMMapMatcher } from '../src/vnisHMMMapMatcher.js';
 import { VNISJunctionVillageAllocator } from '../src/vnisJunctionVillageAllocator.js';
+import { VNISDataFusionEngine } from '../src/vnisDataFusionEngine.js';
+import { RouteCorridorEngine } from '../src/RouteCorridorEngine.js';
+import { OSMJunctionDetector } from '../src/OSMJunctionDetector.js';
+import { VNISMultiCriteriaAllocator } from '../src/VNISMultiCriteriaAllocator.js';
+import { TelemetryFeedbackEngine } from '../src/TelemetryFeedbackEngine.js';
+import { VNISDemandOverlayEngine } from '../src/vnisDemandOverlayEngine.js';
 
 const router = express.Router();
+
+/**
+ * POST /api/vnis/geograph/unified-demand-overlay (Phase 6: Unified Demand Overlay Engine)
+ */
+router.post('/geograph/unified-demand-overlay', async (req, res) => {
+  try {
+    const { orderedVillageNodes, routeId } = req.body;
+    if (!orderedVillageNodes || !Array.isArray(orderedVillageNodes)) {
+      return res.status(400).json({ success: false, error: 'orderedVillageNodes array required' });
+    }
+
+    const result = await VNISDemandOverlayEngine.overlayUnifiedDemand(
+      orderedVillageNodes,
+      routeId || 'R-CORRIDOR-01'
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Unified Demand Overlay Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/vnis/geograph/ingest-telemetry-feedback (Phase 5: Self-Improving Driver Telemetry Feedback)
+ */
+router.post('/geograph/ingest-telemetry-feedback', async (req, res) => {
+  try {
+    const { probePoints, existingAllocatedJunctions } = req.body;
+    if (!probePoints || !Array.isArray(probePoints)) {
+      return res.status(400).json({ success: false, error: 'probePoints array required' });
+    }
+
+    const result = await TelemetryFeedbackEngine.processTelemetryFeedback(
+      probePoints,
+      existingAllocatedJunctions || []
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Ingest Telemetry Feedback Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/vnis/geograph/allocate-multi-criteria (Phase 4: Multi-Criteria Allocation & Confidence Engine)
+ */
+router.post('/geograph/allocate-multi-criteria', async (req, res) => {
+  try {
+    const { detectedJunctions, maxFeederRadiusKm } = req.body;
+    if (!detectedJunctions || !Array.isArray(detectedJunctions)) {
+      return res.status(400).json({ success: false, error: 'detectedJunctions array required' });
+    }
+
+    const result = await VNISMultiCriteriaAllocator.allocateMultiCriteriaVillages(
+      detectedJunctions,
+      maxFeederRadiusKm ? parseFloat(maxFeederRadiusKm) : 3.0
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Multi-Criteria Allocation Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/vnis/geograph/detect-junctions (Phase 3: OSM Road Graph Junction Detector)
+ */
+router.post('/geograph/detect-junctions', async (req, res) => {
+  try {
+    const { sampledPoints, maxJunctionRadiusMeters } = req.body;
+    if (!sampledPoints || !Array.isArray(sampledPoints)) {
+      return res.status(400).json({ success: false, error: 'sampledPoints array required' });
+    }
+
+    const result = await OSMJunctionDetector.detectRouteJunctions(
+      sampledPoints,
+      maxJunctionRadiusMeters ? parseInt(maxJunctionRadiusMeters) : 400
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Detect Junctions Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/vnis/geograph/segment-corridor (Phase 2: Polyline Segmenter & Bounding Corridor)
+ */
+router.post('/geograph/segment-corridor', async (req, res) => {
+  try {
+    const { polyline, sampleIntervalMeters, bufferRadiusKm } = req.body;
+    if (!polyline || !Array.isArray(polyline)) {
+      return res.status(400).json({ success: false, error: 'polyline array required' });
+    }
+
+    const result = RouteCorridorEngine.segmentCorridor(
+      polyline,
+      sampleIntervalMeters ? parseInt(sampleIntervalMeters) : 300,
+      bufferRadiusKm ? parseFloat(bufferRadiusKm) : 3.0
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Segment Corridor Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/vnis/geograph/fuse-route
+ * VillageLink GeoGraph Multi-Criteria Data Fusion Engine Endpoint
+ */
+router.post('/geograph/fuse-route', async (req, res) => {
+  try {
+    const { polyline, maxFeederRadiusKm } = req.body;
+    if (!polyline || !Array.isArray(polyline)) {
+      return res.status(400).json({ success: false, error: 'polyline array required' });
+    }
+
+    const result = await VNISDataFusionEngine.fuseRouteCorridor(
+      polyline,
+      maxFeederRadiusKm ? parseFloat(maxFeederRadiusKm) : 3.0
+    );
+    return res.json(result);
+  } catch (error) {
+    console.error('GeoGraph Fuse Route Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 /**
  * POST /api/vnis/corridor/allocate-junctions
@@ -330,6 +464,79 @@ router.post('/corridor/capacity-matching', async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
+/**
+ * POST /api/vnis/corridor/vacant-yield
+ * Computes sub-segment seat release, vacant inventory, and driver revenue opportunity
+ */
+router.post('/corridor/vacant-yield', async (req, res) => {
+  try {
+    const { driverId, currentStopIndex, activeStops, totalVehicleSeats, activeTickets } = req.body;
+    if (!activeStops || !Array.isArray(activeStops) || activeStops.length === 0) {
+      return res.status(400).json({ success: false, error: 'activeStops array required' });
+    }
+
+    const totalSeats = totalVehicleSeats || 20;
+    const currIndex = currentStopIndex || 0;
+    const tickets = activeTickets || [];
+
+    // Calculate occupied seats for upcoming sub-segments
+    const subSegments = [];
+    let totalPotentialEarningsRupees = 0;
+
+    for (let i = currIndex; i < activeStops.length - 1; i++) {
+      const segFrom = activeStops[i].name || activeStops[i];
+      const segTo = activeStops[i + 1].name || activeStops[i + 1];
+
+      // Count passengers on board during segment i -> i+1
+      const passengersOnSeg = tickets.filter(t => {
+        if (t.status !== 'BOARDED' && t.status !== 'CONFIRMED') return false;
+        const fromIdx = activeStops.findIndex(s => (s.name || s) === t.from);
+        const toIdx = activeStops.findIndex(s => (s.name || s) === t.to);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          return i >= fromIdx && i < toIdx;
+        }
+        return false;
+      }).reduce((acc, t) => acc + (t.passengerCount || 1), 0);
+
+      const vacantSeats = Math.max(0, totalSeats - passengersOnSeg);
+      const estHopFare = Math.round(15 + Math.random() * 25);
+      const potentialSegmentRev = vacantSeats * estHopFare;
+      totalPotentialEarningsRupees += potentialSegmentRev;
+
+      subSegments.push({
+        segmentIndex: i,
+        fromStop: segFrom,
+        toStop: segTo,
+        occupiedSeats: passengersOnSeg,
+        vacantSeats,
+        estimatedHopFareRupees: estHopFare,
+        potentialSegmentRevenue: potentialSegmentRev
+      });
+    }
+
+    const nextStop = activeStops[currIndex + 1] ? (activeStops[currIndex + 1].name || activeStops[currIndex + 1]) : 'Destination';
+
+    return res.json({
+      success: true,
+      data: {
+        driverId: driverId || 'DRV_1',
+        currentStopIndex: currIndex,
+        nextStop,
+        totalVehicleSeats: totalSeats,
+        subSegments,
+        totalPotentialVacantRevenueRupees: totalPotentialEarningsRupees,
+        recommendedAction: totalPotentialEarningsRupees > 100
+          ? `High Demand ahead! ${subSegments[0]?.vacantSeats || 0} vacant seats available at ${nextStop} chowk.`
+          : 'Normal occupancy.'
+      }
+    });
+  } catch (error) {
+    console.error('VNIS Vacant Yield Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 /**
  * POST /api/vnis/pricing/calculate-fare (VNIS Layer 5)

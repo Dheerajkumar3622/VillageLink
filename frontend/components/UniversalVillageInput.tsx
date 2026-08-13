@@ -8,7 +8,7 @@ import { MapPin, Search, Navigation } from 'lucide-react';
  * It loads a 28MB JSON dataset silently and provides <10ms latency search.
  */
 interface UniversalVillageInputProps {
-  onSelect?: (selected: { name: string; pincode: string; district: string; state: string; raw: any }) => void;
+  onSelect?: (selected: { name?: string; pincode?: string; district?: string; state?: string; fullName?: string; lat?: number; lng?: number; isGPS?: boolean; raw?: any }) => void;
   placeholder?: string;
 }
 

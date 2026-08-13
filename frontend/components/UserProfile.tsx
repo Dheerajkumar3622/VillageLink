@@ -363,32 +363,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onBack, onShowPa
                     <button onClick={() => setActiveTab('WALLET')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'WALLET' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'WALLET' ? '#475569' : undefined }}>
                         <WalletIcon size={14} /> Wallet
                     </button>
-                    <button onClick={() => setActiveTab('REFERRAL')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'REFERRAL' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-slate-600 dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'REFERRAL' ? '#475569' : undefined }}>
+                    <button onClick={() => setActiveTab('REFERRAL')} className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'REFERRAL' ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : '!text-[#475569] dark:!text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`} style={{ color: activeTab !== 'REFERRAL' ? '#475569' : undefined }}>
                         <Users size={14} /> Invite
                     </button>
                 </div>
-                {onToggleDevMode && (
-                    <div className="flex items-center justify-between mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
-                        <div>
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                🛠️ Developer Mode (Testing Panels)
-                            </p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                Unlock Mandi & Mess panels for internal testing
-                            </p>
-                        </div>
-                        <button
-                            onClick={onToggleDevMode}
-                            className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm ${
-                                isDevMode 
-                                    ? 'bg-amber-500 text-black shadow-amber-500/30 scale-105' 
-                                    : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                            }`}
-                        >
-                            {isDevMode ? 'ENABLED' : 'DISABLED'}
-                        </button>
-                    </div>
-                )}
                 {user.role === 'ADMIN' && onShowAdmin && (
                     <div className="flex justify-center mt-3">
                         <button onClick={onShowAdmin} className="text-[10px] font-bold bg-[#BE5103] text-white px-6 py-2 rounded-full flex items-center gap-1.5 shadow-lg shadow-luxe-sienna/20 active:scale-95 transition-transform">

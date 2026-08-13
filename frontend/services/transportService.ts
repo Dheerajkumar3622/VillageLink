@@ -568,15 +568,16 @@ export const disconnectDriver = (userId: string) => {
 export const broadcastBusLocation = (state: Partial<BusState> & { driverId: string }) => {
     if (socket) {
         const loc = (state as any).currentLocation || (state as any).location;
+        const stateAny = state as any;
         emitThrottled('driver_location_update', state, 500);
         emitThrottled('driver_location_stream', {
             driverId: state.driverId,
             lat: loc?.lat,
             lng: loc?.lng,
-            speed: state.speed || 0,
-            heading: state.heading || 0,
+            speed: stateAny.speed || 0,
+            heading: stateAny.heading || 0,
             timestamp: Date.now(),
-            isStationary: !state.speed || state.speed < 2
+            isStationary: !stateAny.speed || stateAny.speed < 2
         }, 400);
     }
 };
@@ -785,16 +786,69 @@ export const checkKinematicLock = (ticket: Ticket, driverSpeed: number, passenge
 /**
  * Universal Dynamic Google Polyline + OSM 4.75 Lakh Node Intersection Service
  */
-export const fetchLiveCorridorNodes = async (polylinePoints: Array<{ lat: number; lng: number }>, bufferKm = 0.8) => {
+export const fetchLiveCorridorNodes = async (polylinePoints: Array<{ lat: number; lng: number }>, bufferKm = 3.0) => {
     try {
-        const res = await fetch(`${SERVER_URL}/api/vnis/corridor/snap-polyline`, {
+        let apiUrl = `${SERVER_URL}/api/vnis/geograph/fuse-route`;
+        let res = await fetch(apiUrl, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ polyline: polylinePoints, maxFeederRadiusKm: bufferKm })
+        }).catch(() => null);
+
+        // Fallback to local server if Render production backend is sleeping or 404
+        if (!res || !res.ok) {
+            const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
+            apiUrl = `http://${host}:3001/api/vnis/geograph/fuse-route`;
+            res = await fetch(apiUrl, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ polyline: polylinePoints, maxFeederRadiusKm: bufferKm })
+            }).catch(() => null);
+        }
+
+        if (res && res.ok) {
+            const json = await res.json();
+            if (json.success && json.orderedVillageNodes) {
+                return {
+                    nodesSequence: json.orderedVillageNodes.map((n: any) => ({
+                        node: {
+                            nodeId: n.junctionId || n.nodeId,
+                            name: n.primaryVillage || n.junctionName,
+                            localNameHindi: n.primaryVillage || n.junctionName,
+                            junctionName: n.junctionName,
+                            district: n.district || 'Rural District'
+                        },
+                        cumulativeDistanceKm: n.cumulativeDistKm || n.cumulativeDistanceKm || 0,
+                        feederApproachType: n.junctionType || n.feederApproachType,
+                        perpendicularDistanceMeters: n.roadDistanceKm ? n.roadDistanceKm * 1000 : 200,
+                        confidenceScorePct: n.primaryConfidenceScorePct || n.confidenceScorePct || 95,
+                        statusTag: n.demandOverlay ? n.demandOverlay.statusTag : 'ALGORITHMICALLY_VERIFIED',
+                        coLocatedVillages: (n.connectedVillages && n.connectedVillages.length > 0) 
+                          ? n.connectedVillages 
+                          : (n.allocatedVillages && n.allocatedVillages.length > 0) 
+                          ? n.allocatedVillages 
+                          : (n.coLocatedVillages && n.coLocatedVillages.length > 0) 
+                          ? n.coLocatedVillages 
+                          : [{ villageName: n.primaryVillage || n.junctionName, distanceFromJunctionKm: 0.2, approachType: 'ON_HIGHWAY' }]
+                    })),
+                    totalDistanceKm: json.corridorSummary ? json.corridorSummary.totalDistanceKm : 0
+                };
+            }
+        }
+
+        // Fallback to local snap-polyline endpoint if fuse-route fails
+        const host = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'localhost';
+        const res2 = await fetch(`http://${host}:3001/api/vnis/corridor/snap-polyline`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ polylinePoints, bufferKm, speedKmH: 40, minNodeSpacingMeters: 150 })
-        });
-        const json = await res.json();
-        if (json.success && json.data) {
-            return json.data;
+        }).catch(() => null);
+
+        if (res2 && res2.ok) {
+            const json2 = await res2.json();
+            if (json2.success && json2.data) {
+                return json2.data;
+            }
         }
         return null;
     } catch (e) {

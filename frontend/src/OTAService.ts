@@ -17,6 +17,10 @@ export class OTAService {
   }
 
   public async checkForUpdate(): Promise<void> {
+    if (!import.meta.env.PROD) {
+      console.log('[OTA] Development mode active - OTA auto-update skipped.');
+      return;
+    }
     try {
       console.log('[OTA] Checking for update...');
       // Append timestamp to prevent aggressive caching

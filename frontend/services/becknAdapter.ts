@@ -295,6 +295,7 @@ async function getFallbackSearch(
 ): Promise<UnifiedRideOption[]> {
     const intent = {
         fulfillment: {
+            type: 'PASSENGER_TRANSPORT',
             start: { location: { gps: formatGPS(pickup.lat, pickup.lng) } },
             end: { location: { gps: formatGPS(dropoff.lat, dropoff.lng) } }
         }

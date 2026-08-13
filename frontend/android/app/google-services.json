@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "428748007277",
+    "project_id": "villagelink-96b4c",
+    "storage_bucket": "villagelink-96b4c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:428748007277:android:c0bb2301fabbb78f575c64",
+        "android_client_info": {
+          "package_name": "com.villagelink.user"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "428748007277-kd4nj6e5vtkg8hep4dbmekg86vvv2g9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.villagelink.user",
+            "certificate_hash": "4732ce8f6d71980d3f334aa7785f4cb47509ede3"
+          }
+        },
+        {
+          "client_id": "428748007277-p6slvf8vakee6s7qru1635o0e81uighd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArAqU20_9mmQYxlhcPVchuPUhKulz3Qrs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "428748007277-p6slvf8vakee6s7qru1635o0e81uighd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -5,10 +5,10 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
+import './frontend/index.css';
 
 // Import the User App Root (with auth handling)
-import UserAppRoot from './components/UserAppRoot';
+import UserAppRoot from './frontend/components/UserAppRoot';
 
 const container = document.getElementById('root');
 if (container) {

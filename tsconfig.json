@@ -28,5 +28,12 @@
     "noEmit": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true
-  }
+  },
+  "exclude": [
+    "*.js",
+    "backend/**/*.js",
+    "node_modules",
+    "dist",
+    "apk-out"
+  ]
 }

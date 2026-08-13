@@ -5,10 +5,10 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
+import './frontend/index.css';
 
 // Import the Provider App Root (with auth handling)
-import ProviderAppRoot from './components/ProviderAppRoot';
+import ProviderAppRoot from './frontend/components/ProviderAppRoot';
 import { LanguageProvider } from './frontend/services/i18n';
 
 const container = document.getElementById('root');

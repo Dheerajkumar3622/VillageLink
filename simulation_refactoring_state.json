@@ -1,0 +1,93 @@
+{
+  "currentIndex": 8,
+  "features": [
+    {
+      "id": "mess-mate",
+      "name": "Mess Mate (Menu Voting & Prep Sheets)",
+      "description": "Currently MessManagerView.tsx directly loads getMockVote() and getMockPrepSheet() on initialization, bypasses database interactions, and uses unmatched backend endpoint paths.",
+      "why": "Menu voting and kitchen headcounts were designed as a frontend-only demo without database persistence validation.",
+      "targetFiles": [
+        "frontend/components/MessManagerView.tsx",
+        "frontend/services/messMateService.ts",
+        "backend/routes/foodLinkRoutes.js"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "beckn-ondc",
+      "name": "Beckn ONDC Mobility Grid Integration",
+      "description": "Ride searching and option calculation in becknAdapter.ts are fully simulated client-side using coordinate distance formulas, bypass the backend, and lacks actual network registry queries.",
+      "why": "ONDC/Beckn protocols require active gateway infrastructure and sandboxed BPP registries.",
+      "targetFiles": [
+        "frontend/services/becknAdapter.ts",
+        "backend/routes/becknRoutes.js"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "crop-grading",
+      "name": "AR Mandi Crop Quality Grading",
+      "description": "ARMandiHUD.tsx generates static crop quality results and recommended pricing, rather than sending captured image payloads to the ML grading server.",
+      "why": "Requires camera canvas frame extraction, binary image uploads, and running computer vision models on backend.",
+      "targetFiles": [
+        "frontend/components/ARMandiHUD.tsx",
+        "frontend/services/mlService.ts"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "voice-copilot",
+      "name": "Gemini Voice Co-Pilot Speech Booking",
+      "description": "Fallback voice recording simulation using a hardcoded Bhojpuri/Hindi sentence if microphone API or audio upload is blocked.",
+      "why": "Audio recording blobs require format transcoding and integration with cloud Speech-to-Text APIs.",
+      "targetFiles": [
+        "frontend/components/GeminiCoPilot.tsx",
+        "frontend/services/mlService.ts",
+        "backend/routes/aiRoutes.js"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "ultrasonic-qr",
+      "name": "Ultrasonic QR Soundbox Verification",
+      "description": "Sound transmission is simulated using regular browser AudioContext beeps, and the token verification is not secured against the database.",
+      "why": "Raw PCM audio processing and high-frequency ultrasonic filtering can be unstable across devices.",
+      "targetFiles": [
+        "frontend/components/AudioQRScanner.tsx",
+        "frontend/services/UltrasonicVerificationService.ts"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "proximity-radar",
+      "name": "Tesla-like Autopilot 3D Proximity Radar",
+      "description": "ProximityRadar3D.tsx uses mock vehicles array in ref to simulate traffic movement, rather than active websockets geolocation feeds of nearby drivers.",
+      "why": "For demonstration when testing in isolation or without other live drivers nearby.",
+      "targetFiles": [
+        "frontend/components/ProximityRadar3D.tsx"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "credit-scoring",
+      "name": "Alternative Credit Scoring & PM SVANidhi Offers",
+      "description": "creditScoreService.ts returns a hardcoded 720 score and preset factors if the backend calculation fails.",
+      "why": "Requires real aggregated transaction logs and orders history for the active vendor.",
+      "targetFiles": [
+        "frontend/services/creditScoreService.ts",
+        "frontend/components/VendorAnalytics.tsx"
+      ],
+      "status": "completed"
+    },
+    {
+      "id": "universal-qr",
+      "name": "Universal QR Scanner Trigger Simulators",
+      "description": "UniversalQRScanner.tsx renders direct click triggers simulating successful scans of products, shops, and payments to bypass camera scanning.",
+      "why": "Allows testing core scanner workflows in desktop environments.",
+      "targetFiles": [
+        "frontend/components/UniversalQRScanner.tsx"
+      ],
+      "status": "completed"
+    }
+  ]
+}

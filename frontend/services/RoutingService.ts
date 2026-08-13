@@ -8,6 +8,9 @@ export interface RouteResponse {
   estimatedTime: number; // in seconds
   pathDetails: { lat: number; lng: number }[];
   engineUsed: RouteEngine;
+  junctionVillages?: any[];
+  totalVillagesMapped?: number;
+  feederChowks?: string[];
   alternatives?: {
     distance: number;
     estimatedTime: number;
@@ -98,6 +101,21 @@ export class RoutingService {
       } else {
         route = await this.fetchMapboxRoute(source, destination);
       }
+
+      // Automatically allocate T/Y-Junction village modes along Google Maps polyline
+      if (route && route.pathDetails && route.pathDetails.length > 0) {
+        try {
+          const allocResult = await this.allocateHighwayJunctions(route.pathDetails, 3.0);
+          if (allocResult && allocResult.junctions) {
+            route.junctionVillages = allocResult.junctions;
+            route.totalVillagesMapped = allocResult.totalVillagesMapped || allocResult.junctions.length;
+            route.feederChowks = allocResult.junctions.map((j: any) => j.junctionName);
+          }
+        } catch (jncErr) {
+          console.warn('[RoutingService] VNIS junction allocation attachment error:', jncErr);
+        }
+      }
+
       this.cache.set(cacheKey, route);
       return route;
     } catch (error) {

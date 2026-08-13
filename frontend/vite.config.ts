@@ -1,38 +1,39 @@
 
 // Vite restart trigger 3
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { resolve } from 'path';
 
-// Set VITE_DEV_HTTPS=0 to serve plain http:// on LAN (no self-signed cert warnings; use with npm run dev:host).
-const useDevHttps = process.env.VITE_DEV_HTTPS !== '0';
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, resolve(__dirname, '../'), '');
+  const useDevHttps = env.VITE_DEV_HTTPS !== '0';
 
-export default defineConfig({
-  plugins: [
-    react(), 
-    ...(useDevHttps ? [basicSsl()] : []),
-    {
-      name: 'html-rewrite-middleware',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          const url = req.url ? req.url.split('?')[0] : '';
-          if (url === '/provider') {
-            req.url = '/provider.html';
-          } else if (url === '/admin') {
-            req.url = '/admin.html';
-          } else if (url === '/user') {
-            req.url = '/user.html';
-          }
-          next();
-        });
+  return {
+    plugins: [
+      react(), 
+      ...(useDevHttps ? [basicSsl()] : []),
+      {
+        name: 'html-rewrite-middleware',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            const url = req.url ? req.url.split('?')[0] : '';
+            if (url === '/provider') {
+              req.url = '/provider.html';
+            } else if (url === '/admin') {
+              req.url = '/admin.html';
+            } else if (url === '/user') {
+              req.url = '/user.html';
+            }
+            next();
+          });
+        }
       }
-    }
-  ],
-  envDir: resolve(__dirname, '../'),
-  server: {
-    host: true, // Allow external access via IP
-    port: 3000,
+    ],
+    envDir: resolve(__dirname, '../'),
+    server: {
+      host: true, // Allow external access via IP
+      port: 3000,
     watch: {
       ignored: [
         '**/android/**',
@@ -44,15 +45,15 @@ export default defineConfig({
     },
     proxy: {
       '/socket.io': {
-        target: 'https://backendlink-0xjs.onrender.com', // Live backend for seamless local wifi testing
+        target: 'https://backendlink-0xjs.onrender.com',
         ws: true,
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
       '/api': {
-        target: 'https://backendlink-0xjs.onrender.com', // Live backend for seamless local wifi testing
+        target: 'https://backendlink-0xjs.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     }
   },
@@ -75,6 +76,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-ui': ['lucide-react'],
           'vendor-socket': ['socket.io-client'],
+          'vendor-maps': ['leaflet', 'react-leaflet', 'mapbox-gl', 'react-map-gl'],
           'feature-ai': ['@tensorflow/tfjs', '@tensorflow-models/mobilenet'],
           'feature-blockchain': ['ethers'],
         },
@@ -95,13 +97,15 @@ export default defineConfig({
     minify: 'esbuild',
     cssCodeSplit: true,
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'lucide-react', 'long', 'socket.io-client', 'firebase/app', 'firebase/auth'],
-    exclude: ['@tensorflow/tfjs', '@tensorflow-models/mobilenet', 'ethers']
-  },
-  esbuild: {
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
-    minifyIdentifiers: true,
-    minifySyntax: true,
-  }
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'lucide-react', 'long', 'socket.io-client', 'firebase/app', 'firebase/auth'],
+      exclude: ['@tensorflow/tfjs', '@tensorflow-models/mobilenet', 'ethers']
+    },
+    esbuild: {
+      drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+      minifyIdentifiers: true,
+      minifySyntax: true,
+    }
+  };
 });
+

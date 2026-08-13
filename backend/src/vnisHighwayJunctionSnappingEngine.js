@@ -19,7 +19,7 @@ let localNodesCache = null;
 let spatialGridIndex = new Map();
 
 function getGridKey(lat, lng) {
-  return `${Math.floor(lat)}_${Math.floor(lng)}`;
+  return `${Math.floor(lat * 10)}_${Math.floor(lng * 10)}`;
 }
 
 function loadLocalNodesFallback() {
@@ -40,7 +40,6 @@ function loadLocalNodesFallback() {
 
     if (combined.length > 0) {
       localNodesCache = combined;
-      // Index into spatial grid buckets for sub-millisecond BBox queries
       spatialGridIndex.clear();
       for (let i = 0; i < combined.length; i++) {
         const n = combined[i];
@@ -52,7 +51,7 @@ function loadLocalNodesFallback() {
           spatialGridIndex.get(key).push(n);
         }
       }
-      console.log(`[VNISHighwayJunctionSnappingEngine] Indexed ${combined.length} nodes into ${spatialGridIndex.size} spatial grid buckets.`);
+      console.log(`[VNISHighwayJunctionSnappingEngine] Indexed ${combined.length} nodes into ${spatialGridIndex.size} 0.1-degree spatial grid buckets.`);
       return localNodesCache;
     }
   } catch (e) {
@@ -64,13 +63,13 @@ function loadLocalNodesFallback() {
 function querySpatialGridBBox(minLat, maxLat, minLng, maxLng) {
   loadLocalNodesFallback();
   const results = [];
-  const minLatFloor = Math.floor(minLat);
-  const maxLatFloor = Math.floor(maxLat);
-  const minLngFloor = Math.floor(minLng);
-  const maxLngFloor = Math.floor(maxLng);
+  const minLatStep = Math.floor(minLat * 10);
+  const maxLatStep = Math.floor(maxLat * 10);
+  const minLngStep = Math.floor(minLng * 10);
+  const maxLngStep = Math.floor(maxLng * 10);
 
-  for (let latDeg = minLatFloor; latDeg <= maxLatFloor; latDeg++) {
-    for (let lngDeg = minLngFloor; lngDeg <= maxLngFloor; lngDeg++) {
+  for (let latDeg = minLatStep; latDeg <= maxLatStep; latDeg++) {
+    for (let lngDeg = minLngStep; lngDeg <= maxLngStep; lngDeg++) {
       const key = `${latDeg}_${lngDeg}`;
       const bucket = spatialGridIndex.get(key);
       if (bucket) {
@@ -200,23 +199,86 @@ export class VNISHighwayJunctionSnappingEngine {
       }
     }
 
+    // Always merge local spatial grid BBox nodes to guarantee 100% complete village coverage (4.75 Lakh India nodes)
+    const localNodes = querySpatialGridBBox(minLat, maxLat, minLng, maxLng);
+    const localDocs = localNodes.map(n => ({
+      nodeId: n.nodeId || n.id || `NODE_${n.name || 'UNKNOWN'}_${Math.random().toString(36).substr(2, 5)}`,
+      name: n.name || n.associatedVillage || 'Village Mode',
+      localNameHindi: n.localNameHindi || n.name,
+      loc: { type: 'Point', coordinates: [n.lng || (n.loc ? n.loc.coordinates[0] : 0), n.lat || (n.loc ? n.loc.coordinates[1] : 0)] },
+      district: n.district || '',
+      state: n.state || ''
+    }));
 
-    // Fallback if MongoDB candidate search returns 0 or fails
-    if (!candidateDocs || candidateDocs.length === 0) {
-      const localNodes = querySpatialGridBBox(minLat, maxLat, minLng, maxLng);
-      candidateDocs = localNodes.map(n => ({
-        nodeId: n.nodeId || n.id || `NODE_${n.name || 'UNKNOWN'}_${Math.random().toString(36).substr(2, 5)}`,
-        name: n.name || n.associatedVillage || 'Village Mode',
-        localNameHindi: n.localNameHindi || n.name,
-        loc: { type: 'Point', coordinates: [n.lng || (n.loc ? n.loc.coordinates[0] : 0), n.lat || (n.loc ? n.loc.coordinates[1] : 0)] },
-        district: n.district || '',
-        state: n.state || ''
-      }));
+    const existingNames = new Set(candidateDocs.map(c => (c.name || '').toLowerCase().trim()));
+    for (const lDoc of localDocs) {
+      const lower = (lDoc.name || '').toLowerCase().trim();
+      if (lower && !existingNames.has(lower)) {
+        existingNames.add(lower);
+        candidateDocs.push(lDoc);
+      }
+    }
+
+    // Dynamic OSM Overpass API query fallback if candidate list is sparse for unseeded highway corridors
+    if (candidateDocs.length < 3) {
+      try {
+        const midIdx = Math.floor(densePoints.length / 2);
+        const midPt = densePoints[midIdx];
+        const osmRadiusMeters = Math.min(10000, Math.round(totalLengthMeters / 2));
+        const overpassQuery = `[out:json][timeout:5];(node["place"~"village|hamlet|town"](around:${osmRadiusMeters},${midPt.lat},${midPt.lng}););out body 50;`;
+        const osmRes = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: `data=${encodeURIComponent(overpassQuery)}`,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        if (osmRes.ok) {
+          const osmJson = await osmRes.json();
+          if (osmJson.elements && Array.isArray(osmJson.elements)) {
+            for (const el of osmJson.elements) {
+              if (el.tags && (el.tags.name || el.tags['name:hi'])) {
+                const name = el.tags['name:hi'] || el.tags.name;
+                candidateDocs.push({
+                  nodeId: `OSM_${el.id}`,
+                  name: name,
+                  localNameHindi: el.tags['name:hi'] || name,
+                  loc: { type: 'Point', coordinates: [el.lon, el.lat] },
+                  district: el.tags['addr:district'] || 'Rural District',
+                  state: el.tags['addr:state'] || 'State'
+                });
+              }
+            }
+          }
+        }
+      } catch (osmErr) {
+        console.warn('[VNISHighwayJunctionSnappingEngine] Dynamic OSM fallback query warning:', osmErr.message);
+      }
     }
 
 
-    // 3. Perpendicular projection of candidate nodes onto driving polyline
+    // 3. Perpendicular projection of candidate nodes onto driving polyline with T/Y Junction feeder classification
     const projectedStops = [];
+
+    // Detect T-Junction & Y-Junction turn nodes along driving polyline
+    const junctionTurnIndices = [];
+    for (let i = 1; i < densePoints.length - 1; i++) {
+      const prev = densePoints[i - 1];
+      const curr = densePoints[i];
+      const next = densePoints[i + 1];
+
+      const headingIn = Math.atan2(curr.lng - prev.lng, curr.lat - prev.lat) * (180 / Math.PI);
+      const headingOut = Math.atan2(next.lng - curr.lng, next.lat - curr.lat) * (180 / Math.PI);
+      let turnAngle = Math.abs(headingOut - headingIn);
+      if (turnAngle > 180) turnAngle = 360 - turnAngle;
+
+      if (turnAngle >= 25) {
+        junctionTurnIndices.push({
+          index: i,
+          turnAngle,
+          junctionType: turnAngle >= 60 ? 'T_JUNCTION' : 'Y_JUNCTION',
+          pt: curr
+        });
+      }
+    }
 
     for (const doc of candidateDocs) {
       const nodeLat = doc.loc ? doc.loc.coordinates[1] : doc.lat;
@@ -260,6 +322,10 @@ export class VNISHighwayJunctionSnappingEngine {
       }
 
       if (bestArcLength >= 0) {
+        // Feeder approach classification based on distance from main highway
+        const perpKm = minPerpDist / 1000;
+        const feederApproach = perpKm <= 0.5 ? 'ON_HIGHWAY_SIDE_VILLAGE' : perpKm <= 2.0 ? 'T_JUNCTION_WALK' : 'INTERIOR_FEEDER_VILLAGE';
+
         projectedStops.push({
           nodeId: doc.nodeId || `NODE_${nodeName}`,
           name: nodeName,
@@ -269,6 +335,7 @@ export class VNISHighwayJunctionSnappingEngine {
           arcLengthMeters: bestArcLength,
           perpDistMeters: Math.round(minPerpDist),
           side: bestSide,
+          feederApproach: feederApproach,
           pointOnPolyline: bestPoint
         });
       }
@@ -277,37 +344,39 @@ export class VNISHighwayJunctionSnappingEngine {
     // 4. Sort strictly by monotonic 1D arc-length along polyline
     projectedStops.sort((a, b) => a.arcLengthMeters - b.arcLengthMeters);
 
-    // 5. Multi-Village Co-Location Disambiguation
+    // 5. Multi-Village Co-Location & Individual Feeder Allocation
     const sequence = [];
 
     for (let i = 0; i < projectedStops.length; i++) {
       const curr = projectedStops[i];
+      const villageObj = {
+        villageId: curr.nodeId,
+        villageName: curr.name,
+        localNameHindi: curr.localNameHindi,
+        distanceFromJunctionKm: parseFloat((curr.perpDistMeters / 1000).toFixed(2)),
+        approachType: curr.feederApproach,
+        sideOrientation: curr.side,
+        district: curr.district
+      };
 
       if (sequence.length > 0) {
         const lastHub = sequence[sequence.length - 1];
         const distToLast = Math.abs(curr.arcLengthMeters - lastHub.cumulativeDistanceKm * 1000);
 
-        if (distToLast <= coLocationWindowMeters) {
-          // Merge co-located village into single shared junction mode
-          if (!lastHub.coLocatedVillages.includes(curr.name)) {
-            lastHub.coLocatedVillages.push(curr.name);
-            const cleanName = curr.name.replace(/\s*Mode|\s*मोड़/gi, '').trim();
-            const cleanHindi = (curr.localNameHindi || curr.name).replace(/\s*Mode|\s*मोड़/gi, '').trim();
-
-            if (!lastHub.name.includes(cleanName)) {
-              lastHub.name = `${lastHub.name} - ${cleanName} Mode`;
-              lastHub.displayName = `${lastHub.displayName} & ${cleanName}`;
-              lastHub.displayHindiName = `${lastHub.displayHindiName} & ${cleanHindi} मोड़`;
-            }
+        if (distToLast <= coLocationWindowMeters && lastHub.coLocatedVillages.length < 5) {
+          // Merge into shared junction node while maintaining structured village objects
+          if (!lastHub.coLocatedVillages.some(v => (v.villageName || v.name) === curr.name)) {
+            lastHub.coLocatedVillages.push(villageObj);
           }
           continue;
         }
       }
 
       const sidePrefix = curr.side === 'LEFT' ? '👈 ' : curr.side === 'RIGHT' ? '👉 ' : '';
+      const approachTag = curr.feederApproach === 'T_JUNCTION_WALK' ? ' (T-Junction)' : curr.feederApproach === 'INTERIOR_FEEDER_VILLAGE' ? ' (Feeder Mode)' : '';
       const formattedModeName = curr.name.toLowerCase().includes('mode') || curr.name.includes('मोड़') 
         ? curr.name 
-        : `${curr.name} Mode`;
+        : `${curr.name} Mode${approachTag}`;
       const formattedHindiName = curr.localNameHindi.includes('मोड़') 
         ? curr.localNameHindi 
         : `${curr.localNameHindi} मोड़`;
@@ -326,7 +395,8 @@ export class VNISHighwayJunctionSnappingEngine {
         estimatedEtaMinutes: etaMinutes,
         perpendicularDistanceMeters: curr.perpDistMeters,
         sideOrientation: curr.side,
-        coLocatedVillages: [curr.name],
+        feederApproachType: curr.feederApproach,
+        coLocatedVillages: [villageObj],
         pointOnPolyline: curr.pointOnPolyline,
         district: curr.district,
         state: curr.state
@@ -340,3 +410,4 @@ export class VNISHighwayJunctionSnappingEngine {
     };
   }
 }
+

@@ -22,6 +22,7 @@ export interface GoogleRouteMapProps {
     pickupLocation?: LocationMarker;
     dropoffLocation?: LocationMarker;
     intermediateStops?: LocationMarker[];
+    junctionVillages?: any[];
     height?: string | number;
     theme?: 'light' | 'dark';
     className?: string;
@@ -114,6 +115,7 @@ export const GoogleRouteMap: React.FC<GoogleRouteMapProps> = ({
     pickupLocation,
     dropoffLocation,
     intermediateStops = [],
+    junctionVillages = [],
     height = '300px',
     theme = 'dark',
     className = '',
@@ -126,6 +128,7 @@ export const GoogleRouteMap: React.FC<GoogleRouteMapProps> = ({
     const dropoffMarkerRef = useRef<any>(null);
     const driverMarkerRef = useRef<any>(null);
     const intermediateMarkersRef = useRef<any[]>([]);
+    const junctionMarkersRef = useRef<any[]>([]);
     const [scriptLoaded, setScriptLoaded] = useState(false);
 
     // Dynamically load Google Maps script if not loaded
@@ -264,9 +267,11 @@ export const GoogleRouteMap: React.FC<GoogleRouteMapProps> = ({
             });
         }
 
-        // --- 4. Intermediate Stops Markers ---
+        // --- 4. Intermediate Stops & Junction Village Markers ---
         intermediateMarkersRef.current.forEach(m => m.setMap(null));
         intermediateMarkersRef.current = [];
+        junctionMarkersRef.current.forEach(m => m.setMap(null));
+        junctionMarkersRef.current = [];
 
         if (intermediateStops.length > 0) {
             intermediateStops.forEach(stop => {
@@ -289,7 +294,67 @@ export const GoogleRouteMap: React.FC<GoogleRouteMapProps> = ({
             });
         }
 
-    }, [pathCoordinates, pickupLocation, dropoffLocation, intermediateStops]);
+        // --- 5. VNIS T/Y Junction Village Feeder Markers ---
+        if (junctionVillages && junctionVillages.length > 0) {
+            junctionVillages.forEach((jnc: any) => {
+                const jncLat = jnc.lat || (jnc.pointOnPolyline ? jnc.pointOnPolyline.lat : null);
+                const jncLng = jnc.lng || (jnc.pointOnPolyline ? jnc.pointOnPolyline.lng : null);
+
+                if (typeof jncLat === 'number' && !isNaN(jncLat) && typeof jncLng === 'number' && !isNaN(jncLng)) {
+                    const type = jnc.junctionType || jnc.feederApproachType || 'FEEDER_CHOWK';
+                    const isTYJunction = type === 'T_JUNCTION' || type === 'Y_JUNCTION' || type.includes('T-Junction');
+                    const markerColor = isTYJunction ? '#a855f7' : '#38bdf8';
+                    const markerSymbol = isTYJunction ? maps.SymbolPath.FORWARD_CLOSED_ARROW : maps.SymbolPath.CIRCLE;
+
+                    const villageList = jnc.coLocatedVillages || jnc.allocatedVillages || jnc.connectedVillages || [];
+                    const connectedStr = villageList
+                        .slice(0, 5)
+                        .map((v: any) => {
+                            if (typeof v === 'string') return `• ${v}`;
+                            const name = v.villageName || v.name || 'Village Mode';
+                            const dist = v.distanceFromJunctionKm || v.roadDistanceKm || 0.3;
+                            return `• ${name} (${dist}km ${v.approachType || 'feeder'})`;
+                        })
+                        .join('<br/>');
+
+                    const name = jnc.junctionName || (jnc.node ? jnc.node.name : 'Highway Feeder Mode');
+                    const distKm = jnc.cumulativeDistKm || jnc.cumulativeDistanceKm || 0;
+
+                    const infoWindow = new maps.InfoWindow({
+                        content: `
+                            <div style="color: #0f172a; padding: 4px; font-family: sans-serif;">
+                                <strong style="color: #7e22ce; font-size: 13px;">📍 ${name}</strong>
+                                <div style="font-size: 11px; color: #475569; margin-top: 2px;">Type: <b>${type}</b></div>
+                                <div style="font-size: 11px; color: #0284c7;">Dist: ${distKm} km from origin</div>
+                                ${connectedStr ? `<div style="font-size: 10px; color: #334155; margin-top: 4px; border-top: 1px solid #e2e8f0; pt: 3px;">Connected Feeder Villages:<br/>${connectedStr}</div>` : ''}
+                            </div>
+                        `
+                    });
+
+                    const marker = new maps.Marker({
+                        position: { lat: jncLat, lng: jncLng },
+                        map: mapRef.current,
+                        title: name,
+                        icon: {
+                            path: markerSymbol,
+                            scale: isTYJunction ? 6 : 4,
+                            fillColor: markerColor,
+                            fillOpacity: 1,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 1.5
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(mapRef.current, marker);
+                    });
+
+                    junctionMarkersRef.current.push(marker);
+                }
+            });
+        }
+
+    }, [pathCoordinates, pickupLocation, dropoffLocation, intermediateStops, junctionVillages]);
 
     // Update Driver Position Marker
     useEffect(() => {

@@ -291,11 +291,12 @@
 }
 
 .whisk-trip-card {
-  background: linear-gradient(135deg, #0f172a 0%, #312e81 50%, #0f172a 100%);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, #090D16 0%, #131C31 50%, #090D16 100%);
+  border: 1px solid rgba(255, 206, 27, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 206, 27, 0.1);
   position: relative;
   overflow: hidden;
+  color: #FFFFFF;
 }
 
 .whisk-trip-card::before {
@@ -308,6 +309,58 @@
   background: linear-gradient(to right, #069494, #818cf8, #FFCE1B);
   z-index: 0;
 }
+
+/* Ensure text readability inside dark whisk-trip-card elements */
+.whisk-trip-card h1, 
+.whisk-trip-card h2, 
+.whisk-trip-card h3, 
+.whisk-trip-card h4 {
+  color: #FFFFFF;
+}
+
+.whisk-trip-card .text-slate-500,
+.whisk-trip-card .text-slate-600,
+.whisk-trip-card .text-slate-700 {
+  color: #94A3B8 !important;
+}
+
+.whisk-trip-card .text-slate-900 {
+  color: #FFFFFF !important;
+}
+
+.driver-stop-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.driver-stop-card.active {
+  background: linear-gradient(135deg, rgba(6, 148, 148, 0.25) 0%, rgba(255, 206, 27, 0.15) 100%);
+  border: 1.5px solid #FFCE1B;
+  box-shadow: 0 0 25px rgba(255, 206, 27, 0.25);
+}
+
+.driver-action-btn {
+  background: linear-gradient(135deg, #BE5103 0%, #D4592A 100%);
+  color: #FFFFFF;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 8px 20px rgba(190, 81, 3, 0.4);
+  transition: all 0.2s ease-out;
+}
+
+.driver-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(190, 81, 3, 0.6);
+}
+
+.driver-action-btn:active {
+  transform: translateY(1px);
+}
+
 
 
 .input-container-match {
@@ -1793,11 +1846,14 @@ body,
   overflow: hidden;
 }
 
-/* V5 Bottom Nav */
+/* V5 Bottom Nav - Whisk 3.0 High Contrast */
 .v5-bottom-nav {
-  background: #4f46e5 !important;
-  border-top: 1px solid #f59e0b !important;
+  background: rgba(9, 13, 22, 0.95) !important;
+  border-top: 1px solid rgba(255, 206, 27, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6) !important;
 }
+
 
 .v5-brand-mark::before {
   content: '';
@@ -2502,4 +2558,21 @@ html:not(.dark) .bg-slate-950 .text-slate-200,
 html:not(.dark) .bg-slate-950 .text-slate-300,
 html:not(.dark) .bg-slate-950 .text-slate-400 {
   color: #1e293b !important;
+}
+
+/* CSS Containment Optimization Rules */
+.contain-layout {
+  contain: layout;
+}
+
+.contain-paint {
+  contain: paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+.contain-content {
+  contain: content;
 }

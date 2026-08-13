@@ -254,6 +254,38 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
                 setProfitWarning(null);
             }
 
+            // Geofence GPS Ticket Auto-Verification (Auto-Boarding < 30m)
+            try {
+                const storedTickets = getStoredTickets();
+                const pendingConfirmed = storedTickets.filter(t => t.status === TicketStatus.CONFIRMED);
+                for (const t of pendingConfirmed) {
+                    let boardingLat = 0, boardingLng = 0;
+                    if (tripConfigRef.current.pathDetails && tripConfigRef.current.pathDetails.length > 0) {
+                        const matchingStop = tripConfigRef.current.pathDetails.find((s: any) =>
+                            typeof s !== 'string' && (s.name === t.from || (s.name && s.name.includes(t.from)))
+                        ) as any;
+                        if (matchingStop && matchingStop.lat && matchingStop.lng) {
+                            boardingLat = matchingStop.lat;
+                            boardingLng = matchingStop.lng;
+                        }
+                    }
+                    if (boardingLat !== 0 && boardingLng !== 0) {
+                        const dLat = (latitude - boardingLat) * Math.PI / 180;
+                        const dLng = (longitude - boardingLng) * Math.PI / 180;
+                        const a = Math.sin(dLat / 2) ** 2 + Math.cos(latitude * Math.PI / 180) * Math.cos(boardingLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+                        const distMeters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                        if (distMeters <= 35) { // Within 35m of pickup chowk
+                            driverCollectTicket(t.id);
+                            playSonicToken('BOARDING-SUCCESS');
+                            announce(`Passenger boarded! Seat Confirmed for ${t.from}. Yatra Saphal Ho.`);
+                        }
+                    }
+                }
+            } catch (autoErr) {
+                console.warn('Geofence auto-boarding check warning:', autoErr);
+            }
+
             // Suggest Logistics (Intersects with Path)
             const nearbyLogistics = parcelsRef.current.find(p =>
                 p.status === 'PENDING' &&
@@ -296,6 +328,24 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
 
         if (isOnline && tripConfig.isActive) {
             initFatigueMonitoring();
+            // Start background Ultrasonic FSK acoustic listener for high-freq audio ticket handshake
+            try {
+                startUltrasonicListener((payload) => {
+                    console.log('Ultrasonic payload received:', payload);
+                    if (payload) {
+                        const storedTickets = getStoredTickets();
+                        const match = storedTickets.find(t => t.id === payload || payload.includes(t.id));
+                        if (match && match.status === TicketStatus.CONFIRMED) {
+                            driverCollectTicket(match.id);
+                            playSonicToken('BOARDING-SUCCESS');
+                            announce(`Acoustic Ticket Verified! Passenger boarded from ${match.from}.`);
+                        }
+                    }
+                });
+            } catch (uErr) {
+                console.warn('Ultrasonic listener init warning:', uErr);
+            }
+
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition(
                     (pos) => {
@@ -323,6 +373,7 @@ export const DriverView: React.FC<DriverViewProps> = ({ user, lang }) => {
             if (safetyInterval) clearInterval(safetyInterval);
             if (fallbackInterval) clearInterval(fallbackInterval);
             stopFatigueMonitoring();
+            try { stopUltrasonicListener(); } catch { }
         };
     }, [isOnline, tripConfig.isActive]);
 

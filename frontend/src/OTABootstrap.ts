@@ -30,6 +30,15 @@ export async function bootstrapOTA() {
       });
       console.log('[OTA Bootstrap] Cleared orphaned ota_staging on boot');
     }
+
+    if (!import.meta.env.PROD) {
+      try {
+        const { Preferences } = await import('@capacitor/preferences');
+        await Preferences.remove({ key: 'ota_current_version' });
+        await Preferences.remove({ key: 'ota_bundle_path' });
+        console.log('[OTA Bootstrap] Cleared OTA dev bundle overrides');
+      } catch (err) {}
+    }
   } catch (e) {
     console.warn('[OTA Bootstrap] Non-critical error during cleanup:', e);
   }

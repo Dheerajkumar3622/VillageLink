@@ -102,7 +102,7 @@ export const FoodLinkHome: React.FC<FoodLinkHomeProps> = ({ user, onBack }) => {
 
     useEffect(() => {
         if (!user?.id) return;
-        const socket = io(API_BASE_URL, { transports: ['websocket'] });
+        const socket = io(API_BASE_URL, { transports: ['websocket', 'polling'] });
         socket.emit('join_user_room', user.id);
         socket.on('food_order_status_update', (data: any) => {
             console.log('🍲 Food Order Status Updated:', data);
